@@ -1,0 +1,135 @@
+import { state, applyTheme, applyLang } from './state.js';
+import { db, collection, onSnapshot } from './firebase-config.js';
+import { hideLoading } from './ui.js';
+import { registerRoute, initRouter, handleRoute, navigate } from './router.js';
+import { renderAuthPage, attachAuthEvents, initAuth } from './auth.js';
+import { renderSidebar, renderHeader, attachLayoutEvents } from './components.js';
+import { renderDashboard, attachDashboardEvents } from './pages/dashboard.js';
+import { renderStudents, attachStudentEvents } from './pages/students.js';
+import { renderTeachers, attachTeacherEvents } from './pages/teachers.js';
+import { renderParents, attachParentEvents } from './pages/parents.js';
+import { renderClasses, attachClassEvents } from './pages/classes.js';
+import { renderAttendance, attachAttendanceEvents } from './pages/attendance.js';
+import { renderGrades, attachGradeEvents } from './pages/grades.js';
+import { renderSchedule, attachScheduleEvents } from './pages/schedule.js';
+import { renderFinance, attachFinanceEvents } from './pages/finance.js';
+import { renderAnnouncements, attachAnnouncementEvents, renderMessages, attachMessageEvents, renderSettings, attachSettingsEvents } from './pages/communications.js';
+
+// ========================= APPLY INITIAL SETTINGS =========================
+applyTheme();
+applyLang();
+
+// ========================= PAGE REGISTRY =========================
+const pages = {
+  dashboard:      { render: renderDashboard, events: attachDashboardEvents },
+  students:       { render: renderStudents, events: attachStudentEvents },
+  teachers:       { render: renderTeachers, events: attachTeacherEvents },
+  parents:        { render: renderParents, events: attachParentEvents },
+  classes:        { render: renderClasses, events: attachClassEvents },
+  attendance:     { render: renderAttendance, events: attachAttendanceEvents },
+  grades:         { render: renderGrades, events: attachGradeEvents },
+  schedule:       { render: renderSchedule, events: attachScheduleEvents },
+  finance:        { render: renderFinance, events: attachFinanceEvents },
+  announcements:  { render: renderAnnouncements, events: attachAnnouncementEvents },
+  messages:       { render: renderMessages, events: attachMessageEvents },
+  settings:       { render: renderSettings, events: (renderApp) => attachSettingsEvents(renderApp) },
+  // Placeholder pages for future features
+  exams:          { render: () => placeholderPage('📑', 'exams'), events: () => {} },
+  homework:       { render: () => placeholderPage('📚', 'homework'), events: () => {} },
+  rewards:        { render: () => placeholderPage('⭐', 'rewards'), events: () => {} },
+  clinic:         { render: () => placeholderPage('🏥', 'clinic'), events: () => {} },
+  library:        { render: () => placeholderPage('📖', 'library'), events: () => {} },
+  'bus-tracking': { render: () => placeholderPage('🚌', 'busTracking'), events: () => {} },
+  'my-children':  { render: renderDashboard, events: attachDashboardEvents },
+  materials:      { render: () => placeholderPage('📖', 'materials'), events: () => {} },
+};
+
+function placeholderPage(icon, key) {
+  return `<div class="page-content animate-in"><div class="empty-state glass-card"><span class="empty-icon">${icon}</span><h3>${state.lang === 'ar' ? 'قريباً' : 'Coming Soon'}</h3><p class="text-muted">${state.lang === 'ar' ? 'هذه الميزة قيد التطوير' : 'This feature is under development'}</p></div></div>`;
+}
+
+// ========================= RENDER APP =========================
+function renderApp() {
+  const app = document.getElementById('app');
+  if (!state.user || !state.profile) {
+    app.innerHTML = renderAuthPage();
+    attachAuthEvents();
+    return;
+  }
+
+  const currentPage = state.currentPage || 'dashboard';
+  const page = pages[currentPage] || pages.dashboard;
+
+  app.innerHTML = `
+    <div class="app-layout">
+      ${renderSidebar()}
+      <div class="main-area">
+        ${renderHeader()}
+        <main class="main-content" id="main-content">
+          ${page.render()}
+        </main>
+      </div>
+    </div>`;
+
+  attachLayoutEvents(renderApp);
+  if (typeof page.events === 'function') {
+    if (currentPage === 'settings') page.events(renderApp);
+    else page.events();
+  }
+}
+
+// ========================= REGISTER ROUTES =========================
+Object.keys(pages).forEach(path => {
+  registerRoute(path, () => {
+    state.currentPage = path;
+    renderApp();
+  });
+});
+
+// ========================= DATA LISTENERS =========================
+function startListeners() {
+  const collections = [
+    { name: 'students', key: 'students' },
+    { name: 'teachers', key: 'teachers' },
+    { name: 'parents', key: 'parents' },
+    { name: 'classes', key: 'classes' },
+    { name: 'attendance', key: 'attendance' },
+    { name: 'grades', key: 'grades' },
+    { name: 'schedules', key: 'schedules' },
+    { name: 'fees', key: 'fees' },
+    { name: 'announcements', key: 'announcements' },
+    { name: 'messages', key: 'messages' },
+    { name: 'homework', key: 'homework' },
+    { name: 'rewards', key: 'rewards' },
+  ];
+
+  collections.forEach(({ name, key }) => {
+    try {
+      const unsub = onSnapshot(collection(db, name), (snap) => {
+        state[key] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        // Only re-render if we're on a relevant page
+        if (state.user && state.profile) renderApp();
+      }, (err) => {
+        console.warn(`Listener error for ${name}:`, err);
+        state[key] = [];
+      });
+      state.unsubscribers.push(unsub);
+    } catch(e) {
+      console.warn(`Failed to listen to ${name}:`, e);
+    }
+  });
+}
+
+// ========================= INIT =========================
+initRouter();
+initAuth(
+  () => { // onLogin
+    startListeners();
+    const route = window.location.hash.slice(1) || 'dashboard';
+    state.currentPage = route;
+    renderApp();
+  },
+  () => { // onLogout
+    renderApp();
+  }
+);
