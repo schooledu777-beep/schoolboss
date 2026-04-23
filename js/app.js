@@ -11,6 +11,7 @@ import { renderParents, attachParentEvents } from './pages/parents.js';
 import { renderClasses, attachClassEvents } from './pages/classes.js';
 import { renderAttendance, attachAttendanceEvents } from './pages/attendance.js';
 import { renderGrades, attachGradeEvents } from './pages/grades.js';
+import { renderSubjects, attachSubjectEvents } from './pages/subjects.js';
 import { renderSchedule, attachScheduleEvents } from './pages/schedule.js';
 import { renderFinance, attachFinanceEvents } from './pages/finance.js';
 import { renderAnnouncements, attachAnnouncementEvents, renderMessages, attachMessageEvents, renderSettings, attachSettingsEvents } from './pages/communications.js';
@@ -28,6 +29,7 @@ const pages = {
   classes:        { render: renderClasses, events: attachClassEvents },
   attendance:     { render: renderAttendance, events: attachAttendanceEvents },
   grades:         { render: renderGrades, events: attachGradeEvents },
+  subjects:       { render: renderSubjects, events: attachSubjectEvents },
   schedule:       { render: renderSchedule, events: attachScheduleEvents },
   finance:        { render: renderFinance, events: attachFinanceEvents },
   announcements:  { render: renderAnnouncements, events: attachAnnouncementEvents },
@@ -93,6 +95,7 @@ function startListeners() {
     { name: 'teachers', key: 'teachers' },
     { name: 'parents', key: 'parents' },
     { name: 'classes', key: 'classes' },
+    { name: 'subjects', key: 'subjects' },
     { name: 'attendance', key: 'attendance' },
     { name: 'grades', key: 'grades' },
     { name: 'schedules', key: 'schedules' },

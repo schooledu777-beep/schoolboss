@@ -14,6 +14,7 @@ function getNavItems() {
     { icon: '👨‍🏫', key: 'teachers', page: 'teachers' },
     { icon: '👨‍👩‍👧', key: 'parents', page: 'parents' },
     { icon: '🏫', key: 'classes', page: 'classes' },
+    { icon: '📘', key: 'subjects', page: 'subjects' },
     { icon: '📋', key: 'attendance', page: 'attendance' },
     { icon: '📝', key: 'grades', page: 'grades' },
     { icon: '📅', key: 'schedule', page: 'schedule' },

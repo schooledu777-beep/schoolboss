@@ -25,6 +25,7 @@ export const state = {
   clinic: [],
   library: [],
   buses: [],
+  subjects: [],
   // Listeners
   unsubscribers: []
 };
@@ -57,8 +58,8 @@ export const translations = {
   parents: { ar: 'أولياء الأمور', en: 'Parents' },
   students: { ar: 'الطلاب', en: 'Students' },
   teachers: { ar: 'المعلمون', en: 'Teachers' },
-  parents: { ar: 'أولياء الأمور', en: 'Parents' },
   classes: { ar: 'الفصول', en: 'Classes' },
+  subjects: { ar: 'المواد الدراسية', en: 'Subjects' },
   attendance: { ar: 'الحضور والغياب', en: 'Attendance' },
   grades: { ar: 'الدرجات', en: 'Grades' },
   schedule: { ar: 'الجدول الدراسي', en: 'Schedule' },
@@ -113,6 +114,10 @@ export const translations = {
   todayAttendance: { ar: 'حضور اليوم', en: "Today's Attendance" },
   revenue: { ar: 'الإيرادات', en: 'Revenue' },
   pending: { ar: 'متأخرات', en: 'Pending' },
+  // Subjects
+  subjectName: { ar: 'اسم المادة', en: 'Subject Name' },
+  subjectCode: { ar: 'رمز المادة', en: 'Subject Code' },
+  description: { ar: 'الوصف', en: 'Description' },
   // Messages
   confirmDelete: { ar: 'هل أنت متأكد من الحذف؟', en: 'Are you sure you want to delete?' },
   savedSuccess: { ar: 'تم الحفظ بنجاح', en: 'Saved successfully' },
