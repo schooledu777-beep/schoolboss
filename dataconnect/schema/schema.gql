@@ -1,0 +1,50 @@
+type User @table {
+  displayName: String!
+  email: String!
+  role: String!
+  createdAt: Timestamp!
+  photoUrl: String
+  studentId: String
+  teacherId: String
+}
+
+type Course @table {
+  name: String!
+  courseCode: String!
+  createdAt: Timestamp!
+  description: String
+  department: String
+}
+
+type Enrollment @table(key: ["student", "course"]) {
+  student: User!
+  course: Course!
+  createdAt: Timestamp!
+}
+
+type Assignment @table {
+  title: String!
+  dueDate: Timestamp!
+  createdAt: Timestamp!
+  description: String
+  maxPoints: Int
+  course: Course!
+  teacher: User!
+}
+
+type Grade @table(key: ["student", "assignment"]) {
+  student: User!
+  assignment: Assignment!
+  score: Int!
+  createdAt: Timestamp!
+  feedback: String
+}
+
+type Announcement @table {
+  title: String!
+  content: String!
+  createdAt: Timestamp!
+  targetAudience: String!
+  expiryDate: Timestamp
+  creator: User!
+}
