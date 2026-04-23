@@ -1,4 +1,4 @@
-import { auth, db, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, googleProvider, signOut, onAuthStateChanged, doc, getDoc, setDoc, getDocs, collection, query, where, deleteDoc } from './firebase-config.js';
+import { auth, db, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, doc, getDoc, setDoc, getDocs, collection, query, where, deleteDoc, firebaseConfig, initializeApp, getAuth } from './firebase-config.js';
 import { state, t } from './state.js';
 import { showToast, hideLoading } from './ui.js';
 
@@ -44,10 +44,7 @@ export function renderAuthPage() {
         </button>
       </form>
 
-      <p class="auth-toggle">
-        <span id="auth-toggle-text">${t('noAccount')}</span>
-        <a href="#" id="auth-toggle-link">${t('registerNow')}</a>
-      </p>
+
     </div>
   </div>`;
 }
@@ -191,4 +188,32 @@ export async function logout() {
   state.unsubscribers.forEach(unsub => unsub());
   state.unsubscribers = [];
   await signOut(auth);
+}
+
+/**
+ * Creates a new Firebase Auth user without logging out the current admin.
+ * Uses a secondary Firebase app instance.
+ */
+export async function adminCreateUser(email, password, role, name) {
+  try {
+    const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp" + Date.now());
+    const secondaryAuth = getAuth(secondaryApp);
+    
+    const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+    const newUid = userCredential.user.uid;
+    
+    await setDoc(doc(db, 'users', newUid), {
+      email,
+      role,
+      name,
+      createdAt: new Date().toISOString()
+    });
+    
+    await signOut(secondaryAuth);
+    
+    return newUid;
+  } catch (error) {
+    console.error("Error creating user:", error);
+    throw error;
+  }
 }

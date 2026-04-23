@@ -54,6 +54,7 @@ export const translations = {
   loginNow: { ar: 'سجل دخول', en: 'Login Now' },
   // Nav
   dashboard: { ar: 'لوحة التحكم', en: 'Dashboard' },
+  parents: { ar: 'أولياء الأمور', en: 'Parents' },
   students: { ar: 'الطلاب', en: 'Students' },
   teachers: { ar: 'المعلمون', en: 'Teachers' },
   parents: { ar: 'أولياء الأمور', en: 'Parents' },
