@@ -1,0 +1,17 @@
+image: node:18-alpine
+
+stages:
+  - deploy
+
+deploy_production:
+  stage: deploy
+  only:
+    - main
+  script:
+    # Install Firebase CLI globally
+    - npm install -g firebase-tools
+    # Deploy to Firebase Hosting using the CI token
+    - firebase deploy --only hosting --project edumanage-sms-2026 --token $FIREBASE_TOKEN
+  environment:
+    name: production
+    url: https://$CI_PROJECT_NAME.web.app # This is optional and provides a quick link in GitLab
