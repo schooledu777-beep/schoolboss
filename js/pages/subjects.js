@@ -1,5 +1,5 @@
 import { state, t } from '../state.js';
-import { db, collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from '../firebase-config.js';
+import { db, collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, storage, ref, uploadBytes, getDownloadURL } from '../firebase-config.js';
 import { showModal, closeModal, showConfirm, showToast, escapeHTML } from '../ui.js';
 
 export function renderSubjects() {
@@ -36,7 +36,10 @@ function renderSubjectsTable(subjects) {
   return subjects.map((sub, i) => `
     <tr>
       <td>${i + 1}</td>
-      <td><div class="fw-bold">${escapeHTML(sub.name)}</div></td>
+      <td>
+        <div class="fw-bold">${escapeHTML(sub.name)}</div>
+        ${sub.isOnline ? `<span class="badge" style="background:var(--primary); font-size:10px;">🌐 ${state.lang === 'ar' ? 'أونلاين' : 'Online'}</span>` : ''}
+      </td>
       <td><span class="badge" style="background: var(--primary); color: white;">${escapeHTML(sub.code || '-')}</span></td>
       <td><div class="text-truncate" style="max-width: 200px;" title="${escapeHTML(sub.description || '')}">${escapeHTML(sub.description || '-')}</div></td>
       <td>
@@ -113,6 +116,27 @@ function showSubjectForm(subject = null) {
         <label>${t('description')}</label>
         <textarea id="sf-desc" class="form-input" rows="3">${escapeHTML(subject?.description || '')}</textarea>
       </div>
+
+      <div class="form-group full-width">
+        <label class="toggle-label" style="display:inline-flex; align-items:center; gap:10px; cursor:pointer;">
+          <input type="checkbox" id="sf-online" ${subject?.isOnline ? 'checked' : ''} onchange="document.getElementById('materials-section').style.display=this.checked?'block':'none'">
+          <span>${state.lang === 'ar' ? 'مادة أونلاين (تدعم رفع الملفات والملازم)' : 'Online Subject (Supports files)'}</span>
+        </label>
+      </div>
+      
+      <div id="materials-section" class="form-group full-width" style="display: ${subject?.isOnline ? 'block' : 'none'}; background: var(--bg-card); padding: 10px; border-radius: 8px;">
+        <label>${state.lang === 'ar' ? 'رفع ملفات / ملازم المادة' : 'Upload Subject Files'}</label>
+        <input type="file" id="sf-materials" class="form-input" multiple>
+        
+        <div id="existing-materials" style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 5px;">
+          ${(subject?.materials || []).map((m, i) => `
+            <div class="badge" style="display:inline-flex; align-items:center; gap:5px; background:var(--bg-body); border:1px solid var(--border-color);">
+               <a href="${m.url}" target="_blank" style="color:var(--primary); text-decoration:none;">📄 ${escapeHTML(m.name)}</a>
+               <button type="button" class="btn-icon text-danger" onclick="this.parentElement.remove();" data-url="${m.url}" data-name="${escapeHTML(m.name)}" style="font-size:12px; padding:2px;">✕</button>
+            </div>
+          `).join('')}
+        </div>
+      </div>
       
       <div class="form-actions full-width" style="margin-top: 1rem;">
         <button type="button" class="btn btn-outline" onclick="document.getElementById('modal-close-x').click()">${t('cancel')}</button>
@@ -129,12 +153,39 @@ function showSubjectForm(subject = null) {
     btn.innerHTML = '<span class="spinner-sm"></span>';
 
     try {
+      const existingMaterials = [];
+      document.querySelectorAll('#existing-materials .badge button').forEach(b => {
+        existingMaterials.push({ url: b.dataset.url, name: b.dataset.name });
+      });
+
+      const files = document.getElementById('sf-materials').files;
+      const uploadedMaterials = [];
+      
+      if (files.length > 0) {
+        btn.innerHTML = '<span>⏳</span><span>' + (state.lang === 'ar' ? 'جاري رفع الملفات...' : 'Uploading files...') + '</span>';
+        for (let file of files) {
+          try {
+            const fileRef = ref(storage, \`materials/\${Date.now()}_\${file.name}\`);
+            await uploadBytes(fileRef, file);
+            const url = await getDownloadURL(fileRef);
+            uploadedMaterials.push({ name: file.name, url });
+          } catch (uploadErr) {
+            console.error('File upload failed', uploadErr);
+            showToast(state.lang === 'ar' ? \`فشل رفع \${file.name}\` : \`Failed to upload \${file.name}\`, 'error');
+          }
+        }
+      }
+
       const data = {
         name: document.getElementById('sf-name').value.trim(),
         code: document.getElementById('sf-code').value.trim().toUpperCase(),
         description: document.getElementById('sf-desc').value.trim(),
+        isOnline: document.getElementById('sf-online').checked,
+        materials: [...existingMaterials, ...uploadedMaterials],
         updatedAt: new Date().toISOString()
       };
+
+      btn.innerHTML = '<span>⏳</span><span>' + (state.lang === 'ar' ? 'جاري الحفظ...' : 'Saving...') + '</span>';
 
       if (isEdit) {
         await updateDoc(doc(db, 'subjects', subject.id), data);

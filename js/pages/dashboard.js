@@ -1,6 +1,7 @@
 import { state, t } from '../state.js';
-import { db, collection, getDocs, query, where, onSnapshot, addDoc } from '../firebase-config.js';
+import { db, collection, getDocs, query, where, onSnapshot, addDoc, doc, setDoc } from '../firebase-config.js';
 import { formatCurrency, showToast } from '../ui.js';
+import { adminCreateUser } from '../auth.js';
 
 export function renderDashboard() {
   const role = state.profile?.role || 'student';
@@ -200,8 +201,9 @@ export function attachDashboardEvents() {
         ];
         const teacherIds = [];
         for (let t of teachersData) {
-          const docRef = await addDoc(collection(db, 'teachers'), { ...t, createdAt: new Date().toISOString() });
-          teacherIds.push(docRef.id);
+          const uid = await adminCreateUser(t.email, '123456', 'teacher', t.name);
+          await setDoc(doc(db, 'teachers', uid), { ...t, createdAt: new Date().toISOString() });
+          teacherIds.push(uid);
         }
 
         // 2. Add Parents
@@ -211,8 +213,9 @@ export function attachDashboardEvents() {
         ];
         const parentIds = [];
         for (let p of parentsData) {
-          const docRef = await addDoc(collection(db, 'parents'), { ...p, createdAt: new Date().toISOString() });
-          parentIds.push(docRef.id);
+          const uid = await adminCreateUser(p.email, '123456', 'parent', p.name);
+          await setDoc(doc(db, 'parents', uid), { ...p, createdAt: new Date().toISOString() });
+          parentIds.push(uid);
         }
 
         // 3. Add Subjects
@@ -230,8 +233,9 @@ export function attachDashboardEvents() {
         ];
         const studentIds = [];
         for (let s of studentsData) {
-          const docRef = await addDoc(collection(db, 'students'), { ...s, createdAt: new Date().toISOString() });
-          studentIds.push(docRef.id);
+          const uid = await adminCreateUser(s.email, '123456', 'student', s.name);
+          await setDoc(doc(db, 'students', uid), { ...s, createdAt: new Date().toISOString() });
+          studentIds.push(uid);
         }
 
         // 5. Add Classes
