@@ -165,13 +165,13 @@ function showSubjectForm(subject = null) {
         btn.innerHTML = '<span>⏳</span><span>' + (state.lang === 'ar' ? 'جاري رفع الملفات...' : 'Uploading files...') + '</span>';
         for (let file of files) {
           try {
-            const fileRef = ref(storage, \`materials/\${Date.now()}_\${file.name}\`);
+            const fileRef = ref(storage, `materials/${Date.now()}_${file.name}`);
             await uploadBytes(fileRef, file);
             const url = await getDownloadURL(fileRef);
             uploadedMaterials.push({ name: file.name, url });
           } catch (uploadErr) {
             console.error('File upload failed', uploadErr);
-            showToast(state.lang === 'ar' ? \`فشل رفع \${file.name}\` : \`Failed to upload \${file.name}\`, 'error');
+            showToast(state.lang === 'ar' ? `فشل رفع ${file.name}` : `Failed to upload ${file.name}`, 'error');
           }
         }
       }
