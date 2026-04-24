@@ -5,8 +5,15 @@ import { showToast } from '../ui.js';
 export function renderAttendance() {
   const role = state.profile?.role;
   const todayStr = new Date().toISOString().split('T')[0];
-  const classes = role === 'teacher' ? state.classes.filter(c => c.teacherId === state.profile?.uid || (c.teacherIds||[]).includes(state.profile?.uid)) : state.classes;
-
+  let classes = state.classes;
+  if (role === 'teacher') {
+    classes = state.classes.filter(c => c.teacherId === state.profile?.uid || (c.teacherIds||[]).includes(state.profile?.uid));
+  } else if (role === 'parent') {
+    const kidIds = state.profile?.studentIds || state.students.filter(s => s.parentId === state.profile?.uid).map(s => s.id);
+    classes = state.classes.filter(c => c.studentIds?.some(id => kidIds.includes(id)));
+  } else if (role === 'student') {
+    classes = state.classes.filter(c => c.studentIds?.includes(state.profile?.uid));
+  }
   return `
   <div class="page-content animate-in">
     <div class="page-header"><h2>${t('attendance')}</h2></div>
@@ -39,11 +46,18 @@ async function loadAttendance() {
 
   const cls = state.classes.find(c => c.id === classId);
   const studentIds = cls?.studentIds || [];
-  const students = state.students.filter(s => studentIds.includes(s.id));
+  let students = state.students.filter(s => studentIds.includes(s.id));
+
+  const role = state.profile?.role;
+  if (role === 'parent') {
+    const kidIds = state.profile?.studentIds || state.students.filter(s => s.parentId === state.profile?.uid).map(s => s.id);
+    students = students.filter(s => kidIds.includes(s.id));
+  } else if (role === 'student') {
+    students = students.filter(s => s.id === state.profile?.uid);
+  }
 
   // Check existing attendance for this date/class
   const existing = state.attendance.filter(a => a.classId === classId && a.date === date);
-  const role = state.profile?.role;
   const canEdit = role === 'admin' || role === 'teacher';
 
   if (students.length === 0) {

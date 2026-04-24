@@ -11,13 +11,17 @@ export function renderSchedule() {
 
   // Pick which class schedule to show
   let classId = '';
+  let availableClasses = state.classes;
   if (role === 'teacher') {
-    const myClass = state.classes.find(c => c.teacherId === state.profile?.uid);
-    classId = myClass?.id || '';
-  }
-  if (role === 'student') {
-    const myClass = state.classes.find(c => (c.studentIds||[]).includes(state.profile?.uid));
-    classId = myClass?.id || '';
+    availableClasses = state.classes.filter(c => c.teacherId === state.profile?.uid || (c.teacherIds||[]).includes(state.profile?.uid));
+    classId = availableClasses[0]?.id || '';
+  } else if (role === 'student') {
+    availableClasses = state.classes.filter(c => (c.studentIds||[]).includes(state.profile?.uid));
+    classId = availableClasses[0]?.id || '';
+  } else if (role === 'parent') {
+    const kidIds = state.profile?.studentIds || state.students.filter(s => s.parentId === state.profile?.uid).map(s => s.id);
+    availableClasses = state.classes.filter(c => c.studentIds?.some(id => kidIds.includes(id)));
+    classId = availableClasses[0]?.id || '';
   }
 
   return `
@@ -25,7 +29,7 @@ export function renderSchedule() {
     <div class="page-header"><h2>${t('schedule')}</h2>${canEdit ? `<button class="btn btn-primary" id="add-schedule-btn">+ ${t('add')}</button>` : ''}</div>
     <div class="filter-bar glass-card">
       <select id="sched-class" class="form-select">
-        ${state.classes.map(c => `<option value="${c.id}" ${c.id===classId?'selected':''}>${c.name}</option>`).join('')}
+        ${availableClasses.map(c => `<option value="${c.id}" ${c.id===classId?'selected':''}>${c.name}</option>`).join('')}
       </select>
     </div>
     <div id="schedule-grid" class="schedule-container glass-card">
