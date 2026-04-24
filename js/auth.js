@@ -120,6 +120,7 @@ export function initAuth(onLogin, onLogout) {
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         if (userDoc.exists()) {
           state.profile = userDoc.data();
+          state.profile.uid = user.uid;
         } else {
           // Check if admin pre-created a profile with same email
           let existingProfile = null;
@@ -206,6 +207,7 @@ export async function adminCreateUser(email, password, role, name) {
       email,
       role,
       name,
+      uid: newUid,
       createdAt: new Date().toISOString()
     });
     
