@@ -84,11 +84,24 @@ export function attachMessageEvents() {
     document.getElementById('msg-form')?.addEventListener('submit', async e => {
       e.preventDefault();
       const toId = document.getElementById('mf-to').value;
-      const toUser = allUsers.find(u => u.id === toId);
+      const toUser = allUsers.find(u => (u.uid || u.id) === toId);
       try {
-        await addDoc(collection(db,'messages'), { from: state.profile?.uid, fromName: state.profile?.name, to: toId, toName: toUser?.name, subject: document.getElementById('mf-subject').value.trim(), body: document.getElementById('mf-body').value.trim(), date: new Date().toISOString(), read: false });
+        const payload = { 
+          from: state.profile?.uid || 'unknown', 
+          fromName: state.profile?.name || 'Unknown', 
+          to: toId, 
+          toName: toUser?.name || 'Unknown', 
+          subject: document.getElementById('mf-subject').value.trim(), 
+          body: document.getElementById('mf-body').value.trim(), 
+          date: new Date().toISOString(), 
+          read: false 
+        };
+        await addDoc(collection(db,'messages'), payload);
         closeModal(); showToast(state.lang==='ar'?'تم الإرسال':'Sent!','success');
-      } catch(e) { showToast(t('errorOccurred'),'error'); }
+      } catch(e) { 
+        console.error(e); 
+        showToast(t('errorOccurred'),'error'); 
+      }
     });
   });
 }
