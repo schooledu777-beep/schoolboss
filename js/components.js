@@ -22,6 +22,7 @@ function getNavItems() {
     { icon: '📚', key: 'homework', page: 'homework' },
     { icon: '⭐', key: 'rewards', page: 'rewards' },
     { icon: '📖', key: 'library', page: 'library' },
+    { icon: '⚠️', key: 'academicAlerts', page: 'academic-alerts' },
   ];
 
   if (state.modules?.admissions?.enabled) adminNav.push({ icon: '📝', key: 'admissions', page: 'admissions' });
@@ -43,6 +44,7 @@ function getNavItems() {
     { icon: '📚', key: 'homework', page: 'homework' },
     { icon: '⭐', key: 'rewards', page: 'rewards' },
     { icon: '📅', key: 'mySchedule', page: 'schedule' },
+    { icon: '⚠️', key: 'academicAlerts', page: 'academic-alerts' },
   ];
   if (state.modules?.communications?.enabled) teacherNav.push({ icon: '✉️', key: 'messages', page: 'messages' });
 

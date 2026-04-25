@@ -1,6 +1,7 @@
 import { state, t } from '../state.js';
 import { db, collection, addDoc, updateDoc, deleteDoc, doc } from '../firebase-config.js';
 import { showModal, closeModal, showConfirm, showToast } from '../ui.js';
+import { academicService } from '../services/academicService.js';
 
 export function renderGrades() {
   const role = state.profile?.role;
@@ -20,7 +21,13 @@ export function renderGrades() {
 
   return `
   <div class="page-content animate-in">
-    <div class="page-header"><h2>${t('grades')}</h2>${canEdit ? `<button class="btn btn-primary" id="add-grade-btn">+ ${t('add')}</button>` : ''}</div>
+    <div class="page-header">
+        <h2>${t('grades')}</h2>
+        <div class="header-actions">
+            ${canEdit ? `<button class="btn btn-outline" id="manage-weights-btn">⚖️ ${state.lang==='ar'?'إدارة الأوزان':'Manage Weights'}</button>` : ''}
+            ${canEdit ? `<button class="btn btn-primary" id="add-grade-btn">+ ${t('add')}</button>` : ''}
+        </div>
+    </div>
     <div class="filter-bar glass-card">
       <input type="text" id="grade-search" class="form-input" placeholder="🔍 ${t('search')}...">
       <select id="grade-class-filter" class="form-select"><option value="">${state.lang==='ar'?'كل الفصول':'All Classes'}</option>${state.classes.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}</select>
@@ -39,6 +46,7 @@ export function renderGrades() {
 
 export function attachGradeEvents() {
   document.getElementById('add-grade-btn')?.addEventListener('click', () => showGradeForm());
+  document.getElementById('manage-weights-btn')?.addEventListener('click', () => showWeightForm());
   document.querySelectorAll('.edit-grade').forEach(b => b.addEventListener('click', () => { const g = state.grades.find(x=>x.id===b.dataset.id); if(g) showGradeForm(g); }));
   document.querySelectorAll('.delete-grade').forEach(b => b.addEventListener('click', () => {
     showConfirm(t('delete'),t('confirmDelete'), async()=>{ try{ await deleteDoc(doc(db,'grades',b.dataset.id)); showToast(t('deletedSuccess'),'success'); }catch(e){ showToast(t('errorOccurred'),'error'); }});
@@ -64,7 +72,11 @@ function showGradeForm(grade = null) {
       </div>
       <div class="form-group"><label>${state.lang==='ar'?'المادة':'Subject'}</label><input type="text" id="gf-subject" class="form-input" value="${grade?.subject||''}" required></div>
       <div class="form-group"><label>${state.lang==='ar'?'نوع الامتحان':'Exam Type'}</label>
-        <select id="gf-type" class="form-select"><option value="midterm" ${grade?.examType==='midterm'?'selected':''}>${state.lang==='ar'?'اختبار نصفي':'Midterm'}</option><option value="final" ${grade?.examType==='final'?'selected':''}>${state.lang==='ar'?'اختبار نهائي':'Final'}</option><option value="quiz" ${grade?.examType==='quiz'?'selected':''}>${state.lang==='ar'?'اختبار قصير':'Quiz'}</option><option value="homework" ${grade?.examType==='homework'?'selected':''}>${state.lang==='ar'?'واجب':'Homework'}</option></select>
+        <select id="gf-type" class="form-select">
+            ${state.assessmentTypes.map(t => `<option value="${t.name.toLowerCase()}" ${grade?.examType===t.name.toLowerCase()?'selected':''}>${state.lang==='ar'?t.ar:t.name}</option>`).join('') || `
+                <option value="midterm">Midterm</option><option value="final">Final</option><option value="quiz">Quiz</option><option value="homework">Homework</option>
+            `}
+        </select>
       </div>
       <div class="form-group"><label>${state.lang==='ar'?'الدرجة':'Score'}</label><input type="number" id="gf-score" class="form-input" value="${grade?.score||''}" required min="0"></div>
       <div class="form-group"><label>${state.lang==='ar'?'الدرجة الكاملة':'Max Score'}</label><input type="number" id="gf-max" class="form-input" value="${grade?.maxScore||100}" required min="1"></div>
@@ -73,6 +85,72 @@ function showGradeForm(grade = null) {
   document.getElementById('grade-form')?.addEventListener('submit', async e => {
     e.preventDefault();
     const data = { studentId: document.getElementById('gf-student').value, subject: document.getElementById('gf-subject').value.trim(), examType: document.getElementById('gf-type').value, score: Number(document.getElementById('gf-score').value), maxScore: Number(document.getElementById('gf-max').value), teacherId: state.profile?.uid, date: new Date().toISOString().split('T')[0] };
-    try { if(isEdit) await updateDoc(doc(db,'grades',grade.id),data); else await addDoc(collection(db,'grades'),data); closeModal(); showToast(t('savedSuccess'),'success'); } catch(e) { showToast(t('errorOccurred'),'error'); }
+    try { 
+        if(isEdit) await updateDoc(doc(db,'grades',grade.id),data); 
+        else await addDoc(collection(db,'grades'),data); 
+        
+        // Trigger academic alerts check
+        academicService.processAcademicAlerts(data.studentId);
+        
+        closeModal(); 
+        showToast(t('savedSuccess'),'success'); 
+    } catch(e) { showToast(t('errorOccurred'),'error'); }
   });
 }
+
+function showWeightForm() {
+    showModal(state.lang==='ar'?'أوزان المواد':'Subject Weights', `
+        <div class="weight-manager">
+            <form id="weight-form" class="form-grid">
+                <div class="form-group"><label>${state.lang==='ar'?'المادة':'Subject'}</label>
+                    <select id="wf-subject" class="form-select" required>
+                        ${state.subjects.map(s => `<option value="${s.name}">${s.name}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group"><label>${state.lang==='ar'?'نوع التقييم':'Assessment Type'}</label>
+                    <select id="wf-type" class="form-select" required>
+                        ${state.assessmentTypes.map(t => `<option value="${t.name.toLowerCase()}">${state.lang==='ar'?t.ar:t.name}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group"><label>${state.lang==='ar'?'الوزن (%)':'Weight (%)'}</label><input type="number" id="wf-weight" class="form-input" required min="1" max="100"></div>
+                <div class="form-actions"><button type="submit" class="btn btn-primary">${t('add')}</button></div>
+            </form>
+            <div class="table-responsive" style="margin-top: 1.5rem;">
+                <table class="data-table">
+                    <thead><tr><th>${state.lang==='ar'?'المادة':'Subject'}</th><th>${state.lang==='ar'?'النوع':'Type'}</th><th>${state.lang==='ar'?'الوزن':'Weight'}</th><th></th></tr></thead>
+                    <tbody id="weights-list">
+                        ${state.subjectWeights.map(w => `
+                            <tr><td>${w.subject}</td><td>${w.examType}</td><td>${w.weight}%</td><td><button class="btn btn-sm btn-danger delete-weight" data-id="${w.id}">🗑️</button></td></tr>
+                        `).join('') || `<tr><td colspan="4" class="text-center">${t('noData')}</td></tr>`}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `);
+
+    document.getElementById('weight-form')?.addEventListener('submit', async e => {
+        e.preventDefault();
+        const data = { 
+            subject: document.getElementById('wf-subject').value, 
+            examType: document.getElementById('wf-type').value, 
+            weight: Number(document.getElementById('wf-weight').value),
+            createdAt: new Date().toISOString()
+        };
+        try { 
+            await addDoc(collection(db, 'subject_weights'), data); 
+            showToast(t('savedSuccess'), 'success'); 
+            showWeightForm(); // Refresh modal
+        } catch(e) { showToast(t('errorOccurred'), 'error'); }
+    });
+
+    document.querySelectorAll('.delete-weight').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            try { 
+                await deleteDoc(doc(db, 'subject_weights', btn.dataset.id)); 
+                showToast(t('deletedSuccess'), 'success'); 
+                showWeightForm(); 
+            } catch(e) { showToast(t('errorOccurred'), 'error'); }
+        });
+    });
+}
+

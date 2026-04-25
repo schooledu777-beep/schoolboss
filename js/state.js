@@ -27,6 +27,12 @@ export const state = {
   buses: [],
   subjects: [],
   roles: [],
+  assessmentTypes: [],
+  subjectWeights: [],
+  academicAlerts: [],
+  timeslots: [],
+  classrooms: [],
+  teacherAvailability: [],
   modules: {
     admissions: { enabled: true, monetized: false },
     finance: { enabled: true, monetized: false },
@@ -96,6 +102,9 @@ export const translations = {
   myRewards: { ar: 'مكافآتي', en: 'My Rewards' },
   materials: { ar: 'المواد الدراسية', en: 'Materials' },
   profile: { ar: 'الملف الشخصي', en: 'Profile' },
+  academicAlerts: { ar: 'التنبيهات الأكاديمية', en: 'Academic Alerts' },
+  timeslots: { ar: 'الفترات الزمنية', en: 'Timeslots' },
+  classrooms: { ar: 'القاعات الدراسية', en: 'Classrooms' },
   // Roles
   admin: { ar: 'مدير', en: 'Admin' },
   teacher: { ar: 'معلم', en: 'Teacher' },

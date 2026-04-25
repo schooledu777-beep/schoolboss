@@ -16,6 +16,8 @@ import { renderSchedule, attachScheduleEvents } from './pages/schedule.js';
 import { renderFinance, attachFinanceEvents } from './pages/finance.js';
 import { renderAnnouncements, attachAnnouncementEvents, renderMessages, attachMessageEvents, renderSettings, attachSettingsEvents } from './pages/communications.js';
 import { renderAdmissions, attachAdmissionsEvents } from './pages/admissions.js';
+import { renderAcademicAlerts, attachAcademicAlertsEvents } from './pages/academicAlerts.js';
+import { academicService } from './services/academicService.js';
 
 // ========================= APPLY INITIAL SETTINGS =========================
 applyTheme();
@@ -36,6 +38,7 @@ const pages = {
   announcements:  { render: renderAnnouncements, events: attachAnnouncementEvents },
   messages:       { render: renderMessages, events: attachMessageEvents },
   admissions:     { render: renderAdmissions, events: attachAdmissionsEvents },
+  'academic-alerts': { render: renderAcademicAlerts, events: attachAcademicAlertsEvents },
   settings:       { render: renderSettings, events: (renderApp) => attachSettingsEvents(renderApp) },
   // Placeholder pages for future features
   exams:          { render: () => placeholderPage('📑', 'exams'), events: () => {} },
@@ -114,6 +117,12 @@ function startListeners() {
     { name: 'messages', key: 'messages' },
     { name: 'homework', key: 'homework' },
     { name: 'rewards', key: 'rewards' },
+    { name: 'assessment_types', key: 'assessmentTypes' },
+    { name: 'subject_weights', key: 'subjectWeights' },
+    { name: 'academic_alerts', key: 'academicAlerts' },
+    { name: 'timeslots', key: 'timeslots' },
+    { name: 'classrooms', key: 'classrooms' },
+    { name: 'teacher_availability', key: 'teacherAvailability' },
   ];
 
   collections.forEach(({ name, key }) => {
@@ -143,6 +152,9 @@ initAuth(
     startListeners();
     const route = window.location.hash.slice(1) || 'dashboard';
     state.currentPage = route;
+    if (state.profile?.role === 'admin') {
+        academicService.seedAssessmentTypes();
+    }
     renderApp();
   },
   () => { // onLogout

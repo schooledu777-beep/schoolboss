@@ -1,6 +1,7 @@
 import { state, t } from '../state.js';
 import { db, collection, addDoc, updateDoc, doc, getDocs, query, where } from '../firebase-config.js';
 import { showToast } from '../ui.js';
+import { academicService } from '../services/academicService.js';
 
 export function renderAttendance() {
   const role = state.profile?.role;
@@ -111,6 +112,8 @@ async function saveAttendance() {
       } else {
         await addDoc(collection(db, 'attendance'), { studentId: sid, classId, date, status: radio.value, teacherId: state.profile?.uid, createdAt: new Date().toISOString() });
       }
+      // Trigger academic alerts check for this student
+      academicService.processAcademicAlerts(sid);
     }
     showToast(t('savedSuccess'), 'success');
   } catch(e) { showToast(t('errorOccurred'), 'error'); }
