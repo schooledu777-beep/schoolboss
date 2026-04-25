@@ -15,14 +15,14 @@ export function renderStudents() {
     <div class="filter-bar glass-card">
       <input type="text" id="${searchId}" class="form-input" placeholder="🔍 ${t('search')}...">
       <select id="student-class-filter" class="form-select">
-        <option value="">${state.lang === 'ar' ? 'كل الفصول' : 'All Classes'}</option>
+        <option value="">${state.lang === 'ar' ? 'كل الصفوف' : 'All Levels'}</option>
         ${state.classes.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
       </select>
     </div>
     <div class="table-responsive glass-card">
       <table class="data-table" id="students-table">
         <thead><tr>
-          <th>#</th><th>${t('fullName')}</th><th>${state.lang === 'ar' ? 'الفصل' : 'Class'}</th>
+          <th>#</th><th>${t('fullName')}</th><th>${state.lang === 'ar' ? 'الصف' : 'Level'}</th>
           <th>${state.lang === 'ar' ? 'الجنس' : 'Gender'}</th><th>${t('email')}</th>
           <th>${state.lang === 'ar' ? 'إجراءات' : 'Actions'}</th>
         </tr></thead>
@@ -86,7 +86,7 @@ function showStudentForm(student = null) {
       <div class="form-group"><label>${state.lang === 'ar' ? 'الجنس' : 'Gender'}</label>
         <select id="sf-gender" class="form-select"><option value="male" ${student?.gender === 'male' ? 'selected' : ''}>${state.lang === 'ar' ? 'ذكر' : 'Male'}</option><option value="female" ${student?.gender === 'female' ? 'selected' : ''}>${state.lang === 'ar' ? 'أنثى' : 'Female'}</option></select>
       </div>
-      <div class="form-group"><label>${state.lang === 'ar' ? 'الفصل' : 'Class'}</label>
+      <div class="form-group"><label>${state.lang === 'ar' ? 'الصف' : 'Level'}</label>
         <select id="sf-class" class="form-select"><option value="">—</option>${state.classes.map(c => `<option value="${c.id}" ${student?.classId === c.id ? 'selected' : ''}>${c.name}</option>`).join('')}</select>
       </div>
       <div class="form-group"><label>${state.lang === 'ar' ? 'تاريخ الميلاد' : 'Date of Birth'}</label><input type="date" id="sf-dob" class="form-input" value="${student?.dob || ''}"></div>

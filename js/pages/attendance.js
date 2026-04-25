@@ -20,8 +20,8 @@ export function renderAttendance() {
   <div class="page-content animate-in">
     <div class="page-header"><h2>${t('attendance')}</h2></div>
     <div class="filter-bar glass-card">
-      <div class="form-group"><label>${state.lang==='ar'?'الفصل':'Class'}</label>
-        <select id="att-class" class="form-select"><option value="">${state.lang==='ar'?'اختر فصلاً':'Select Class'}</option>${classes.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}</select>
+      <div class="form-group"><label>${state.lang==='ar'?'الصف':'Level'}</label>
+        <select id="att-class" class="form-select"><option value="">${state.lang==='ar'?'اختر صفاً':'Select Level'}</option>${classes.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}</select>
       </div>
       <div class="form-group"><label>${state.lang==='ar'?'التاريخ':'Date'}</label>
         <input type="date" id="att-date" class="form-input" value="${todayStr}">
@@ -29,7 +29,7 @@ export function renderAttendance() {
       <button class="btn btn-primary" id="load-att-btn">${state.lang==='ar'?'تحميل':'Load'}</button>
     </div>
     <div id="att-list" class="glass-card" style="padding:1.5rem;">
-      <p class="text-muted text-center">${state.lang==='ar'?'اختر فصلاً وتاريخاً لعرض الحضور':'Select a class and date to load attendance'}</p>
+      <p class="text-muted text-center">${state.lang==='ar'?'اختر صفاً وتاريخاً لعرض الحضور':'Select a level and date to load attendance'}</p>
     </div>
     ${role !== 'parent' && role !== 'student' ? `<div style="margin-top:1rem;text-align:center;"><button class="btn btn-primary btn-lg" id="save-att-btn" style="display:none">${t('save')}</button></div>` : ''}
   </div>`;

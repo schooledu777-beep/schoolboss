@@ -237,10 +237,6 @@ export function attachDashboardEvents() {
         btn.innerHTML = '<span>⏳</span><span>جاري الإضافة...</span>';
         btn.style.pointerEvents = 'none';
 
-        const { adminCreateUser } = await import('../services/adminService.js');
-        const { setDoc, doc, addDoc, collection } = await import('../firebase-config.js');
-        const { db } = await import('../firebase-config.js');
-
         // 1. Add Teachers
         const teachersData = [
           { name: 'أحمد محمود', email: 'ahmad@school.com', subjects: ['رياضيات', 'علوم'], phone: '0501234567', role: 'teacher', baseSalary: 5000 },

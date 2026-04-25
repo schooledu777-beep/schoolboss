@@ -12,7 +12,7 @@ export function renderClasses() {
         const studentCount = (c.studentIds || []).length;
         return `
         <div class="class-card glass-card">
-          <div class="class-header gradient-purple"><h3>${c.name}</h3><span class="badge">${c.grade || ''} ${c.section || ''}</span></div>
+          <div class="class-header gradient-purple"><h3>${c.name}</h3><span class="badge">${c.grade || ''} - ${c.section || ''}</span></div>
           <div class="class-body">
             <div class="class-stat"><span>👨‍🏫</span><span>${teacher?.name || '—'}</span></div>
             <div class="class-stat"><span>👨‍🎓</span><span>${studentCount} ${t('students')}</span></div>
@@ -37,11 +37,11 @@ export function attachClassEvents() {
 
 function showClassForm(cls = null) {
   const isEdit = !!cls;
-  showModal(isEdit ? (state.lang==='ar'?'تعديل فصل':'Edit Class') : (state.lang==='ar'?'إضافة فصل':'Add Class'), `
+  showModal(isEdit ? (state.lang==='ar'?'تعديل الصف':'Edit Level') : (state.lang==='ar'?'إضافة صف':'Add Level'), `
     <form id="class-form" class="form-grid">
-      <div class="form-group"><label>${state.lang==='ar'?'اسم الفصل':'Class Name'}</label><input type="text" id="cf-name" class="form-input" value="${cls?.name||''}" required></div>
-      <div class="form-group"><label>${state.lang==='ar'?'المرحلة':'Grade'}</label><input type="text" id="cf-grade" class="form-input" value="${cls?.grade||''}"></div>
-      <div class="form-group"><label>${state.lang==='ar'?'الشعبة':'Section'}</label><input type="text" id="cf-section" class="form-input" value="${cls?.section||''}"></div>
+      <div class="form-group"><label>${state.lang==='ar'?'اسم الصف (كامل)':'Full Name'}</label><input type="text" id="cf-name" class="form-input" value="${cls?.name||''}" placeholder="${state.lang==='ar'?'مثلاً: الصف الأول - الشعبة الثانية':'e.g. First Level - Section 2'}" required></div>
+      <div class="form-group"><label>${state.lang==='ar'?'الصف':'Level'}</label><input type="text" id="cf-grade" class="form-input" value="${cls?.grade||''}" placeholder="${state.lang==='ar'?'مثلاً: الصف الأول':'e.g. First Level'}"></div>
+      <div class="form-group"><label>${state.lang==='ar'?'الشعبة':'Section'}</label><input type="text" id="cf-section" class="form-input" value="${cls?.section||''}" placeholder="${state.lang==='ar'?'مثلاً: الشعبة الثانية':'e.g. Section 2'}"></div>
       <div class="form-group"><label>${state.lang==='ar'?'المعلم المسؤول':'Teacher'}</label>
         <select id="cf-teacher" class="form-select"><option value="">—</option>${state.teachers.map(tc=>`<option value="${tc.id}" ${cls?.teacherId===tc.id?'selected':''}>${tc.name}</option>`).join('')}</select>
       </div>

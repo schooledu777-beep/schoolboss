@@ -30,7 +30,7 @@ export function renderGrades() {
     </div>
     <div class="filter-bar glass-card">
       <input type="text" id="grade-search" class="form-input" placeholder="🔍 ${t('search')}...">
-      <select id="grade-class-filter" class="form-select"><option value="">${state.lang==='ar'?'كل الفصول':'All Classes'}</option>${state.classes.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}</select>
+      <select id="grade-class-filter" class="form-select"><option value="">${state.lang==='ar'?'كل الصفوف':'All Levels'}</option>${state.classes.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}</select>
     </div>
     <div class="table-responsive glass-card">
       <table class="data-table" id="grades-table"><thead><tr><th>#</th><th>${state.lang==='ar'?'الطالب':'Student'}</th><th>${state.lang==='ar'?'المادة':'Subject'}</th><th>${state.lang==='ar'?'نوع الامتحان':'Exam Type'}</th><th>${state.lang==='ar'?'الدرجة':'Score'}</th><th>${state.lang==='ar'?'من':'Max'}</th>${canEdit?`<th>${state.lang==='ar'?'إجراءات':'Actions'}</th>`:''}</tr></thead>
