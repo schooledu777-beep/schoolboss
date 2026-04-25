@@ -1,6 +1,6 @@
 import { state, t } from '../state.js';
 import { admissionsService } from '../services/admissionsService.js';
-import { showMessage, showConfirm } from '../ui.js';
+import { showToast } from '../ui.js';
 
 let applicationsCache = [];
 const STATUSES = ['Inquiry', 'Interview_Scheduled', 'Accepted', 'Waitlisted', 'Rejected', 'Fee_Paid', 'Enrolled'];
@@ -140,11 +140,11 @@ export async function attachAdmissionsEvents() {
 
         try {
             await admissionsService.createApplication(data);
-            showMessage(state.lang === 'ar' ? 'تم إنشاء الطلب بنجاح' : 'Application created', 'success');
+            showToast(state.lang === 'ar' ? 'تم إنشاء الطلب بنجاح' : 'Application created', 'success');
             modal.classList.add('hidden');
             await loadApplications();
         } catch (error) {
-            showMessage(state.lang === 'ar' ? 'حدث خطأ أثناء الحفظ' : 'Error saving application', 'error');
+            showToast(state.lang === 'ar' ? 'حدث خطأ أثناء الحفظ' : 'Error saving application', 'error');
         } finally {
             btn.disabled = false;
             btn.innerHTML = t('save');
@@ -161,7 +161,7 @@ async function loadApplications() {
         renderKanbanCards();
     } catch (err) {
         console.error(err);
-        showMessage('Error loading applications', 'error');
+        showToast('Error loading applications', 'error');
     }
 }
 
@@ -260,7 +260,7 @@ function setupDragAndDrop() {
                     await admissionsService.transitionApplicationStatus(appId, newStatus);
                 } catch (error) {
                     // Revert on failure
-                    showMessage(state.lang === 'ar' ? 'فشل نقل الطلب' : 'Failed to move application', 'error');
+                    showToast(state.lang === 'ar' ? 'فشل نقل الطلب' : 'Failed to move application', 'error');
                     loadApplications(); // Reload full state
                 }
             }
