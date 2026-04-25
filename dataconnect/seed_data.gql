@@ -1,0 +1,118 @@
+mutation CreateDemoData @transaction @auth(level: USER, insecureReason: "This operation is for seeding data and should only be run by authenticated users.") {
+  user_insertMany(data: [
+    {
+      id: "b2d2f7a0-0e1a-4e8c-8d1e-2c9b3f7a4d6e",
+      displayName: "Alice Smith",
+      email: "alice.smith@example.com",
+      role: "student",
+      createdAt: "2023-01-15T08:00:00Z",
+      studentId: "S001"
+    },
+    {
+      id: "a1c1e5d2-3b4f-4a5c-9e2d-1f3b0e7c8a9d",
+      displayName: "Bob Johnson",
+      email: "bob.johnson@example.com",
+      role: "teacher",
+      createdAt: "2023-01-20T09:30:00Z",
+      teacherId: "T001"
+    },
+    {
+      id: "e4f5g6h7-1i2j-3k4l-5m6n-7o8p9q0r1s2t",
+      displayName: "Charlie Brown",
+      email: "charlie.brown@example.com",
+      role: "student",
+      createdAt: "2023-01-22T10:00:00Z",
+      studentId: "S002"
+    }
+  ])
+  course_insertMany(data: [
+    {
+      id: "c1a2b3c4-d5e6-7f8a-9b0c-1d2e3f4a5b6c",
+      name: "Introduction to Computer Science",
+      courseCode: "CS101",
+      createdAt: "2023-02-01T11:00:00Z",
+      department: "Computer Science",
+      description: "A foundational course in computer science."
+    },
+    {
+      id: "f8e9d0c1-b2a3-4f5e-6d7c-8b9a0f1e2d3c",
+      name: "Calculus I",
+      courseCode: "MA101",
+      createdAt: "2023-02-05T12:00:00Z",
+      department: "Mathematics",
+      description: "First course in differential and integral calculus."
+    }
+  ])
+  enrollment_insertMany(data: [
+    {
+      studentId: "b2d2f7a0-0e1a-4e8c-8d1e-2c9b3f7a4d6e",
+      courseId: "c1a2b3c4-d5e6-7f8a-9b0c-1d2e3f4a5b6c",
+      createdAt: "2023-02-10T13:00:00Z"
+    },
+    {
+      studentId: "e4f5g6h7-1i2j-3k4l-5m6n-7o8p9q0r1s2t",
+      courseId: "c1a2b3c4-d5e6-7f8a-9b0c-1d2e3f4a5b6c",
+      createdAt: "2023-02-11T13:30:00Z"
+    },
+    {
+      studentId: "b2d2f7a0-0e1a-4e8c-8d1e-2c9b3f7a4d6e",
+      courseId: "f8e9d0c1-b2a3-4f5e-6d7c-8b9a0f1e2d3c",
+      createdAt: "2023-02-12T14:00:00Z"
+    }
+  ])
+  assignment_insertMany(data: [
+    {
+      id: "a0b1c2d3-e4f5-6a7b-8c9d-0e1f2a3b4c5d",
+      title: "Homework 1: Variables and Data Types",
+      dueDate: "2023-03-01T23:59:59Z",
+      createdAt: "2023-02-15T15:00:00Z",
+      maxPoints: 100,
+      courseId: "c1a2b3c4-d5e6-7f8a-9b0c-1d2e3f4a5b6c",
+      teacherId: "a1c1e5d2-3b4f-4a5c-9e2d-1f3b0e7c8a9d"
+    },
+    {
+      id: "b5c6d7e8-f9a0-1b2c-3d4e-5f6a7b8c9d0e",
+      title: "Midterm Exam",
+      dueDate: "2023-04-15T10:00:00Z",
+      createdAt: "2023-03-01T09:00:00Z",
+      maxPoints: 200,
+      courseId: "f8e9d0c1-b2a3-4f5e-6d7c-8b9a0f1e2d3c",
+      teacherId: "a1c1e5d2-3b4f-4a5c-9e2d-1f3b0e7c8a9d"
+    }
+  ])
+  grade_insertMany(data: [
+    {
+      studentId: "b2d2f7a0-0e1a-4e8c-8d1e-2c9b3f7a4d6e",
+      assignmentId: "a0b1c2d3-e4f5-6a7b-8c9d-0e1f2a3b4c5d",
+      score: 95,
+      createdAt: "2023-03-05T16:00:00Z",
+      feedback: "Excellent work!"
+    },
+    {
+      studentId: "e4f5g6h7-1i2j-3k4l-5m6n-7o8p9q0r1s2t",
+      assignmentId: "a0b1c2d3-e4f5-6a7b-8c9d-0e1f2a3b4c5d",
+      score: 88,
+      createdAt: "2023-03-06T17:00:00Z",
+      feedback: "Good effort, review variable scope."
+    }
+  ])
+  announcement_insertMany(data: [
+    {
+      id: "6c5e4d3f-2a1b-0c9d-8e7f-6a5b4c3d2e1f",
+      title: "Welcome to the new school year!",
+      content: "We are excited to kick off another fantastic academic year.",
+      createdAt: "2023-08-20T10:00:00Z",
+      targetAudience: "all",
+      expiryDate: "2023-09-01T23:59:59Z",
+      creatorId: "a1c1e5d2-3b4f-4a5c-9e2d-1f3b0e7c8a9d"
+    },
+    {
+      id: "1f2e3d4c-5b6a-7f8e-9d0c-1b2a3f4e5d6c",
+      title: "Upcoming Parent-Teacher Conferences",
+      content: "Please sign up for slots to discuss student progress.",
+      createdAt: "2023-09-05T14:00:00Z",
+      targetAudience: "parents",
+      creatorId: "a1c1e5d2-3b4f-4a5c-9e2d-1f3b0e7c8a9d"
+    }
+  ])
+}

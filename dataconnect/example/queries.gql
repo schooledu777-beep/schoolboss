@@ -1,0 +1,50 @@
+query ListAllCourses @auth(level: USER, insecureReason: "This operation is safe to expose to all logged in users.") {
+  courses {
+    id
+    name
+    courseCode
+    department
+  }
+}
+
+query GetCourseDetails($courseId: UUID!) @auth(level: USER, insecureReason: "This operation is safe to expose to all logged in users.") {
+  course(id: $courseId) {
+    id
+    name
+    courseCode
+    description
+    department
+    createdAt
+    assignments_on_course {
+      id
+      title
+      dueDate
+      maxPoints
+    }
+    enrollments_on_course {
+      student {
+        id
+        displayName
+      }
+      createdAt
+    }
+  }
+}
+
+mutation CreateNewCourse($name: String!, $courseCode: String!, $department: String, $description: String) @auth(expr: "auth.token.admin == true") {
+  course_insert(data: {
+    name: $name,
+    courseCode: $courseCode,
+    department: $department,
+    description: $description,
+    createdAt_expr: "request.time"
+  })
+}
+
+mutation EnrollStudentInCourse($studentId: UUID!, $courseId: UUID!) @auth(expr: "auth.uid == $studentId || auth.token.admin == true") {
+  enrollment_insert(data: {
+    studentId: $studentId,
+    courseId: $courseId,
+    createdAt_expr: "request.time"
+  })
+}
