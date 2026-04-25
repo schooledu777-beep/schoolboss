@@ -135,6 +135,21 @@ export function renderSettings() {
         <div class="setting-row"><span>${state.lang==='ar'?'اللغة':'Language'}</span><button class="btn btn-outline" id="setting-lang">${state.lang==='ar'?'English':'عربي'}</button></div>
       </div>
       <div class="card glass-card">
+        <h3 class="card-title">${state.lang==='ar'?'الأنظمة (Modules)':'Modules'}</h3>
+        <p class="text-muted" style="margin-bottom:1rem">${state.lang==='ar'?'تفعيل وتعطيل الأنظمة الفرعية':'Enable/Disable sub-systems'}</p>
+        <div class="modules-grid">
+          ${Object.keys(state.modules || {}).map(modKey => `
+            <div class="setting-row">
+              <span>${modKey}</span>
+              <label class="switch">
+                <input type="checkbox" class="module-toggle" data-module="${modKey}" ${state.modules[modKey].enabled ? 'checked' : ''}>
+                <span class="slider round"></span>
+              </label>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      <div class="card glass-card">
         <h3 class="card-title">${state.lang==='ar'?'حسابي':'My Account'}</h3>
         <div class="setting-row"><span>${t('email')}</span><span class="text-muted">${state.profile?.email}</span></div>
         <div class="setting-row"><span>${state.lang==='ar'?'الدور':'Role'}</span><span class="badge badge-success">${t(state.profile?.role)}</span></div>
@@ -144,6 +159,22 @@ export function renderSettings() {
 }
 
 export function attachSettingsEvents(renderApp) {
+  document.querySelectorAll('.module-toggle').forEach(toggle => {
+    toggle.addEventListener('change', async (e) => {
+      const modKey = e.target.dataset.module;
+      const isEnabled = e.target.checked;
+      state.modules[modKey].enabled = isEnabled;
+      try {
+        await setDoc(doc(db, 'settings', 'modules'), state.modules, { merge: true });
+        showToast(t('savedSuccess'), 'success');
+        renderApp();
+      } catch(err) {
+        e.target.checked = !isEnabled;
+        state.modules[modKey].enabled = !isEnabled;
+        showToast(t('errorOccurred'), 'error');
+      }
+    });
+  });
   document.querySelectorAll('input[name="school-type"]').forEach(radio => {
     radio.addEventListener('change', async (e) => {
       state.schoolType = e.target.value;
