@@ -157,6 +157,18 @@ export function initAuth(onLogin, onLogout) {
         try {
           const settingsDoc = await getDoc(doc(db, 'settings', 'general'));
           if (settingsDoc.exists()) state.schoolType = settingsDoc.data().schoolType || 'private';
+
+          const modulesDoc = await getDoc(doc(db, 'settings', 'modules'));
+          if (modulesDoc.exists()) state.modules = { ...state.modules, ...modulesDoc.data() };
+
+          const customFieldsDoc = await getDoc(doc(db, 'settings', 'custom_fields'));
+          if (customFieldsDoc.exists()) state.customFields = { ...state.customFields, ...customFieldsDoc.data() };
+
+          const rolesSnap = await getDocs(collection(db, 'roles'));
+          const rolesData = [];
+          rolesSnap.forEach(doc => rolesData.push({ id: doc.id, ...doc.data() }));
+          if (rolesData.length > 0) state.roles = rolesData;
+          
         } catch(e) {
           console.warn("Failed to load settings:", e);
         }

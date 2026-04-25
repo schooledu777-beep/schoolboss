@@ -8,7 +8,7 @@ function getNavItems() {
   const role = state.profile?.role || 'student';
   const isPrivate = state.schoolType === 'private';
   
-  const adminNav = [
+  let adminNav = [
     { icon: '📊', key: 'dashboard', page: 'dashboard' },
     { icon: '👨‍🎓', key: 'students', page: 'students' },
     { icon: '👨‍🏫', key: 'teachers', page: 'teachers' },
@@ -19,41 +19,45 @@ function getNavItems() {
     { icon: '📝', key: 'grades', page: 'grades' },
     { icon: '📅', key: 'schedule', page: 'schedule' },
     { icon: '📑', key: 'exams', page: 'exams' },
-    ...(isPrivate ? [{ icon: '💰', key: 'finance', page: 'finance' }] : []),
-    { icon: '📢', key: 'announcements', page: 'announcements' },
-    { icon: '✉️', key: 'messages', page: 'messages' },
     { icon: '📚', key: 'homework', page: 'homework' },
     { icon: '⭐', key: 'rewards', page: 'rewards' },
-    { icon: '🏥', key: 'clinic', page: 'clinic' },
     { icon: '📖', key: 'library', page: 'library' },
-    { icon: '🚌', key: 'busTracking', page: 'bus-tracking' },
-    { icon: '⚙️', key: 'settings', page: 'settings' },
   ];
 
-  const teacherNav = [
+  if (state.modules?.finance?.enabled) adminNav.push({ icon: '💰', key: 'finance', page: 'finance' });
+  if (state.modules?.communications?.enabled) {
+    adminNav.push({ icon: '📢', key: 'announcements', page: 'announcements' });
+    adminNav.push({ icon: '✉️', key: 'messages', page: 'messages' });
+  }
+  if (state.modules?.clinic?.enabled) adminNav.push({ icon: '🏥', key: 'clinic', page: 'clinic' });
+  if (state.modules?.logistics?.enabled) adminNav.push({ icon: '🚌', key: 'busTracking', page: 'bus-tracking' });
+  
+  adminNav.push({ icon: '⚙️', key: 'settings', page: 'settings' });
+
+  let teacherNav = [
     { icon: '📊', key: 'dashboard', page: 'dashboard' },
     { icon: '🏫', key: 'myClasses', page: 'classes' },
     { icon: '📋', key: 'attendance', page: 'attendance' },
     { icon: '📝', key: 'grades', page: 'grades' },
     { icon: '📚', key: 'homework', page: 'homework' },
-    { icon: '✉️', key: 'messages', page: 'messages' },
     { icon: '⭐', key: 'rewards', page: 'rewards' },
     { icon: '📅', key: 'mySchedule', page: 'schedule' },
   ];
+  if (state.modules?.communications?.enabled) teacherNav.push({ icon: '✉️', key: 'messages', page: 'messages' });
 
-  const parentNav = [
+  let parentNav = [
     { icon: '📊', key: 'dashboard', page: 'dashboard' },
     { icon: '👨‍👩‍👧', key: 'myChildren', page: 'my-children' },
     { icon: '📝', key: 'grades', page: 'grades' },
     { icon: '📋', key: 'attendance', page: 'attendance' },
     { icon: '📚', key: 'homework', page: 'homework' },
     { icon: '📅', key: 'schedule', page: 'schedule' },
-    ...(isPrivate ? [{ icon: '💰', key: 'finance', page: 'finance' }] : []),
-    { icon: '✉️', key: 'messages', page: 'messages' },
-    { icon: '🚌', key: 'busTracking', page: 'bus-tracking' },
   ];
+  if (state.modules?.finance?.enabled) parentNav.push({ icon: '💰', key: 'finance', page: 'finance' });
+  if (state.modules?.communications?.enabled) parentNav.push({ icon: '✉️', key: 'messages', page: 'messages' });
+  if (state.modules?.logistics?.enabled) parentNav.push({ icon: '🚌', key: 'busTracking', page: 'bus-tracking' });
 
-  const studentNav = [
+  let studentNav = [
     { icon: '📊', key: 'dashboard', page: 'dashboard' },
     { icon: '📅', key: 'mySchedule', page: 'schedule' },
     { icon: '📝', key: 'myGrades', page: 'grades' },

@@ -26,6 +26,19 @@ export const state = {
   library: [],
   buses: [],
   subjects: [],
+  roles: [],
+  modules: {
+    finance: { enabled: true, monetized: false },
+    logistics: { enabled: true, monetized: true },
+    clinic: { enabled: true, monetized: false },
+    communications: { enabled: true, monetized: false },
+    inventory: { enabled: false, monetized: true },
+    training_center: { enabled: false, monetized: false }
+  },
+  customFields: {
+    student: [],
+    teacher: []
+  },
   // Listeners
   unsubscribers: []
 };
