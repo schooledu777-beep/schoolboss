@@ -36,6 +36,7 @@ function showTeacherForm(teacher = null) {
       ${!isEdit ? `<div class="form-group"><label>${state.lang==='ar'?'كلمة المرور':'Password'}</label><input type="text" id="tf-password" class="form-input" value="123456" required></div>` : ''}
       <div class="form-group"><label>${state.lang==='ar'?'المواد':'Subjects'}</label><input type="text" id="tf-subjects" class="form-input" value="${(teacher?.subjects||[]).join(', ')}" placeholder="${state.lang==='ar'?'رياضيات, علوم, ...':'Math, Science, ...'}"></div>
       <div class="form-group"><label>${state.lang==='ar'?'الهاتف':'Phone'}</label><input type="tel" id="tf-phone" class="form-input" value="${teacher?.phone||''}"></div>
+      <div class="form-group"><label>${state.lang==='ar'?'الراتب الأساسي':'Base Salary'}</label><input type="number" id="tf-salary" class="form-input" value="${teacher?.baseSalary||''}"></div>
       <div class="form-actions"><button type="button" class="btn btn-outline" onclick="document.getElementById('modal-close-x').click()">${t('cancel')}</button><button type="submit" class="btn btn-primary">${t('save')}</button></div>
     </form>`);
   document.getElementById('teacher-form')?.addEventListener('submit', async e => {
@@ -45,7 +46,15 @@ function showTeacherForm(teacher = null) {
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-sm"></span>';
 
-    const data = { name: document.getElementById('tf-name').value.trim(), email: document.getElementById('tf-email').value.trim(), subjects: document.getElementById('tf-subjects').value.split(',').map(s=>s.trim()).filter(Boolean), phone: document.getElementById('tf-phone').value.trim(), role: 'teacher', updatedAt: new Date().toISOString() };
+    const data = { 
+      name: document.getElementById('tf-name').value.trim(), 
+      email: document.getElementById('tf-email').value.trim(), 
+      subjects: document.getElementById('tf-subjects').value.split(',').map(s=>s.trim()).filter(Boolean), 
+      phone: document.getElementById('tf-phone').value.trim(), 
+      baseSalary: Number(document.getElementById('tf-salary').value) || 0,
+      role: 'teacher', 
+      updatedAt: new Date().toISOString() 
+    };
     try { 
       if(isEdit) {
         await updateDoc(doc(db,'teachers',teacher.id),data); 

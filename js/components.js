@@ -21,9 +21,12 @@ function getNavItems() {
     { icon: '📑', key: 'exams', page: 'exams' },
     { icon: '📚', key: 'homework', page: 'homework' },
     { icon: '⭐', key: 'rewards', page: 'rewards' },
-    { icon: '📖', key: 'library', page: 'library' },
     { icon: '⚠️', key: 'academicAlerts', page: 'academic-alerts' },
   ];
+  
+  if (state.modules?.hr?.enabled) adminNav.push({ icon: '👥', key: 'hr', page: 'hr' });
+  if (state.modules?.library?.enabled) adminNav.push({ icon: '📖', key: 'library', page: 'library' });
+  if (state.modules?.hostel?.enabled) adminNav.push({ icon: '🏠', key: 'hostel', page: 'hostel' });
 
   if (state.modules?.admissions?.enabled) adminNav.push({ icon: '📝', key: 'admissions', page: 'admissions' });
   if (state.modules?.finance?.enabled) adminNav.push({ icon: '💰', key: 'finance', page: 'finance' });

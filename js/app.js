@@ -17,7 +17,11 @@ import { renderFinance, attachFinanceEvents } from './pages/finance.js';
 import { renderAnnouncements, attachAnnouncementEvents, renderMessages, attachMessageEvents, renderSettings, attachSettingsEvents } from './pages/communications.js';
 import { renderAdmissions, attachAdmissionsEvents } from './pages/admissions.js';
 import { renderAcademicAlerts, attachAcademicAlertsEvents } from './pages/academicAlerts.js';
+import { renderHR, attachHREvents } from './pages/hr.js';
+import { renderLibrary, attachLibraryEvents } from './pages/library.js';
+import { renderHostel, attachHostelEvents } from './pages/hostel.js';
 import { academicService } from './services/academicService.js';
+import { libraryService } from './services/libraryService.js';
 
 // ========================= APPLY INITIAL SETTINGS =========================
 applyTheme();
@@ -39,6 +43,9 @@ const pages = {
   messages:       { render: renderMessages, events: attachMessageEvents },
   admissions:     { render: renderAdmissions, events: attachAdmissionsEvents },
   'academic-alerts': { render: renderAcademicAlerts, events: attachAcademicAlertsEvents },
+  hr:             { render: renderHR, events: attachHREvents },
+  library:        { render: renderLibrary, events: attachLibraryEvents },
+  hostel:         { render: renderHostel, events: attachHostelEvents },
   settings:       { render: renderSettings, events: (renderApp) => attachSettingsEvents(renderApp) },
   // Placeholder pages for future features
   exams:          { render: () => placeholderPage('📑', 'exams'), events: () => {} },
@@ -123,6 +130,12 @@ function startListeners() {
     { name: 'timeslots', key: 'timeslots' },
     { name: 'classrooms', key: 'classrooms' },
     { name: 'teacher_availability', key: 'teacherAvailability' },
+    { name: 'leaves', key: 'leaves' },
+    { name: 'salary_slips', key: 'salarySlips' },
+    { name: 'books', key: 'books' },
+    { name: 'borrowing_records', key: 'borrowingRecords' },
+    { name: 'rooms', key: 'rooms' },
+    { name: 'bed_allocations', key: 'bedAllocations' },
   ];
 
   collections.forEach(({ name, key }) => {
@@ -154,6 +167,7 @@ initAuth(
     state.currentPage = route;
     if (state.profile?.role === 'admin') {
         academicService.seedAssessmentTypes();
+        libraryService.processOverdueFees();
     }
     renderApp();
   },
