@@ -74,8 +74,9 @@ function renderApp() {
     return;
   }
 
-  const currentPage = state.currentPage || 'dashboard';
-  let page = pages[currentPage] || pages.dashboard;
+  const currentHash = state.currentPage || 'dashboard';
+  const basePath = currentHash.split('?')[0];
+  let page = pages[basePath] || pages.dashboard;
 
   // Route Guard for Admin-only pages
   const adminOnlyPages = ['admissions', 'settings'];

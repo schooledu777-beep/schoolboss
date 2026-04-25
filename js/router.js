@@ -17,7 +17,8 @@ export function getCurrentRoute() {
 }
 
 export async function handleRoute() {
-  const path = getCurrentRoute();
+  const fullPath = getCurrentRoute();
+  const path = fullPath.split('?')[0];
   state.currentPage = path;
   
   // Cleanup previous page
