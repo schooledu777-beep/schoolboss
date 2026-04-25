@@ -62,7 +62,15 @@ function renderApp() {
   }
 
   const currentPage = state.currentPage || 'dashboard';
-  const page = pages[currentPage] || pages.dashboard;
+  let page = pages[currentPage] || pages.dashboard;
+
+  // Route Guard for Admin-only pages
+  const adminOnlyPages = ['admissions', 'settings'];
+  if (adminOnlyPages.includes(currentPage) && state.profile.role !== 'admin') {
+    page = pages.dashboard;
+    state.currentPage = 'dashboard';
+    window.location.hash = 'dashboard';
+  }
 
   app.innerHTML = `
     <div class="app-layout">

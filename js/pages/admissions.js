@@ -82,6 +82,10 @@ export function renderAdmissions() {
                         <input type="text" id="app-parent-name" class="form-control" required>
                     </div>
                     <div class="form-group">
+                        <label>${state.lang === 'ar' ? 'البريد الإلكتروني' : 'Email Address'}</label>
+                        <input type="email" id="app-parent-email" class="form-control" required>
+                    </div>
+                    <div class="form-group">
                         <label>${state.lang === 'ar' ? 'رقم الهاتف' : 'Phone Number'}</label>
                         <input type="tel" id="app-parent-phone" class="form-control" required>
                     </div>
@@ -98,6 +102,41 @@ export function renderAdmissions() {
         </div>
     </div>
 
+    <!-- Documents Modal -->
+    <div class="modal-overlay hidden" id="documents-modal">
+        <div class="modal glass-card" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3>${state.lang === 'ar' ? 'المستندات المرفقة' : 'Application Documents'}</h3>
+                <button class="btn-icon" id="close-documents-modal">✕</button>
+            </div>
+            <div class="modal-body">
+                <div id="documents-list" style="margin-bottom: 1rem;">
+                    <!-- Documents will be loaded here -->
+                </div>
+                
+                <form id="upload-document-form" class="form-grid" style="border-top: 1px solid var(--border); padding-top: 1rem;">
+                    <input type="hidden" id="doc-app-id">
+                    <div class="form-group">
+                        <label>${state.lang === 'ar' ? 'نوع المستند' : 'Document Type'}</label>
+                        <select id="doc-type" class="form-control" required>
+                            <option value="birth_certificate">${state.lang === 'ar' ? 'شهادة ميلاد' : 'Birth Certificate'}</option>
+                            <option value="transcript">${state.lang === 'ar' ? 'بيان درجات' : 'Transcript'}</option>
+                            <option value="medical_record">${state.lang === 'ar' ? 'سجل طبي' : 'Medical Record'}</option>
+                            <option value="other">${state.lang === 'ar' ? 'أخرى' : 'Other'}</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>${state.lang === 'ar' ? 'الملف' : 'File'}</label>
+                        <input type="file" id="doc-file" class="form-control" required accept=".pdf,.jpg,.jpeg,.png">
+                    </div>
+                    <div class="form-actions full-width">
+                        <button type="submit" class="btn btn-primary" id="upload-document-btn">${state.lang === 'ar' ? 'رفع المستند' : 'Upload Document'}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
   </div>
   `;
 }
@@ -105,12 +144,17 @@ export function renderAdmissions() {
 export function attachAdmissionsEvents() {
     loadApplications();
 
-    // Modal Triggers
     const modal = document.getElementById('application-modal');
+    const docsModal = document.getElementById('documents-modal');
+
     // Close on overlay click
     modal?.addEventListener('click', (e) => {
         if (e.target === modal) modal.classList.add('hidden');
     });
+    docsModal?.addEventListener('click', (e) => {
+        if (e.target === docsModal) docsModal.classList.add('hidden');
+    });
+
     document.getElementById('btn-new-application')?.addEventListener('click', () => {
         document.getElementById('application-form').reset();
         modal.classList.remove('hidden');
@@ -119,6 +163,10 @@ export function attachAdmissionsEvents() {
     const closeBtns = ['close-application-modal', 'cancel-application-modal'];
     closeBtns.forEach(id => {
         document.getElementById(id)?.addEventListener('click', () => modal.classList.add('hidden'));
+    });
+    
+    document.getElementById('close-documents-modal')?.addEventListener('click', () => {
+        docsModal.classList.add('hidden');
     });
 
     // Form Submission
@@ -136,6 +184,7 @@ export function attachAdmissionsEvents() {
             },
             parentContact: {
                 fullName: document.getElementById('app-parent-name').value,
+                email: document.getElementById('app-parent-email').value,
                 phoneNumber: document.getElementById('app-parent-phone').value,
             },
             appliedGradeLevel: document.getElementById('app-grade').value,
@@ -155,8 +204,61 @@ export function attachAdmissionsEvents() {
         }
     });
 
+    // Upload Document Form
+    document.getElementById('upload-document-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const appId = document.getElementById('doc-app-id').value;
+        const fileInput = document.getElementById('doc-file');
+        const docType = document.getElementById('doc-type').value;
+        
+        if (!fileInput.files.length) return;
+        const file = fileInput.files[0];
+
+        const btn = document.getElementById('upload-document-btn');
+        const oldHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<div class="loader-ring" style="width:20px;height:20px;margin:0;border-width:2px;"></div>';
+
+        try {
+            await admissionsService.uploadApplicationDocument(appId, file, docType);
+            showToast(state.lang === 'ar' ? 'تم رفع المستند بنجاح' : 'Document uploaded successfully', 'success');
+            fileInput.value = ''; // Reset file input
+            await loadDocuments(appId); // Refresh documents list
+        } catch (error) {
+            showToast(state.lang === 'ar' ? 'فشل رفع المستند' : 'Failed to upload document', 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = oldHtml;
+        }
+    });
+
     // Drag and Drop Setup
     setupDragAndDrop();
+}
+
+async function loadDocuments(appId) {
+    const listEl = document.getElementById('documents-list');
+    listEl.innerHTML = '<div class="text-center"><div class="loader-ring"></div></div>';
+    
+    try {
+        const docs = await admissionsService.getApplicationDocuments(appId);
+        if (docs.length === 0) {
+            listEl.innerHTML = `<p class="text-muted text-center">${state.lang === 'ar' ? 'لا توجد مستندات مرفقة' : 'No documents attached'}</p>`;
+            return;
+        }
+        
+        listEl.innerHTML = docs.map(doc => `
+            <div class="glass-card" style="padding: 0.75rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <strong>${doc.documentType}</strong><br>
+                    <span class="text-muted text-sm">${doc.fileName}</span>
+                </div>
+                <a href="${doc.fileUrl}" target="_blank" class="btn btn-sm btn-outline">${state.lang === 'ar' ? 'عرض' : 'View'}</a>
+            </div>
+        `).join('');
+    } catch (error) {
+        listEl.innerHTML = `<p class="text-danger">${state.lang === 'ar' ? 'حدث خطأ أثناء جلب المستندات' : 'Error fetching documents'}</p>`;
+    }
 }
 
 async function loadApplications() {
@@ -195,10 +297,13 @@ function renderKanbanCards() {
             card.dataset.id = app.id;
             card.innerHTML = `
                 <div class="card-title">${app.studentInfo?.firstName} ${app.studentInfo?.lastName}</div>
-                <div class="card-meta">
+                <div class="card-meta" style="margin-bottom: 0.5rem;">
                     <span class="badge" style="background:var(--surface2)">${app.appliedGradeLevel}</span>
                     <span class="text-muted text-sm">${dateStr}</span>
                 </div>
+                <button class="btn btn-sm btn-outline full-width view-docs-btn" data-id="${app.id}" style="font-size: 0.8rem; padding: 0.25rem;">
+                    📄 ${state.lang === 'ar' ? 'المستندات' : 'Docs'}
+                </button>
             `;
             dz.appendChild(card);
         }
@@ -212,6 +317,17 @@ function renderKanbanCards() {
 
     // Reattach drag events to new cards
     setupDragAndDrop();
+
+    // Attach docs button events
+    document.querySelectorAll('.view-docs-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const appId = btn.dataset.id;
+            const docsModal = document.getElementById('documents-modal');
+            document.getElementById('doc-app-id').value = appId;
+            docsModal.classList.remove('hidden');
+            loadDocuments(appId);
+        });
+    });
 }
 
 function setupDragAndDrop() {

@@ -13,8 +13,10 @@ import {
     orderBy,
     ref, 
     uploadBytes, 
-    getDownloadURL 
+    getDownloadURL,
+    setDoc
 } from '../firebase-config.js';
+import { adminCreateUser } from '../auth.js';
 
 const COLLECTION_NAME = 'admission_applications';
 
@@ -139,6 +141,25 @@ export const admissionsService = {
     },
 
     /**
+     * Fetch documents for an application
+     * @param {String} applicationId 
+     */
+    async getApplicationDocuments(applicationId) {
+        try {
+            const docsRef = collection(db, `${COLLECTION_NAME}/${applicationId}/documents`);
+            const querySnapshot = await getDocs(docsRef);
+            const documents = [];
+            querySnapshot.forEach((docSnap) => {
+                documents.push({ id: docSnap.id, ...docSnap.data() });
+            });
+            return documents;
+        } catch (error) {
+            console.error("Error fetching documents: ", error);
+            throw error;
+        }
+    },
+
+    /**
      * Transition application to a new status
      * @param {String} applicationId 
      * @param {String} newStatus 
@@ -165,8 +186,53 @@ export const admissionsService = {
                 updatedAt: serverTimestamp()
             });
             
-            // Future: Webhook/Notification trigger logic goes here
-            // if (newStatus === 'Enrolled') { ... }
+            // Automation: Trigger account creation when Enrolled
+            if (newStatus === 'Enrolled') {
+                const docSnap = await getDoc(docRef);
+                const appData = docSnap.data();
+                
+                if (appData && !appData.accountsCreated) {
+                    try {
+                        const parentEmail = appData.parentContact.email || `parent_${applicationId}@school.local`;
+                        const parentPassword = 'Password123!'; // Default password
+                        const parentName = appData.parentContact.fullName;
+                        const parentPhone = appData.parentContact.phoneNumber;
+                        
+                        // Create Parent Account
+                        const parentUid = await adminCreateUser(parentEmail, parentPassword, 'parent', parentName);
+                        await setDoc(doc(db, 'parents', parentUid), {
+                            name: parentName,
+                            email: parentEmail,
+                            phone: parentPhone,
+                            role: 'parent',
+                            createdAt: new Date().toISOString()
+                        });
+
+                        // Create Student Account
+                        const studentEmail = `student_${applicationId}@school.local`;
+                        const studentPassword = 'Password123!';
+                        const studentName = `${appData.studentInfo.firstName} ${appData.studentInfo.lastName}`;
+                        
+                        const studentUid = await adminCreateUser(studentEmail, studentPassword, 'student', studentName);
+                        await setDoc(doc(db, 'students', studentUid), {
+                            name: studentName,
+                            email: studentEmail,
+                            classId: '', // To be assigned later
+                            gender: 'unknown',
+                            dob: appData.studentInfo.dateOfBirth ? new Date(appData.studentInfo.dateOfBirth.seconds * 1000).toISOString().split('T')[0] : '',
+                            parentId: parentUid,
+                            role: 'student',
+                            createdAt: new Date().toISOString()
+                        });
+                        
+                        // Mark as created
+                        await updateDoc(docRef, { accountsCreated: true });
+                        console.log('Successfully created parent and student accounts for application:', applicationId);
+                    } catch (accErr) {
+                        console.error('Error creating automated accounts:', accErr);
+                    }
+                }
+            }
             
         } catch (error) {
             console.error("Error transitioning status: ", error);
