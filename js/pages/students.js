@@ -30,7 +30,7 @@ export function renderStudents() {
           ${students.map((s, i) => {
             const cls = state.classes.find(c => c.id === s.classId);
             return `<tr>
-              <td>${i + 1}</td><td><div class="user-cell"><div class="avatar avatar-xs gradient-purple">${(s.name || '?')[0]}</div>${escapeHTML(s.name || '')}</div></td>
+              <td>${i + 1}</td><td><div class="user-cell"><div class="avatar avatar-xs gradient-purple">${(s.name || '?')[0]}</div><a href="#student-profile?id=${s.id}" class="student-link">${escapeHTML(s.name || '')}</a></div></td>
               <td>${cls?.name || '—'}</td><td>${s.gender === 'male' ? '👦' : '👧'}</td><td>${s.email || '—'}</td>
               <td><button class="btn btn-sm btn-outline edit-student" data-id="${s.id}">✏️</button> <button class="btn btn-sm btn-danger delete-student" data-id="${s.id}">🗑️</button></td>
             </tr>`;
@@ -70,7 +70,7 @@ export function attachStudentEvents() {
     if (tbody) {
       tbody.innerHTML = filtered.map((s, i) => {
         const cls = state.classes.find(c => c.id === s.classId);
-        return `<tr><td>${i+1}</td><td>${escapeHTML(s.name||'')}</td><td>${cls?.name||'—'}</td><td>${s.gender==='male'?'👦':'👧'}</td><td>${s.email||'—'}</td><td><button class="btn btn-sm btn-outline edit-student" data-id="${s.id}">✏️</button> <button class="btn btn-sm btn-danger delete-student" data-id="${s.id}">🗑️</button></td></tr>`;
+        return `<tr><td>${i+1}</td><td><a href="#student-profile?id=${s.id}" class="student-link">${escapeHTML(s.name||'')}</a></td><td>${cls?.name||'—'}</td><td>${s.gender==='male'?'👦':'👧'}</td><td>${s.email||'—'}</td><td><button class="btn btn-sm btn-outline edit-student" data-id="${s.id}">✏️</button> <button class="btn btn-sm btn-danger delete-student" data-id="${s.id}">🗑️</button></td></tr>`;
       }).join('') || `<tr><td colspan="6" class="text-center text-muted">${t('noData')}</td></tr>`;
     }
   });

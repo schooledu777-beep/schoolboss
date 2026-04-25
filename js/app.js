@@ -21,6 +21,7 @@ import { renderAcademicAlerts, attachAcademicAlertsEvents } from './pages/academ
 import { renderHR, attachHREvents } from './pages/hr.js';
 import { renderLibrary, attachLibraryEvents } from './pages/library.js';
 import { renderHostel, attachHostelEvents } from './pages/hostel.js';
+import { renderStudentProfile, attachStudentProfileEvents } from './pages/studentProfile.js';
 import { academicService } from './services/academicService.js';
 import { libraryService } from './services/libraryService.js';
 
@@ -45,9 +46,10 @@ const pages = {
   admissions:     { render: renderAdmissions, events: attachAdmissionsEvents },
   'academic-alerts': { render: renderAcademicAlerts, events: attachAcademicAlertsEvents },
   hr:             { render: renderHR, events: attachHREvents },
-  library:        { render: renderLibrary, events: attachLibraryEvents },
-  hostel:         { render: renderHostel, events: attachHostelEvents },
-  settings:       { render: renderSettings, events: (renderApp) => attachSettingsEvents(renderApp) },
+  library:         { render: renderLibrary, events: attachLibraryEvents },
+  hostel:          { render: renderHostel, events: attachHostelEvents },
+  'student-profile': { render: renderStudentProfile, events: attachStudentProfileEvents },
+  settings:        { render: renderSettings, events: (renderApp) => attachSettingsEvents(renderApp) },
   // Placeholder pages for future features
   exams:          { render: () => placeholderPage('📑', 'exams'), events: () => {} },
   homework:       { render: () => placeholderPage('📚', 'homework'), events: () => {} },
