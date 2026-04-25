@@ -82,7 +82,13 @@ function renderAdminDash() {
   </div>`;
 }
 
+function renderTeacherDash() {
   const teacherId = state.profile?.uid;
+  const myClasses = state.classes.filter(c => c.teacherId === teacherId);
+  const myStudentIds = [...new Set(myClasses.flatMap(c => c.studentIds || []))];
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todayAtt = state.attendance.filter(a => a.date === todayStr && myStudentIds.includes(a.studentId));
+  const presentCount = todayAtt.filter(a => a.status === 'present').length;
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
   const dailySchedule = state.schedules.filter(s => s.teacherId === teacherId && s.day === today);
 
