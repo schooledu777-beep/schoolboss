@@ -74,15 +74,14 @@ function renderApp() {
     return;
   }
 
-  const currentHash = state.currentPage || 'dashboard';
+  const currentHash = window.location.hash.slice(1) || 'dashboard';
   const basePath = currentHash.split('?')[0];
   let page = pages[basePath] || pages.dashboard;
 
   // Route Guard for Admin-only pages
   const adminOnlyPages = ['admissions', 'settings'];
-  if (adminOnlyPages.includes(currentPage) && state.profile.role !== 'admin') {
+  if (adminOnlyPages.includes(basePath) && state.profile.role !== 'admin') {
     page = pages.dashboard;
-    state.currentPage = 'dashboard';
     window.location.hash = 'dashboard';
   }
 
@@ -99,7 +98,7 @@ function renderApp() {
 
   attachLayoutEvents(renderApp);
   if (typeof page.events === 'function') {
-    if (currentPage === 'settings') page.events(renderApp);
+    if (basePath === 'settings') page.events(renderApp);
     else page.events();
   }
 }

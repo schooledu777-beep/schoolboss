@@ -17,8 +17,9 @@ export function getCurrentRoute() {
 }
 
 export async function handleRoute() {
-  const fullPath = getCurrentRoute();
-  const path = fullPath.split('?')[0];
+  const fullHash = window.location.hash.slice(1) || 'dashboard';
+  const path = fullHash.split('?')[0];
+  console.log('[Router] Navigating to:', path, 'Full hash:', fullHash);
   state.currentPage = path;
   
   // Cleanup previous page

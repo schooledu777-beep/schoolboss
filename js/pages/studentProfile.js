@@ -3,12 +3,23 @@ import { db, doc, getDoc } from '../firebase-config.js';
 import { escapeHTML } from '../ui.js';
 
 export function renderStudentProfile() {
-  const params = new URLSearchParams(window.location.hash.split('?')[1]);
+  const hash = window.location.hash.slice(1);
+  const params = new URLSearchParams(hash.includes('?') ? hash.split('?')[1] : '');
   const studentId = params.get('id');
+  
+  console.log('[StudentProfile] Loading ID:', studentId);
   const student = state.students.find(s => s.id === studentId);
 
   if (!student) {
-    return `<div class="page-content"><div class="empty-state glass-card"><h3>${t('noData')}</h3></div></div>`;
+    return `
+    <div class="page-content animate-in">
+      <div class="empty-state glass-card">
+        <span class="empty-icon">🔍</span>
+        <h3>${state.lang === 'ar' ? 'لم يتم العثور على الطالب' : 'Student Not Found'}</h3>
+        <p class="text-muted">${state.lang === 'ar' ? 'تأكد من معرف الطالب أو أعد المحاولة لاحقاً' : 'Check student ID or try again later'}</p>
+        <button class="btn btn-outline" onclick="window.history.back()" style="margin-top:1rem">${state.lang === 'ar' ? 'عودة' : 'Back'}</button>
+      </div>
+    </div>`;
   }
 
   const cls = state.classes.find(c => c.id === student.classId);
