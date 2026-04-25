@@ -81,8 +81,8 @@ export const admissionsService = {
             
             const querySnapshot = await getDocs(q);
             const applications = [];
-            querySnapshot.forEach((doc) => {
-                applications.push({ id: doc.id, ...doc.data() });
+            querySnapshot.forEach((docSnap) => {
+                applications.push({ id: docSnap.id, ...docSnap.data() });
             });
             return applications;
         } catch (error) {

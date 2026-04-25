@@ -102,11 +102,15 @@ export function renderAdmissions() {
   `;
 }
 
-export async function attachAdmissionsEvents() {
-    await loadApplications();
+export function attachAdmissionsEvents() {
+    loadApplications();
 
     // Modal Triggers
     const modal = document.getElementById('application-modal');
+    // Close on overlay click
+    modal?.addEventListener('click', (e) => {
+        if (e.target === modal) modal.classList.add('hidden');
+    });
     document.getElementById('btn-new-application')?.addEventListener('click', () => {
         document.getElementById('application-form').reset();
         modal.classList.remove('hidden');
@@ -158,7 +162,10 @@ export async function attachAdmissionsEvents() {
 async function loadApplications() {
     try {
         applicationsCache = await admissionsService.getApplications();
-        renderKanbanCards();
+        // Only render if kanban board is still in the DOM
+        if (document.getElementById('kanban-board')) {
+            renderKanbanCards();
+        }
     } catch (err) {
         console.error(err);
         showToast('Error loading applications', 'error');

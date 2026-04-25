@@ -112,8 +112,11 @@ function startListeners() {
     try {
       const unsub = onSnapshot(collection(db, name), (snap) => {
         state[key] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        // Only re-render if we're on a relevant page
-        if (state.user && state.profile) renderApp();
+        // Re-render only if the current page is relevant to this collection
+        const relevantPages = [name, 'dashboard', state.currentPage];
+        if (state.user && state.profile && relevantPages.includes(state.currentPage)) {
+          renderApp();
+        }
       }, (err) => {
         console.warn(`Listener error for ${name}:`, err);
         state[key] = [];

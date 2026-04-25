@@ -166,7 +166,7 @@ export function initAuth(onLogin, onLogout) {
 
           const rolesSnap = await getDocs(collection(db, 'roles'));
           const rolesData = [];
-          rolesSnap.forEach(doc => rolesData.push({ id: doc.id, ...doc.data() }));
+          rolesSnap.forEach(roleDoc => rolesData.push({ id: roleDoc.id, ...roleDoc.data() }));
           if (rolesData.length > 0) state.roles = rolesData;
           
         } catch(e) {
