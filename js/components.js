@@ -24,6 +24,7 @@ function getNavItems() {
     { icon: '📖', key: 'library', page: 'library' },
   ];
 
+  if (state.modules?.admissions?.enabled) adminNav.push({ icon: '📝', key: 'admissions', page: 'admissions' });
   if (state.modules?.finance?.enabled) adminNav.push({ icon: '💰', key: 'finance', page: 'finance' });
   if (state.modules?.communications?.enabled) {
     adminNav.push({ icon: '📢', key: 'announcements', page: 'announcements' });

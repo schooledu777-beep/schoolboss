@@ -15,6 +15,7 @@ import { renderSubjects, attachSubjectEvents } from './pages/subjects.js';
 import { renderSchedule, attachScheduleEvents } from './pages/schedule.js';
 import { renderFinance, attachFinanceEvents } from './pages/finance.js';
 import { renderAnnouncements, attachAnnouncementEvents, renderMessages, attachMessageEvents, renderSettings, attachSettingsEvents } from './pages/communications.js';
+import { renderAdmissions, attachAdmissionsEvents } from './pages/admissions.js';
 
 // ========================= APPLY INITIAL SETTINGS =========================
 applyTheme();
@@ -34,6 +35,7 @@ const pages = {
   finance:        { render: renderFinance, events: attachFinanceEvents },
   announcements:  { render: renderAnnouncements, events: attachAnnouncementEvents },
   messages:       { render: renderMessages, events: attachMessageEvents },
+  admissions:     { render: renderAdmissions, events: attachAdmissionsEvents },
   settings:       { render: renderSettings, events: (renderApp) => attachSettingsEvents(renderApp) },
   // Placeholder pages for future features
   exams:          { render: () => placeholderPage('📑', 'exams'), events: () => {} },

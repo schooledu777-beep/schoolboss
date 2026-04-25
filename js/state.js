@@ -28,6 +28,7 @@ export const state = {
   subjects: [],
   roles: [],
   modules: {
+    admissions: { enabled: true, monetized: false },
     finance: { enabled: true, monetized: false },
     logistics: { enabled: true, monetized: true },
     clinic: { enabled: true, monetized: false },
@@ -86,6 +87,7 @@ export const translations = {
   library: { ar: 'المكتبة', en: 'Library' },
   busTracking: { ar: 'تتبع الحافلات', en: 'Bus Tracking' },
   settings: { ar: 'الإعدادات', en: 'Settings' },
+  admissions: { ar: 'القبول والتسجيل', en: 'Admissions' },
   myClasses: { ar: 'فصولي', en: 'My Classes' },
   myChildren: { ar: 'أبنائي', en: 'My Children' },
   mySchedule: { ar: 'جدولي', en: 'My Schedule' },
