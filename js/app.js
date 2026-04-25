@@ -1,3 +1,4 @@
+// ERP Sync - 2026-04-25
 import { state, applyTheme, applyLang } from './state.js';
 import { db, collection, onSnapshot } from './firebase-config.js';
 import { hideLoading } from './ui.js';
