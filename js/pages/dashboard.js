@@ -337,9 +337,19 @@ export function attachDashboardEvents() {
         btn.innerHTML = oldHtml;
         btn.style.pointerEvents = 'auto';
       } catch (err) {
-        console.error(err);
+        console.error("Mock data error:", err);
         showToast(t('errorOccurred'), 'error');
+        const btn = document.getElementById('btn-mock-data');
+        if (btn) {
+           btn.innerHTML = '🧪 ' + (state.lang === 'ar' ? 'بيانات تجريبية' : 'Mock Data');
+           btn.style.pointerEvents = 'auto';
+        }
       }
     }
+  });
+
+  document.getElementById('bulk-grading-btn')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    showToast(state.lang === 'ar' ? 'ميزة الرصد الجماعي قيد التفعيل' : 'Bulk grading feature is being activated', 'info');
   });
 }
