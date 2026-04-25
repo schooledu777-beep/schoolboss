@@ -1,6 +1,7 @@
 import { state, t } from '../state.js';
 import { db, collection, addDoc, updateDoc, deleteDoc, doc } from '../firebase-config.js';
 import { showModal, closeModal, showConfirm, showToast, formatCurrency } from '../ui.js';
+import { notificationService } from '../services/notificationService.js';
 
 export function renderFinance() {
   if (state.schoolType === 'public') {
@@ -67,7 +68,22 @@ function showFeeForm(fee = null) {
   document.getElementById('fee-form')?.addEventListener('submit', async e => {
     e.preventDefault();
     const data = { studentId: document.getElementById('ff-student').value, amount: Number(document.getElementById('ff-amount').value), dueDate: document.getElementById('ff-due').value, notes: document.getElementById('ff-notes').value.trim(), paidAmount: fee?.paidAmount || 0 };
-    try { if(isEdit) await updateDoc(doc(db,'fees',fee.id),data); else await addDoc(collection(db,'fees'),data); closeModal(); showToast(t('savedSuccess'),'success'); } catch(e) { showToast(t('errorOccurred'),'error'); }
+    try { 
+      if(isEdit) await updateDoc(doc(db,'fees',fee.id),data); 
+      else await addDoc(collection(db,'fees'),data); 
+      
+      // Trigger notification for new/updated unpaid fee
+      const student = state.students.find(s => s.id === data.studentId);
+      if (student?.parentId && data.amount > data.paidAmount) {
+        notificationService.triggerEventNotification('invoice_overdue', {
+          recipientId: student.parentId,
+          amount: formatCurrency(data.amount - data.paidAmount)
+        });
+      }
+
+      closeModal(); 
+      showToast(t('savedSuccess'),'success'); 
+    } catch(e) { showToast(t('errorOccurred'),'error'); }
   });
 }
 

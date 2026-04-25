@@ -41,6 +41,7 @@ export const state = {
   buildings: [],
   rooms: [],
   bedAllocations: [],
+  notificationLogs: [],
   modules: {
     admissions: { enabled: true, monetized: false },
     finance: { enabled: true, monetized: false },
@@ -165,6 +166,13 @@ export const translations = {
   deletedSuccess: { ar: 'تم الحذف بنجاح', en: 'Deleted successfully' },
   errorOccurred: { ar: 'حدث خطأ', en: 'An error occurred' },
   noData: { ar: 'لا توجد بيانات', en: 'No data available' },
+  // Portal Specific
+  balanceDue: { ar: 'الرصيد المستحق', en: 'Balance Due' },
+  weeklyAttendance: { ar: 'حضور الأسبوع', en: 'Weekly Attendance' },
+  latestGrades: { ar: 'آخر الدرجات', en: 'Latest Grades' },
+  bulkGrading: { ar: 'رصد درجات جماعي', en: 'Bulk Grading' },
+  todaySchedule: { ar: 'جدول اليوم', en: "Today's Schedule" },
+  notificationHistory: { ar: 'سجل التنبيهات', en: 'Notification History' },
 };
 
 // ========================= SETTINGS =========================

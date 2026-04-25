@@ -2,6 +2,7 @@ import { state, t } from '../state.js';
 import { db, collection, addDoc, updateDoc, doc, getDocs, query, where } from '../firebase-config.js';
 import { showToast } from '../ui.js';
 import { academicService } from '../services/academicService.js';
+import { notificationService } from '../services/notificationService.js';
 
 export function renderAttendance() {
   const role = state.profile?.role;
@@ -114,6 +115,18 @@ async function saveAttendance() {
       }
       // Trigger academic alerts check for this student
       academicService.processAcademicAlerts(sid);
+
+      // Trigger notification if absent
+      if (radio.value === 'absent') {
+        const student = state.students.find(s => s.id === sid);
+        if (student?.parentId) {
+          notificationService.triggerEventNotification('student_absent', {
+            recipientId: student.parentId,
+            studentName: student.name,
+            date: date
+          });
+        }
+      }
     }
     showToast(t('savedSuccess'), 'success');
   } catch(e) { showToast(t('errorOccurred'), 'error'); }

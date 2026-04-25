@@ -2,6 +2,7 @@ import { state, t } from '../state.js';
 import { db, collection, getDocs, query, where, onSnapshot, addDoc, doc, setDoc } from '../firebase-config.js';
 import { formatCurrency, showToast } from '../ui.js';
 import { adminCreateUser } from '../auth.js';
+import { portalService } from '../services/portalService.js';
 
 export function renderDashboard() {
   const role = state.profile?.role || 'student';
@@ -81,12 +82,9 @@ function renderAdminDash() {
   </div>`;
 }
 
-function renderTeacherDash() {
-  const myClasses = state.classes.filter(c => c.teacherId === state.profile?.uid || c.teacherIds?.includes(state.profile?.uid));
-  const myStudentIds = myClasses.flatMap(c => c.studentIds || []);
-  const todayStr = new Date().toISOString().split('T')[0];
-  const todayAtt = state.attendance.filter(a => a.date === todayStr && myStudentIds.includes(a.studentId));
-  const presentCount = todayAtt.filter(a => a.status === 'present').length;
+  const teacherId = state.profile?.uid;
+  const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+  const dailySchedule = state.schedules.filter(s => s.teacherId === teacherId && s.day === today);
 
   return `
   <div class="page-content animate-in">
@@ -99,20 +97,29 @@ function renderTeacherDash() {
       <div class="stat-card gradient-cyan"><div class="stat-icon">👨‍🎓</div><div class="stat-info"><h3>${myStudentIds.length}</h3><p>${t('totalStudents')}</p></div></div>
       <div class="stat-card gradient-green"><div class="stat-icon">✅</div><div class="stat-info"><h3>${presentCount}/${todayAtt.length || myStudentIds.length}</h3><p>${t('todayAttendance')}</p></div></div>
     </div>
+    
     <div class="grid-2">
+      <div class="card glass-card">
+        <h3 class="card-title">${t('todaySchedule')}</h3>
+        <div class="recent-list">
+          ${dailySchedule.map(s => `
+            <div class="recent-item">
+              <span class="recent-icon">⏰</span>
+              <div>
+                <strong>${s.subject}</strong>
+                <p class="text-muted text-sm">${s.startTime || ''} - ${s.endTime || ''} | ${state.classes.find(c => c.id === s.classId)?.name || ''}</p>
+              </div>
+            </div>
+          `).join('') || `<p class="text-muted text-center">${t('noData')}</p>`}
+        </div>
+      </div>
       <div class="card glass-card">
         <h3 class="card-title">${state.lang === 'ar' ? 'إجراءات سريعة' : 'Quick Actions'}</h3>
         <div class="quick-actions">
           <a href="#attendance" class="quick-action-btn"><span>📋</span><span>${state.lang === 'ar' ? 'تسجيل حضور' : 'Take Attendance'}</span></a>
           <a href="#grades" class="quick-action-btn"><span>📝</span><span>${state.lang === 'ar' ? 'إدخال درجات' : 'Enter Grades'}</span></a>
-          <a href="#homework" class="quick-action-btn"><span>📚</span><span>${state.lang === 'ar' ? 'إضافة واجب' : 'Add Homework'}</span></a>
+          <a href="#" id="bulk-grading-btn" class="quick-action-btn"><span>📊</span><span>${t('bulkGrading')}</span></a>
           <a href="#messages" class="quick-action-btn"><span>✉️</span><span>${state.lang === 'ar' ? 'إرسال رسالة' : 'Send Message'}</span></a>
-        </div>
-      </div>
-      <div class="card glass-card">
-        <h3 class="card-title">${state.lang === 'ar' ? 'فصولي' : 'My Classes'}</h3>
-        <div class="recent-list">
-          ${myClasses.map(c => `<div class="recent-item"><span class="recent-icon">🏫</span><div><strong>${c.name}</strong><p class="text-muted text-sm">${(c.studentIds || []).length} ${t('students')}</p></div></div>`).join('') || `<p class="text-muted text-center">${t('noData')}</p>`}
         </div>
       </div>
     </div>
@@ -120,7 +127,14 @@ function renderTeacherDash() {
 }
 
 function renderParentDash() {
-  const myStudents = state.students.filter(s => state.profile?.studentIds?.includes(s.id) || s.parentId === state.profile?.uid);
+  const parentId = state.profile?.uid;
+  const myStudents = state.students.filter(s => state.profile?.studentIds?.includes(s.id) || s.parentId === parentId);
+  const childrenIds = myStudents.map(s => s.id);
+
+  // Quick aggregation
+  const unpaidFees = state.fees.filter(f => childrenIds.includes(f.studentId) && f.status === 'unpaid');
+  const totalBalance = unpaidFees.reduce((sum, f) => sum + (Number(f.amount) || 0), 0);
+  
   return `
   <div class="page-content animate-in">
     <div class="page-header">
@@ -128,17 +142,39 @@ function renderParentDash() {
       <p class="text-muted">${state.lang === 'ar' ? 'مرحباً ' : 'Welcome, '}${state.profile?.name}</p>
     </div>
     <div class="stats-grid grid-3">
-      <div class="stat-card gradient-purple"><div class="stat-icon">👨‍👩‍👧</div><div class="stat-info"><h3>${myStudents.length}</h3><p>${t('myChildren')}</p></div></div>
-      <div class="stat-card gradient-cyan"><div class="stat-icon">📢</div><div class="stat-info"><h3>${state.announcements.length}</h3><p>${t('announcements')}</p></div></div>
-      <div class="stat-card gradient-green"><div class="stat-icon">✉️</div><div class="stat-info"><h3>${state.messages.filter(m => m.to === state.profile?.uid && !m.read).length}</h3><p>${state.lang === 'ar' ? 'رسائل جديدة' : 'New Messages'}</p></div></div>
+      <div class="stat-card gradient-purple">
+        <div class="stat-icon">💰</div>
+        <div class="stat-info"><h3>${formatCurrency(totalBalance)}</h3><p>${t('balanceDue')}</p></div>
+      </div>
+      <div class="stat-card gradient-cyan">
+        <div class="stat-icon">👨‍👩‍👧</div>
+        <div class="stat-info"><h3>${myStudents.length}</h3><p>${t('myChildren')}</p></div>
+      </div>
+      <div class="stat-card gradient-green">
+        <div class="stat-icon">🔔</div>
+        <div class="stat-info"><h3>${state.notificationLogs.filter(n => n.recipientId === parentId && n.status === 'pending').length}</h3><p>${state.lang === 'ar' ? 'تنبيهات جديدة' : 'New Alerts'}</p></div>
+      </div>
     </div>
-    <div class="card glass-card">
-      <h3 class="card-title">${t('myChildren')}</h3>
-      <div class="children-grid">
-        ${myStudents.map(s => {
-          const cls = state.classes.find(c => c.id === s.classId);
-          return `<div class="child-card glass-card"><div class="avatar avatar-lg gradient-purple">${s.name?.[0] || '?'}</div><h4>${s.name}</h4><p class="text-muted">${cls?.name || ''}</p><div class="child-actions"><a href="#grades" class="btn btn-sm btn-outline">📝 ${t('grades')}</a><a href="#attendance" class="btn btn-sm btn-outline">📋 ${t('attendance')}</a></div></div>`;
-        }).join('') || `<p class="text-muted text-center">${t('noData')}</p>`}
+    <div class="grid-2">
+      <div class="card glass-card">
+        <h3 class="card-title">${t('myChildren')}</h3>
+        <div class="children-grid">
+          ${myStudents.map(s => {
+            const cls = state.classes.find(c => c.id === s.classId);
+            return `<div class="child-card glass-card"><div class="avatar avatar-md gradient-purple">${s.name?.[0] || '?'}</div><h4>${s.name}</h4><p class="text-muted">${cls?.name || ''}</p><div class="child-actions"><a href="#grades" class="btn btn-sm btn-outline">📝</a><a href="#attendance" class="btn btn-sm btn-outline">📋</a></div></div>`;
+          }).join('') || `<p class="text-muted text-center">${t('noData')}</p>`}
+        </div>
+      </div>
+      <div class="card glass-card">
+        <h3 class="card-title">${t('notificationHistory')}</h3>
+        <div class="recent-list">
+          ${state.notificationLogs.filter(n => n.recipientId === parentId).slice(0, 5).map(n => `
+            <div class="recent-item">
+              <span class="recent-icon">🔔</span>
+              <div><strong>${n.title}</strong><p class="text-muted text-sm">${n.message}</p></div>
+            </div>
+          `).join('') || `<p class="text-muted text-center">${t('noData')}</p>`}
+        </div>
       </div>
     </div>
   </div>`;

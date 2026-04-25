@@ -137,6 +137,7 @@ function startListeners() {
     { name: 'borrowing_records', key: 'borrowingRecords' },
     { name: 'rooms', key: 'rooms' },
     { name: 'bed_allocations', key: 'bedAllocations' },
+    { name: 'notification_logs', key: 'notificationLogs' },
   ];
 
   collections.forEach(({ name, key }) => {
