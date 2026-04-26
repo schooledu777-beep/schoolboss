@@ -97,6 +97,7 @@ function renderApp() {
     </div>`;
 
   attachLayoutEvents(renderApp);
+  attachStudentProfileEvents(); // Ensure profile tab switching works
   if (typeof page.events === 'function') {
     if (basePath === 'settings') page.events(renderApp);
     else page.events();

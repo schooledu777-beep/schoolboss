@@ -2,6 +2,7 @@ import { state, t } from '../state.js';
 import { db, collection, addDoc, updateDoc, deleteDoc, doc, setDoc, serverTimestamp } from '../firebase-config.js';
 import { adminCreateUser } from '../auth.js';
 import { showModal, closeModal, showConfirm, showToast, escapeHTML } from '../ui.js';
+import { getStudentDashboardHTML } from './studentProfile.js';
 
 export function renderStudents() {
   const students = state.students;
@@ -29,8 +30,8 @@ export function renderStudents() {
         <tbody>
           ${students.map((s, i) => {
             const cls = state.classes.find(c => c.id === s.classId);
-            return `<tr>
-              <td>${i + 1}</td><td><div class="user-cell"><div class="avatar avatar-xs gradient-purple">${(s.name || '?')[0]}</div><a href="#student-profile?id=${s.id}" class="student-link" style="color:var(--primary-light); font-weight:600;">${escapeHTML(s.name || '')}</a></div></td>
+            return `<tr class="clickable-row" data-id="${s.id}">
+              <td>${i + 1}</td><td><div class="user-cell"><div class="avatar avatar-xs gradient-purple">${(s.name || '?')[0]}</div><span class="student-link" style="color:var(--primary-light); font-weight:600;">${escapeHTML(s.name || '')}</span></div></td>
               <td>${cls?.name || '—'}</td><td>${s.gender === 'male' ? '👦' : '👧'}</td><td>${s.email || '—'}</td>
               <td><button class="btn btn-sm btn-outline edit-student" data-id="${s.id}">✏️</button> <button class="btn btn-sm btn-danger delete-student" data-id="${s.id}">🗑️</button></td>
             </tr>`;
@@ -41,8 +42,29 @@ export function renderStudents() {
   </div>`;
 }
 
+export function showStudentCardModal(studentId) {
+  const student = state.students.find(s => s.id === studentId);
+  if (!student) return;
+  
+  showModal(
+    state.lang === 'ar' ? 'بطاقة الطالب' : 'Student Card',
+    getStudentDashboardHTML(studentId),
+    { wide: true }
+  );
+}
+
 export function attachStudentEvents() {
   document.getElementById('add-student-btn')?.addEventListener('click', () => showStudentForm());
+  
+  // Click row to show student card
+  document.querySelectorAll('.clickable-row').forEach(row => {
+    row.addEventListener('click', (e) => {
+      // Don't trigger if clicking action buttons
+      if (e.target.closest('.edit-student') || e.target.closest('.delete-student')) return;
+      showStudentCardModal(row.dataset.id);
+    });
+  });
+
   document.querySelectorAll('.edit-student').forEach(btn => btn.addEventListener('click', () => {
     const student = state.students.find(s => s.id === btn.dataset.id);
     if (student) showStudentForm(student);
@@ -70,8 +92,28 @@ export function attachStudentEvents() {
     if (tbody) {
       tbody.innerHTML = filtered.map((s, i) => {
         const cls = state.classes.find(c => c.id === s.classId);
-        return `<tr><td>${i+1}</td><td><div class="user-cell"><div class="avatar avatar-xs gradient-purple">${(s.name || '?')[0]}</div><a href="#student-profile?id=${s.id}" class="student-link" style="color:var(--primary-light); font-weight:600;">${escapeHTML(s.name||'')}</a></div></td><td>${cls?.name||'—'}</td><td>${s.gender==='male'?'👦':'👧'}</td><td>${s.email||'—'}</td><td><button class="btn btn-sm btn-outline edit-student" data-id="${s.id}">✏️</button> <button class="btn btn-sm btn-danger delete-student" data-id="${s.id}">🗑️</button></td></tr>`;
+        return `<tr class="clickable-row" data-id="${s.id}"><td>${i+1}</td><td><div class="user-cell"><div class="avatar avatar-xs gradient-purple">${(s.name || '?')[0]}</div><span class="student-link" style="color:var(--primary-light); font-weight:600;">${escapeHTML(s.name||'')}</span></div></td><td>${cls?.name||'—'}</td><td>${s.gender==='male'?'👦':'👧'}</td><td>${s.email||'—'}</td><td><button class="btn btn-sm btn-outline edit-student" data-id="${s.id}">✏️</button> <button class="btn btn-sm btn-danger delete-student" data-id="${s.id}">🗑️</button></td></tr>`;
       }).join('') || `<tr><td colspan="6" class="text-center text-muted">${t('noData')}</td></tr>`;
+      
+      // Re-attach events for the new rows
+      tbody.querySelectorAll('.clickable-row').forEach(row => {
+        row.addEventListener('click', (e) => {
+          if (e.target.closest('.edit-student') || e.target.closest('.delete-student')) return;
+          showStudentCardModal(row.dataset.id);
+        });
+      });
+      tbody.querySelectorAll('.edit-student').forEach(btn => btn.addEventListener('click', () => {
+        const student = state.students.find(s => s.id === btn.dataset.id);
+        if (student) showStudentForm(student);
+      }));
+      tbody.querySelectorAll('.delete-student').forEach(btn => btn.addEventListener('click', () => {
+        showConfirm(t('delete'), t('confirmDelete'), async () => {
+          try {
+            await deleteDoc(doc(db, 'students', btn.dataset.id));
+            showToast(t('deletedSuccess'), 'success');
+          } catch(e) { showToast(t('errorOccurred'), 'error'); }
+        });
+      }));
     }
   });
 }

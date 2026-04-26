@@ -379,3 +379,50 @@ input:checked + .slider:before { transform: translateX(20px); }
     justify-content: space-between;
     align-items: center;
 }
+/* ====== Clickable Rows ====== */
+.clickable-row { cursor: pointer; transition: background 0.2s; }
+.clickable-row:hover { background: rgba(99, 102, 241, 0.05) !important; }
+.clickable-row td { position: relative; }
+
+/* ====== Student Profile Modal ====== */
+.student-profile-modal { display: flex; flex-direction: column; gap: 1.5rem; color: var(--text); }
+.sp-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
+.sp-user-info { display: flex; align-items: center; gap: 1rem; }
+.sp-user-details h3 { font-size: 1.4rem; font-weight: 800; margin: 0; }
+.sp-user-details p { font-size: 0.85rem; color: var(--text2); margin: 0.2rem 0 0; }
+.sp-status-badge { background: rgba(99, 102, 241, 0.1); color: var(--primary-light); padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
+
+.sp-layout { display: grid; grid-template-columns: 200px 1fr; gap: 1.5rem; min-height: 400px; }
+.sp-sidebar { display: flex; flex-direction: column; gap: 0.5rem; border-left: 1px solid var(--border); padding-left: 1rem; }
+[dir="ltr"] .sp-sidebar { border-left: none; border-right: 1px solid var(--border); padding-left: 0; padding-right: 1rem; }
+
+.sp-tab-btn { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; border-radius: var(--radius-sm); border: none; background: transparent; color: var(--text2); font-family: var(--font); font-size: 0.9rem; font-weight: 500; cursor: pointer; transition: all 0.2s; text-align: start; width: 100%; }
+.sp-tab-btn:hover { background: var(--surface); color: var(--text); }
+.sp-tab-btn.active { background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(6, 182, 212, 0.1)); color: var(--primary-light); font-weight: 700; }
+
+.sp-main-content { flex: 1; overflow-y: auto; padding-right: 0.5rem; }
+
+/* Dashboard Widgets */
+.sp-widgets-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+.sp-widget { padding: 1.25rem; border-radius: var(--radius); position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; min-height: 120px; }
+.sp-widget-icon { font-size: 1.2rem; margin-bottom: 0.5rem; opacity: 0.8; }
+.sp-widget-title { font-size: 0.8rem; color: rgba(255, 255, 255, 0.8); margin-bottom: 0.25rem; }
+.sp-widget-value { font-size: 1.5rem; font-weight: 800; }
+.sp-widget-footer { font-size: 0.75rem; opacity: 0.7; margin-top: auto; }
+
+.widget-blue { background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff; }
+.widget-dark { background: var(--bg2); border: 1px solid var(--border); color: var(--text); }
+
+.sp-section-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; }
+.sp-section-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; color: var(--text2); }
+
+.sp-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.sp-info-item { display: flex; align-items: center; gap: 0.75rem; }
+.sp-info-label { font-size: 0.75rem; color: var(--text3); display: block; }
+.sp-info-value { font-size: 0.9rem; font-weight: 600; }
+
+@media (max-width: 768px) {
+  .sp-layout { grid-template-columns: 1fr; }
+  .sp-sidebar { flex-direction: row; overflow-x: auto; border-left: none; border-bottom: 1px solid var(--border); padding-left: 0; padding-bottom: 1rem; }
+  .sp-tab-btn { white-space: nowrap; width: auto; }
+}

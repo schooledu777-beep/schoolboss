@@ -19,10 +19,16 @@
     "public": ".",
     "ignore": [
       "firebase.json",
+      "firestore.rules",
+      "firestore.indexes.json",
       "**/.*",
       "**/node_modules/**",
       "**/*.bat",
-      "**/*.exe"
+      "**/*.exe",
+      "**/*.txt",
+      "web-app/**",
+      "dataconnect/**",
+      "firebase/**"
     ]
   }
 }
