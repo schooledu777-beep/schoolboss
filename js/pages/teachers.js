@@ -42,9 +42,10 @@ async function showTeacherCard(teacherId) {
 }
 
 
-function showTeacherForm(teacher = null) {
+export function showTeacherForm(teacher = null) {
   const isEdit = !!teacher;
   let selectedSubjects = teacher?.subjects || [];
+  let selectedClasses = isEdit ? state.classes.filter(c => c.teacherId === teacher.id).map(c => c.id) : [];
 
   const updateSubjectTags = () => {
     const container = document.getElementById('selected-subjects-tags');
@@ -65,11 +66,35 @@ function showTeacherForm(teacher = null) {
     });
   };
 
+  const updateClassTags = () => {
+    const container = document.getElementById('selected-classes-tags');
+    if (!container) return;
+    container.innerHTML = selectedClasses.map(cid => {
+      const cls = state.classes.find(c => c.id === cid);
+      return `
+        <div class="tag-chip animate-in gradient-purple" style="color: white;">
+          <span>${cls?.name || cid}</span>
+          <span class="tag-remove" data-val="${cid}">&times;</span>
+        </div>
+      `;
+    }).join('');
+    
+    container.querySelectorAll('.tag-remove').forEach(btn => {
+      btn.onclick = () => {
+        selectedClasses = selectedClasses.filter(v => v !== btn.dataset.val);
+        updateClassTags();
+      };
+    });
+  };
+
   showModal(isEdit ? (state.lang==='ar'?'تعديل معلم':'Edit Teacher') : (state.lang==='ar'?'إضافة معلم':'Add Teacher'), `
     <form id="teacher-form" class="form-grid">
       <div class="form-group"><label>${t('fullName')}</label><input type="text" id="tf-name" class="form-input" value="${teacher?.name||''}" required></div>
       <div class="form-group"><label>${t('email')}</label><input type="email" id="tf-email" class="form-input" value="${teacher?.email||''}" required></div>
-      ${!isEdit ? `<div class="form-group"><label>${state.lang==='ar'?'كلمة مور':'Password'}</label><input type="text" id="tf-password" class="form-input" value="123456" required></div>` : ''}
+      ${!isEdit ? `<div class="form-group"><label>${state.lang==='ar'?'كلمة المرور':'Password'}</label><input type="text" id="tf-password" class="form-input" value="123456" required></div>` : ''}
+      <div class="form-group"><label>${state.lang==='ar'?'الهاتف':'Phone'}</label><input type="tel" id="tf-phone" class="form-input" value="${teacher?.phone||''}"></div>
+      <div class="form-group"><label>${state.lang==='ar'?'المؤهل العلمي':'Qualification'}</label><input type="text" id="tf-qualification" class="form-input" value="${teacher?.qualification||''}" placeholder="${state.lang==='ar'?'مثلاً: بكالوريوس رياضيات':'e.g. BS Mathematics'}"></div>
+      <div class="form-group"><label>${state.lang==='ar'?'الراتب الأساسي':'Base Salary'}</label><input type="number" id="tf-salary" class="form-input" value="${teacher?.baseSalary||''}"></div>
       
       <div class="form-group full-width">
         <label>${state.lang==='ar'?'المواد الدراسية':'Subjects'}</label>
@@ -82,13 +107,23 @@ function showTeacherForm(teacher = null) {
         </div>
       </div>
 
-      <div class="form-group"><label>${state.lang==='ar'?'الهاتف':'Phone'}</label><input type="tel" id="tf-phone" class="form-input" value="${teacher?.phone||''}"></div>
-      <div class="form-group"><label>${state.lang==='ar'?'الراتب الأساسي':'Base Salary'}</label><input type="number" id="tf-salary" class="form-input" value="${teacher?.baseSalary||''}"></div>
+      <div class="form-group full-width">
+        <label>${state.lang==='ar'?'الصفوف المسندة':'Assigned Classes'}</label>
+        <div class="multi-select-container">
+          <div id="selected-classes-tags" class="multi-select-tags"></div>
+          <select id="tf-classes-select" class="form-select">
+            <option value="">${state.lang==='ar'?'اختر صفاً لإسناده...':'Select a class to assign...'}</option>
+            ${state.classes.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+
       <div class="form-actions"><button type="button" class="btn btn-outline" onclick="document.getElementById('modal-close-x').click()">${t('cancel')}</button><button type="submit" class="btn btn-primary">${t('save')}</button></div>
     </form>`);
 
   // Initial tags
   updateSubjectTags();
+  updateClassTags();
 
   // Add subject listener
   document.getElementById('tf-subjects-select')?.addEventListener('change', (e) => {
@@ -97,7 +132,17 @@ function showTeacherForm(teacher = null) {
       selectedSubjects.push(val);
       updateSubjectTags();
     }
-    e.target.value = ''; // Reset select
+    e.target.value = '';
+  });
+
+  // Add class listener
+  document.getElementById('tf-classes-select')?.addEventListener('change', (e) => {
+    const val = e.target.value;
+    if (val && !selectedClasses.includes(val)) {
+      selectedClasses.push(val);
+      updateClassTags();
+    }
+    e.target.value = '';
   });
 
   document.getElementById('teacher-form')?.addEventListener('submit', async e => {
@@ -112,11 +157,13 @@ function showTeacherForm(teacher = null) {
       email: document.getElementById('tf-email').value.trim(), 
       subjects: selectedSubjects, 
       phone: document.getElementById('tf-phone').value.trim(), 
+      qualification: document.getElementById('tf-qualification').value.trim(),
       baseSalary: Number(document.getElementById('tf-salary').value) || 0,
       role: 'teacher', 
       updatedAt: new Date().toISOString() 
     };
     try { 
+      let teacherId = teacher?.id;
       if(isEdit) {
         await updateDoc(doc(db,'teachers',teacher.id),data); 
       } else { 
@@ -124,9 +171,26 @@ function showTeacherForm(teacher = null) {
         const password = document.getElementById('tf-password').value;
         const newUid = await adminCreateUser(data.email, password, 'teacher', data.name);
         await setDoc(doc(db, 'teachers', newUid), data);
+        teacherId = newUid;
       } 
+
+      // Sync Classes
+      const batchUpdates = [];
+      state.classes.forEach(cls => {
+        const isSelected = selectedClasses.includes(cls.id);
+        const currentlyHasMe = cls.teacherId === teacherId;
+
+        if (isSelected && !currentlyHasMe) {
+          batchUpdates.push(updateDoc(doc(db, 'classes', cls.id), { teacherId: teacherId }));
+        } else if (!isSelected && currentlyHasMe) {
+          batchUpdates.push(updateDoc(doc(db, 'classes', cls.id), { teacherId: "" }));
+        }
+      });
+      if (batchUpdates.length > 0) await Promise.all(batchUpdates);
+
       closeModal(); 
       showToast(t('savedSuccess'),'success'); 
+      if (window.onTeacherUpdated) window.onTeacherUpdated(teacherId);
     } catch(err) { 
       console.error(err);
       showToast(err.code || t('errorOccurred'),'error'); 

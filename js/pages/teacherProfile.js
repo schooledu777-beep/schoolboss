@@ -1,6 +1,7 @@
 import { state, t } from '../state.js';
 import { db, doc, getDoc } from '../firebase-config.js';
-import { escapeHTML, getInitials } from '../ui.js';
+import { escapeHTML, getInitials, showModal } from '../ui.js';
+import { showTeacherForm } from './teachers.js';
 
 export function getTeacherDashboardHTML(teacherId, activeTab = 'overview') {
     const teacher = state.teachers.find(t => t.id === teacherId);
@@ -152,7 +153,10 @@ export function getTeacherDashboardHTML(teacherId, activeTab = 'overview') {
                     <p>${(teacher.subjects || []).join(', ') || '—'} | ${state.lang === 'ar' ? 'الرقم:' : 'ID:'} ${teacherId.slice(0, 8).toUpperCase()}</p>
                 </div>
             </div>
-            <span class="sp-status-badge" style="background: rgba(6, 182, 212, 0.1); color: #0891b2;">${t('teacher')}</span>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                ${state.profile?.role === 'admin' ? `<button class="btn btn-sm btn-outline edit-profile-btn" data-id="${teacherId}" title="${state.lang==='ar'?'تعديل':'Edit'}">✏️</button>` : ''}
+                <span class="sp-status-badge" style="background: rgba(6, 182, 212, 0.1); color: #0891b2;">${t('teacher')}</span>
+            </div>
         </div>
 
         <div class="sp-layout">
@@ -221,4 +225,22 @@ export function attachTeacherProfileEvents() {
         const newContent = tempDiv.querySelector('#tp-tab-content').innerHTML;
         contentArea.innerHTML = newContent;
     });
+
+    // Edit Profile Button
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('.edit-profile-btn');
+        if (!btn) return;
+        const teacher = state.teachers.find(t => t.id === btn.dataset.id);
+        if (teacher) showTeacherForm(teacher);
+    });
+
+    // Refresh on update
+    window.onTeacherUpdated = (teacherId) => {
+        const activeBtn = document.querySelector('.sp-tab-btn.active');
+        const activeTab = activeBtn ? activeBtn.dataset.tab : 'overview';
+        const modalBody = document.querySelector('.student-profile-modal')?.parentElement;
+        if (modalBody) {
+            modalBody.innerHTML = getTeacherDashboardHTML(teacherId, activeTab);
+        }
+    };
 }

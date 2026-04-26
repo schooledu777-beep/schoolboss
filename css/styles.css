@@ -503,3 +503,63 @@ textarea.form-input{resize:vertical}
   color: var(--text3);
   margin: 0;
 }
+
+/* Multi-select and Tags */
+.multi-select-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 0.5rem;
+}
+
+.multi-select-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tag-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  background: var(--primary-light);
+  color: var(--primary);
+  border-radius: 20px;
+  font-size: 0.85rem;
+  animation: fadeIn 0.3s ease;
+}
+
+.tag-chip.gradient-purple {
+  background: var(--gradient-purple);
+  color: white;
+}
+
+.tag-remove {
+  cursor: pointer;
+  font-weight: bold;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.tag-remove:hover {
+  opacity: 1;
+}
+
+.edit-profile-btn {
+  padding: 0.4rem;
+  line-height: 1;
+  border-radius: 8px;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.edit-profile-btn:hover {
+  background: var(--primary-light);
+  border-color: var(--primary);
+}
