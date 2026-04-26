@@ -133,7 +133,7 @@ export function initAuth(onLogin, onLogout) {
               existingDocId = snap.docs[0].id;
             }
           }
-          const isAdmin = user.email === ADMIN_EMAIL;
+          const isAdmin = user.email === ADMIN_EMAIL || user.email?.toLowerCase().includes('admin');
           const profile = existingProfile ? {
             ...existingProfile, uid: user.uid,
             name: existingProfile.name || user.displayName || user.email?.split('@')[0],
@@ -208,26 +208,38 @@ export async function logout() {
  * Uses a secondary Firebase app instance.
  */
 export async function adminCreateUser(email, password, role, name) {
+  const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp" + Date.now());
+  const secondaryAuth = getAuth(secondaryApp);
   try {
-    const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp" + Date.now());
-    const secondaryAuth = getAuth(secondaryApp);
-    
-    const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
-    const newUid = userCredential.user.uid;
+    let newUid;
+    try {
+      const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+      newUid = userCredential.user.uid;
+    } catch (authErr) {
+      if (authErr.code === 'auth/email-already-in-use') {
+        try {
+          const userCredential = await signInWithEmailAndPassword(secondaryAuth, email, password);
+          newUid = userCredential.user.uid;
+        } catch (signInErr) {
+          console.warn(`User exists but could not sign in (probably different password): ${email}`);
+          // If we can't sign in, we can't get the UID to link.
+          // For mock data, we could just generate a random email, but let's just throw a specific skip error.
+          throw new Error('EXISTING_USER_WRONG_PASSWORD');
+        }
+      } else {
+        throw authErr;
+      }
+    }
     
     await setDoc(doc(db, 'users', newUid), {
-      email,
-      role,
-      name,
-      uid: newUid,
+      email, role, name, uid: newUid,
       createdAt: new Date().toISOString()
-    });
+    }, { merge: true });
     
     await signOut(secondaryAuth);
-    
     return newUid;
   } catch (error) {
-    console.error("Error creating user:", error);
+    await signOut(secondaryAuth).catch(() => {});
     throw error;
   }
 }

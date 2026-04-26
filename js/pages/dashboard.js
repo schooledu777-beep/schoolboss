@@ -229,124 +229,95 @@ function renderStudentDash() {
 export function attachDashboardEvents() {
   document.getElementById('btn-mock-data')?.addEventListener('click', async (e) => {
     e.preventDefault();
-    const msg = state.lang === 'ar' ? 'هل أنت متأكد من إضافة بيانات تجريبية شاملة لجميع الأقسام؟' : 'Add comprehensive mock data for all modules?';
-    if (confirm(msg)) {
-      try {
-        const btn = e.currentTarget;
-        const oldHtml = btn.innerHTML;
-        btn.innerHTML = '<span>⏳</span><span>جاري الإضافة...</span>';
-        btn.style.pointerEvents = 'none';
+    const isAr = state.lang === 'ar';
+    const msg = isAr ? 'هل أنت متأكد من إضافة بيانات تجريبية شاملة لجميع الأقسام؟' : 'Add comprehensive mock data for all modules?';
+    if (!confirm(msg)) return;
 
-        // 1. Add Teachers
-        const teachersData = [
-          { name: 'أحمد محمود', email: 'ahmad@school.com', subjects: ['رياضيات', 'علوم'], phone: '0501234567', role: 'teacher', baseSalary: 5000 },
-          { name: 'سارة خالد', email: 'sara@school.com', subjects: ['لغة عربية', 'تاريخ'], phone: '0501234568', role: 'teacher', baseSalary: 4500 }
-        ];
-        const teacherIds = [];
-        for (let t of teachersData) {
+    const btn = e.currentTarget;
+    const oldHtml = btn.innerHTML;
+    btn.innerHTML = `<span>⏳</span><span>${isAr ? 'جاري الإضافة...' : 'Adding...'}</span>`;
+    btn.style.pointerEvents = 'none';
+
+    try {
+      // 1. Add Teachers
+      const teachersData = [
+        { name: 'أحمد محمود', email: 'ahmad@school.com', subjects: ['رياضيات', 'علوم'], phone: '0501234567', role: 'teacher', baseSalary: 5000 },
+        { name: 'سارة خالد', email: 'sara@school.com', subjects: ['لغة عربية', 'تاريخ'], phone: '0501234568', role: 'teacher', baseSalary: 4500 }
+      ];
+      const teacherIds = [];
+      for (let t of teachersData) {
+        try {
           const uid = await adminCreateUser(t.email, '123456', 'teacher', t.name);
-          await setDoc(doc(db, 'teachers', uid), { ...t, createdAt: new Date().toISOString() });
+          await setDoc(doc(db, 'teachers', uid), { ...t, createdAt: new Date().toISOString() }, { merge: true });
           teacherIds.push(uid);
-        }
-
-        // 2. Add Parents
-        const parentsData = [
-          { name: 'خالد عبدالله', email: 'khaled@parent.com', phone: '0509876543', role: 'parent' },
-          { name: 'فاطمة علي', email: 'fatima@parent.com', phone: '0509876544', role: 'parent' }
-        ];
-        const parentIds = [];
-        for (let p of parentsData) {
-          const uid = await adminCreateUser(p.email, '123456', 'parent', p.name);
-          await setDoc(doc(db, 'parents', uid), { ...p, createdAt: new Date().toISOString() });
-          parentIds.push(uid);
-        }
-
-        // 3. Add Subjects
-        const subjectsData = ['رياضيات', 'لغة عربية', 'علوم', 'لغة إنجليزية', 'تاريخ'];
-        for (let s of subjectsData) {
-          await addDoc(collection(db, 'subjects'), { name: s, code: 'SUBJ-'+Math.floor(Math.random()*1000) });
-        }
-
-        // 4. Add Students
-        const studentsData = [
-          { name: 'عمر خالد', email: 'omar@student.com', parentId: parentIds[0], role: 'student' },
-          { name: 'محمد علي', email: 'mohammed@student.com', parentId: parentIds[1], role: 'student' }
-        ];
-        const studentIds = [];
-        for (let s of studentsData) {
-          const uid = await adminCreateUser(s.email, '123456', 'student', s.name);
-          await setDoc(doc(db, 'students', uid), { ...s, createdAt: new Date().toISOString() });
-          studentIds.push(uid);
-        }
-
-        // 5. Add Classes
-        const classesData = [
-          { name: 'الصف الأول - أ', grade: 'الصف الأول', teacherId: teacherIds[0] || '', studentIds: [studentIds[0], studentIds[1]] }
-        ];
-        const classIds = [];
-        for (let c of classesData) {
-          const docRef = await addDoc(collection(db, 'classes'), { ...c, createdAt: new Date().toISOString() });
-          classIds.push(docRef.id);
-        }
-
-        // 6. Add Schedules
-        const days = ['الاحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'];
-        for (let day of days) {
-          await addDoc(collection(db, 'schedules'), {
-            classId: classIds[0],
-            day: day,
-            period: 'الحصة الأولى',
-            subject: 'رياضيات',
-            teacherId: teacherIds[0] || '',
-            createdAt: new Date().toISOString()
-          });
-        }
-
-        // 7. Add Library Books
-        const booksData = [
-          { title: 'العبرات', author: 'المنفلوطي', category: 'أدب', isbn: '978-1', total: 5, available: 5 },
-          { title: 'مقدمة ابن خلدون', author: 'ابن خلدون', category: 'تاريخ', isbn: '978-2', total: 2, available: 2 }
-        ];
-        for (let b of booksData) await addDoc(collection(db, 'books'), { ...b, createdAt: new Date().toISOString() });
-
-        // 8. Add Hostel Data
-        const buildingRef = await addDoc(collection(db, 'buildings'), { name: 'مبنى أ', gender: 'male', createdAt: new Date().toISOString() });
-        await addDoc(collection(db, 'rooms'), { buildingId: buildingRef.id, roomNumber: '101', capacity: 4, gender: 'male', bedAllocations: [], createdAt: new Date().toISOString() });
-
-        // 9. Add Financial Data
-        for (let sid of studentIds) {
-          await addDoc(collection(db, 'fees'), { 
-            studentId: sid, 
-            amount: 5000, 
-            paidAmount: 1000, 
-            dueDate: new Date().toISOString().split('T')[0], 
-            status: 'partial',
-            createdAt: new Date().toISOString()
-          });
-        }
-
-        // 10. Add Announcement
-        await addDoc(collection(db, 'announcements'), {
-          title: 'ترحيب بالعام الدراسي الجديد',
-          body: 'نرحب بجميع الطلاب وأولياء الأمور والمعلمين في العام الدراسي الجديد.',
-          targetRole: '',
-          priority: 'high',
-          sender: 'الإدارة',
-          date: new Date().toISOString()
-        });
-
-        showToast(state.lang === 'ar' ? 'تمت إضافة البيانات التجريبية بنجاح لجميع الأقسام' : 'Comprehensive mock data added successfully', 'success');
-        btn.innerHTML = oldHtml;
-        btn.style.pointerEvents = 'auto';
-      } catch (err) {
-        console.error("Mock data error:", err);
-        showToast(t('errorOccurred'), 'error');
-        const btn = document.getElementById('btn-mock-data');
-        if (btn) {
-           btn.innerHTML = '🧪 ' + (state.lang === 'ar' ? 'بيانات تجريبية' : 'Mock Data');
-           btn.style.pointerEvents = 'auto';
-        }
+        } catch (err) { console.warn(`Skipping teacher ${t.email}:`, err); }
       }
+
+      // 2. Add Parents
+      const parentsData = [
+        { name: 'خالد عبدالله', email: 'khaled@parent.com', phone: '0509876543', role: 'parent' },
+        { name: 'فاطمة علي', email: 'fatima@parent.com', phone: '0509876544', role: 'parent' }
+      ];
+      const parentIds = [];
+      for (let p of parentsData) {
+        try {
+          const uid = await adminCreateUser(p.email, '123456', 'parent', p.name);
+          await setDoc(doc(db, 'parents', uid), { ...p, createdAt: new Date().toISOString() }, { merge: true });
+          parentIds.push(uid);
+        } catch (err) { console.warn(`Skipping parent ${p.email}:`, err); }
+      }
+
+      // 3. Add Subjects
+      const subjectsData = ['رياضيات', 'لغة عربية', 'علوم', 'لغة إنجليزية', 'تاريخ'];
+      for (let s of subjectsData) {
+        try {
+          // Check if subject exists first to avoid duplicates
+          const q = query(collection(db, 'subjects'), where('name', '==', s));
+          const snap = await getDocs(q);
+          if (snap.empty) {
+            await addDoc(collection(db, 'subjects'), { name: s, code: 'SUBJ-'+Math.floor(Math.random()*1000) });
+          }
+        } catch (err) { console.warn(`Skipping subject ${s}:`, err); }
+      }
+
+      // 4. Add Students
+      const studentsData = [
+        { name: 'عمر خالد', email: 'omar@student.com', parentId: parentIds[0] || 'mock-parent-1', role: 'student' },
+        { name: 'محمد علي', email: 'mohammed@student.com', parentId: parentIds[1] || 'mock-parent-2', role: 'student' }
+      ];
+      const studentIds = [];
+      for (let s of studentsData) {
+        try {
+          const uid = await adminCreateUser(s.email, '123456', 'student', s.name);
+          await setDoc(doc(db, 'students', uid), { ...s, createdAt: new Date().toISOString() }, { merge: true });
+          studentIds.push(uid);
+        } catch (err) { console.warn(`Skipping student ${s.email}:`, err); }
+      }
+
+      // 5. Add Classes (only if we have teachers and students)
+      if (teacherIds.length > 0 && studentIds.length > 0) {
+        try {
+          await addDoc(collection(db, 'classes'), { 
+            name: 'الصف الأول - أ', 
+            grade: 'الصف الأول', 
+            teacherId: teacherIds[0], 
+            studentIds: studentIds,
+            createdAt: new Date().toISOString() 
+          });
+        } catch (err) { console.warn("Skipping class creation:", err); }
+      }
+
+      showToast(isAr ? 'تمت إضافة البيانات التجريبية بنجاح' : 'Mock data added successfully', 'success');
+      btn.innerHTML = oldHtml;
+      btn.style.pointerEvents = 'auto';
+      // Reload to see new data
+      setTimeout(() => window.location.reload(), 1500);
+
+    } catch (err) {
+      console.error("Mock data fatal error:", err);
+      showToast(t('errorOccurred'), 'error');
+      btn.innerHTML = oldHtml;
+      btn.style.pointerEvents = 'auto';
     }
   });
 
