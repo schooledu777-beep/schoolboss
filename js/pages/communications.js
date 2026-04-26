@@ -1,5 +1,5 @@
 import { state, t } from '../state.js';
-import { db, collection, addDoc, deleteDoc, doc, setDoc } from '../firebase-config.js';
+import { db, collection, addDoc, deleteDoc, doc, setDoc, writeBatch, getDocs } from '../firebase-config.js';
 import { showModal, closeModal, showConfirm, showToast, formatDate } from '../ui.js';
 
 // ========================= ANNOUNCEMENTS =========================
@@ -154,11 +154,55 @@ export function renderSettings() {
         <div class="setting-row"><span>${t('email')}</span><span class="text-muted">${state.profile?.email}</span></div>
         <div class="setting-row"><span>${state.lang==='ar'?'الدور':'Role'}</span><span class="badge badge-success">${t(state.profile?.role)}</span></div>
       </div>
+      <div class="card glass-card border-danger">
+        <h3 class="card-title text-danger">${state.lang==='ar'?'صيانة النظام':'System Maintenance'}</h3>
+        <p class="text-muted" style="margin-bottom:1rem">${state.lang==='ar'?'مسح كافة البيانات المسجلة (الطلاب، المعلمين، الحصص، إلخ) للبدء من جديد.':'Clear all registered data (students, teachers, classes, etc.) to start fresh.'}</p>
+        <button class="btn btn-danger full-width" id="clear-data-btn">⚠️ ${state.lang==='ar'?'مسح كافة البيانات':'Clear All Data'}</button>
+      </div>
     </div>
   </div>`;
 }
 
 export function attachSettingsEvents(renderApp) {
+  document.getElementById('clear-data-btn')?.addEventListener('click', async () => {
+    const isAr = state.lang === 'ar';
+    showConfirm(
+      isAr ? 'مسح كافة البيانات' : 'Clear All Data',
+      isAr ? 'سيتم حذف كافة الطلاب والمعلمين والصفوف والبيانات الأخرى نهائياً. هل أنت متأكد؟ (سيتم استثناء حسابك الحالي)' : 'All students, teachers, classes, and other data will be permanently deleted. Are you sure? (Your account will be preserved)',
+      async () => {
+        try {
+          showToast(isAr ? 'جاري مسح البيانات...' : 'Clearing data...', 'info');
+          const collectionsToClear = [
+            'students', 'teachers', 'parents', 'classes', 'subjects', 
+            'attendance', 'grades', 'schedules', 'fees', 'announcements', 
+            'messages', 'homework', 'rewards', 'transfers', 'academic_alerts', 
+            'salary_slips', 'leaves'
+          ];
+          
+          for (const collName of collectionsToClear) {
+            const snapshot = await getDocs(collection(db, collName));
+            if (snapshot.empty) continue;
+            
+            const batch = writeBatch(db);
+            snapshot.docs.forEach(d => {
+              if (collName === 'teachers' || collName === 'parents') {
+                if (d.data().email === state.profile?.email) return;
+              }
+              batch.delete(d.ref);
+            });
+            await batch.commit();
+          }
+          
+          showToast(isAr ? 'تم مسح البيانات بنجاح' : 'Data cleared successfully', 'success');
+          setTimeout(() => window.location.reload(), 1500);
+        } catch (err) {
+          console.error(err);
+          showToast(isAr ? 'حدث خطأ أثناء المسح' : 'Error clearing data', 'error');
+        }
+      }
+    );
+  });
+
   document.querySelectorAll('.module-toggle').forEach(toggle => {
     toggle.addEventListener('change', async (e) => {
       const modKey = e.target.dataset.module;
