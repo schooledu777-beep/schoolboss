@@ -7,7 +7,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyDGucpjrJ58MXNr947a6wqvVxxxo_5TFKg",
   authDomain: "edumanage-sms-2026.firebaseapp.com",
   projectId: "edumanage-sms-2026",
-  storageBucket: "edumanage-sms-2026.firebasestorage.app",
+  storageBucket: "edumanage-sms-2026.appspot.com",
   messagingSenderId: "317801771239",
   appId: "1:317801771239:web:872909d14c8ea564053242"
 };
