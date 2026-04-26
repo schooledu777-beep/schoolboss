@@ -22,6 +22,7 @@ import { renderHR, attachHREvents } from './pages/hr.js';
 import { renderLibrary, attachLibraryEvents } from './pages/library.js';
 import { renderHostel, attachHostelEvents } from './pages/hostel.js';
 import { renderStudentProfile, attachStudentProfileEvents } from './pages/studentProfile.js';
+import { attachTeacherProfileEvents } from './pages/teacherProfile.js';
 import { academicService } from './services/academicService.js';
 import { libraryService } from './services/libraryService.js';
 
@@ -97,7 +98,8 @@ function renderApp() {
     </div>`;
 
   attachLayoutEvents(renderApp);
-  attachStudentProfileEvents(); // Ensure profile tab switching works
+  attachStudentProfileEvents(); // Ensure student profile tab switching works
+  attachTeacherProfileEvents(); // Ensure teacher profile tab switching works
   if (typeof page.events === 'function') {
     if (basePath === 'settings') page.events(renderApp);
     else page.events();

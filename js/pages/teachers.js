@@ -10,13 +10,22 @@ export function renderTeachers() {
     <div class="filter-bar glass-card"><input type="text" id="teacher-search" class="form-input" placeholder="🔍 ${t('search')}..."></div>
     <div class="table-responsive glass-card">
       <table class="data-table" id="teachers-table"><thead><tr><th>#</th><th>${t('fullName')}</th><th>${state.lang==='ar'?'المواد':'Subjects'}</th><th>${t('email')}</th><th>${state.lang==='ar'?'الهاتف':'Phone'}</th><th>${state.lang==='ar'?'إجراءات':'Actions'}</th></tr></thead>
-      <tbody>${state.teachers.map((tc, i) => `<tr><td>${i+1}</td><td><div class="user-cell"><div class="avatar avatar-xs gradient-cyan">${(tc.name||'?')[0]}</div>${escapeHTML(tc.name||'')}</div></td><td>${(tc.subjects||[]).join(', ')||'—'}</td><td>${tc.email||'—'}</td><td>${tc.phone||'—'}</td><td><button class="btn btn-sm btn-outline edit-teacher" data-id="${tc.id}">✏️</button> <button class="btn btn-sm btn-danger delete-teacher" data-id="${tc.id}">🗑️</button></td></tr>`).join('')||`<tr><td colspan="6" class="text-center text-muted">${t('noData')}</td></tr>`}</tbody></table>
+      <tbody>${state.teachers.map((tc, i) => `<tr class="clickable-row teacher-row" data-id="${tc.id}"><td>${i+1}</td><td><div class="user-cell"><div class="avatar avatar-xs gradient-cyan">${(tc.name||'?')[0]}</div>${escapeHTML(tc.name||'')}</div></td><td>${(tc.subjects||[]).join(', ')||'—'}</td><td>${tc.email||'—'}</td><td>${tc.phone||'—'}</td><td><button class="btn btn-sm btn-outline edit-teacher" data-id="${tc.id}">✏️</button> <button class="btn btn-sm btn-danger delete-teacher" data-id="${tc.id}">🗑️</button></td></tr>`).join('')||`<tr><td colspan="6" class="text-center text-muted">${t('noData')}</td></tr>`}</tbody></table>
     </div>
   </div>`;
 }
 
 export function attachTeacherEvents() {
   document.getElementById('add-teacher-btn')?.addEventListener('click', () => showTeacherForm());
+  
+  // Row Click for Profile
+  document.querySelectorAll('.teacher-row').forEach(row => {
+    row.addEventListener('click', (e) => {
+      if (e.target.closest('button')) return; // Don't trigger if clicking edit/delete buttons
+      showTeacherCard(row.dataset.id);
+    });
+  });
+
   document.querySelectorAll('.edit-teacher').forEach(b => b.addEventListener('click', () => { const tc = state.teachers.find(x => x.id === b.dataset.id); if(tc) showTeacherForm(tc); }));
   document.querySelectorAll('.delete-teacher').forEach(b => b.addEventListener('click', () => {
     showConfirm(t('delete'), t('confirmDelete'), async () => { try { await deleteDoc(doc(db,'teachers',b.dataset.id)); showToast(t('deletedSuccess'),'success'); } catch(e) { showToast(t('errorOccurred'),'error'); } });
@@ -25,6 +34,11 @@ export function attachTeacherEvents() {
     const v = e.target.value.toLowerCase();
     document.querySelectorAll('#teachers-table tbody tr').forEach(r => r.style.display = r.textContent.toLowerCase().includes(v) ? '' : 'none');
   });
+}
+
+async function showTeacherCard(teacherId) {
+    const { getTeacherDashboardHTML } = await import('./teacherProfile.js');
+    showModal(state.lang === 'ar' ? 'بطاقة المعلم' : 'Teacher Card', getTeacherDashboardHTML(teacherId), 'large');
 }
 
 function showTeacherForm(teacher = null) {
