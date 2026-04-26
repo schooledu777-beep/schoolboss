@@ -1,8 +1,9 @@
 import { state, t } from '../state.js';
 import { db, collection, addDoc, updateDoc, deleteDoc, doc, setDoc, serverTimestamp } from '../firebase-config.js';
 import { adminCreateUser } from '../auth.js';
-import { showModal, closeModal, showConfirm, showToast, escapeHTML } from '../ui.js';
+import { showModal, closeModal, showConfirm, showToast, escapeHTML, renderAvatar } from '../ui.js';
 import { getStudentDashboardHTML } from './studentProfile.js';
+import { uploadFile } from '../services/uploadService.js';
 
 export function renderStudents() {
   const students = state.students;
@@ -31,7 +32,7 @@ export function renderStudents() {
           ${students.map((s, i) => {
             const cls = state.classes.find(c => c.id === s.classId);
             return `<tr class="clickable-row" data-id="${s.id}">
-              <td>${i + 1}</td><td><div class="user-cell"><div class="avatar avatar-xs gradient-purple">${(s.name || '?')[0]}</div><span class="student-link" style="color:var(--primary-light); font-weight:600;">${escapeHTML(s.name || '')}</span></div></td>
+              <td>${i + 1}</td><td><div class="user-cell">${renderAvatar(s.name, s.photoURL, 'avatar-xs')}<span class="student-link" style="color:var(--primary-light); font-weight:600;">${escapeHTML(s.name || '')}</span></div></td>
               <td>${cls?.name || '—'}</td><td>${s.gender === 'male' ? '👦' : '👧'}</td><td>${s.email || '—'}</td>
               <td>
                 <button class="btn btn-sm btn-outline transfer-student" data-id="${s.id}" title="${state.lang==='ar'?'نقل الطالب':'Transfer Student'}">🔄</button>
@@ -102,7 +103,7 @@ export function attachStudentEvents() {
     if (tbody) {
       tbody.innerHTML = filtered.map((s, i) => {
         const cls = state.classes.find(c => c.id === s.classId);
-        return `<tr class="clickable-row" data-id="${s.id}"><td>${i+1}</td><td><div class="user-cell"><div class="avatar avatar-xs gradient-purple">${(s.name || '?')[0]}</div><span class="student-link" style="color:var(--primary-light); font-weight:600;">${escapeHTML(s.name||'')}</span></div></td><td>${cls?.name||'—'}</td><td>${s.gender==='male'?'👦':'👧'}</td><td>${s.email||'—'}</td><td><button class="btn btn-sm btn-outline transfer-student" data-id="${s.id}" title="${state.lang==='ar'?'نقل الطالب':'Transfer Student'}">🔄</button> <button class="btn btn-sm btn-outline edit-student" data-id="${s.id}">✏️</button> <button class="btn btn-sm btn-danger delete-student" data-id="${s.id}">🗑️</button></td></tr>`;
+        return `<tr class="clickable-row" data-id="${s.id}"><td>${i+1}</td><td><div class="user-cell">${renderAvatar(s.name, s.photoURL, 'avatar-xs')}<span class="student-link" style="color:var(--primary-light); font-weight:600;">${escapeHTML(s.name||'')}</span></div></td><td>${cls?.name||'—'}</td><td>${s.gender==='male'?'👦':'👧'}</td><td>${s.email||'—'}</td><td><button class="btn btn-sm btn-outline transfer-student" data-id="${s.id}" title="${state.lang==='ar'?'نقل الطالب':'Transfer Student'}">🔄</button> <button class="btn btn-sm btn-outline edit-student" data-id="${s.id}">✏️</button> <button class="btn btn-sm btn-danger delete-student" data-id="${s.id}">🗑️</button></td></tr>`;
       }).join('') || `<tr><td colspan="6" class="text-center text-muted">${t('noData')}</td></tr>`;
       
       // Re-attach events for the new rows
@@ -217,6 +218,7 @@ function showStudentForm(student = null) {
       </div>
       <div class="form-group"><label>${state.lang === 'ar' ? 'تاريخ الميلاد' : 'Date of Birth'}</label><input type="date" id="sf-dob" class="form-input" value="${student?.dob || ''}"></div>
       <div class="form-group"><label>${state.lang === 'ar' ? 'الهاتف' : 'Phone'}</label><input type="tel" id="sf-phone" class="form-input" value="${student?.phone || ''}"></div>
+      <div class="form-group full-width"><label>${state.lang === 'ar' ? 'الصورة الشخصية' : 'Profile Photo'}</label><input type="file" id="sf-photo" class="form-input" accept="image/*"></div>
       <div class="form-group full-width">
         <label>${state.lang === 'ar' ? 'ولي الأمر' : 'Parent'}</label>
         <select id="sf-parent-select" class="form-select">
@@ -287,6 +289,12 @@ function showStudentForm(student = null) {
         parentId: finalParentId,
         updatedAt: new Date().toISOString()
       };
+
+      const photoFile = document.getElementById('sf-photo').files[0];
+      if (photoFile) {
+        showToast(state.lang === 'ar' ? 'جاري رفع الصورة...' : 'Uploading photo...', 'info');
+        data.photoURL = await uploadFile(photoFile, 'students/photos');
+      }
 
       if (isEdit) {
         await updateDoc(doc(db, 'students', student.id), data);

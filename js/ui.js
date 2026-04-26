@@ -95,6 +95,16 @@ export function getInitials(name) {
   return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 }
 
+export function renderAvatar(name, photoURL, sizeClass = 'avatar-md') {
+  if (photoURL) {
+    return `<div class="avatar ${sizeClass}"><img src="${photoURL}" alt="${name}" style="width:100%; height:100%; object-fit:cover; border-radius:inherit;"></div>`;
+  }
+  const initials = getInitials(name);
+  const colors = ['gradient-purple', 'gradient-cyan', 'gradient-green', 'gradient-amber', 'gradient-red'];
+  const color = colors[name.length % colors.length];
+  return `<div class="avatar ${sizeClass} ${color}">${initials}</div>`;
+}
+
 export function debounce(fn, delay = 300) {
   let timer;
   return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), delay); };

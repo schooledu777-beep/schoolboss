@@ -1,6 +1,7 @@
 import { state, t } from '../state.js';
-import { db, doc, getDoc } from '../firebase-config.js';
-import { escapeHTML, getInitials, formatCurrency } from '../ui.js';
+import { db, doc, updateDoc } from '../firebase-config.js';
+import { escapeHTML, getInitials, formatCurrency, renderAvatar, showToast } from '../ui.js';
+import { uploadFile } from '../services/uploadService.js';
 
 export function renderStudentProfile() {
   const hash = window.location.hash.slice(1);
@@ -339,7 +340,11 @@ export function getStudentDashboardHTML(studentId, activeTab = 'overview') {
     <div class="student-profile-modal">
       <div class="sp-header">
         <div class="sp-user-info">
-          <div class="avatar avatar-lg gradient-purple">${getInitials(student.name)}</div>
+          <div class="profile-photo-wrapper clickable" data-id="${studentId}" title="${state.lang === 'ar' ? 'تغيير الصورة' : 'Change Photo'}">
+            ${renderAvatar(student.name, student.photoURL, 'avatar-lg')}
+            <div class="photo-overlay">📷</div>
+            <input type="file" id="student-photo-input" style="display:none;" accept="image/*">
+          </div>
           <div class="sp-user-details">
             <h3>${escapeHTML(student.name)}</h3>
             <p>${cls?.name || '—'} | ${state.lang === 'ar' ? 'الرقم:' : 'ID:'} ${student.id.substring(0, 8).toUpperCase()}</p>
@@ -394,6 +399,38 @@ export function attachStudentProfileEvents() {
             contentArea.innerHTML = newContent;
         }, 50);
       }
+    }
+  });
+
+  // Photo Upload Handler
+  document.addEventListener('click', (e) => {
+    const wrapper = e.target.closest('.profile-photo-wrapper');
+    if (wrapper && wrapper.querySelector('#student-photo-input')) {
+        document.getElementById('student-photo-input').click();
+    }
+  });
+
+  document.addEventListener('change', async (e) => {
+    if (e.target.id === 'student-photo-input' && e.target.files[0]) {
+        const file = e.target.files[0];
+        const studentId = e.target.closest('.profile-photo-wrapper').dataset.id;
+        try {
+            showToast(state.lang === 'ar' ? 'جاري رفع الصورة...' : 'Uploading photo...', 'info');
+            const url = await uploadFile(file, 'students/photos', `${studentId}_photo`);
+            await updateDoc(doc(db, 'students', studentId), { photoURL: url });
+            showToast(state.lang === 'ar' ? 'تم تحديث الصورة بنجاح' : 'Photo updated successfully', 'success');
+            
+            // Refresh modal content
+            const activeBtn = document.querySelector('.sp-tab-btn.active');
+            const activeTab = activeBtn ? activeBtn.dataset.tab : 'overview';
+            const modalBody = document.querySelector('.student-profile-modal')?.parentElement;
+            if (modalBody) {
+                modalBody.innerHTML = getStudentDashboardHTML(studentId, activeTab);
+            }
+        } catch (err) {
+            console.error(err);
+            showToast(t('errorOccurred'), 'error');
+        }
     }
   });
 }

@@ -265,37 +265,77 @@ textarea.form-input{resize:vertical}
   flex-direction: column;
   gap: 0.5rem;
   width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.5rem;
+  max-height: 200px;
+  overflow-y: auto;
 }
-.multi-select-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  min-height: 38px;
-  padding: 0.4rem;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-}
+
 .tag-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.2rem 0.6rem;
-  background: var(--primary);
-  color: #fff;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 600;
+    background: var(--primary);
+    color: white;
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
 }
-.tag-remove {
-  cursor: pointer;
-  font-size: 1.1rem;
-  line-height: 1;
-  opacity: 0.8;
-  transition: opacity 0.2s;
+
+.tag-chip .remove-tag {
+    cursor: pointer;
+    font-weight: bold;
+    opacity: 0.8;
 }
-.tag-remove:hover {
-  opacity: 1;
+
+.tag-chip .remove-tag:hover {
+    opacity: 1;
+}
+
+/* Profile Photo Styles */
+.profile-photo-wrapper {
+    position: relative;
+    width: fit-content;
+    border-radius: 50%;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.profile-photo-wrapper:hover {
+    transform: scale(1.05);
+}
+
+.photo-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    text-align: center;
+    padding: 2px 0;
+    font-size: 0.8rem;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.profile-photo-wrapper:hover .photo-overlay {
+    opacity: 1;
+}
+
+.avatar-lg {
+    width: 80px;
+    height: 80px;
+    font-size: 2rem;
+}
+
+.avatar-xs {
+    width: 24px;
+    height: 24px;
+    font-size: 0.75rem;
 }
 
 /* ====== Classes Grid & Cards ====== */

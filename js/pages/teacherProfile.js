@@ -1,7 +1,8 @@
 import { state, t } from '../state.js';
-import { db, doc, getDoc } from '../firebase-config.js';
-import { escapeHTML, getInitials, showModal } from '../ui.js';
+import { db, doc, updateDoc, arrayUnion } from '../firebase-config.js';
+import { escapeHTML, getInitials, renderAvatar, showToast } from '../ui.js';
 import { showTeacherForm } from './teachers.js';
+import { uploadFile } from '../services/uploadService.js';
 
 export function getTeacherDashboardHTML(teacherId, activeTab = 'overview') {
     const teacher = state.teachers.find(t => t.id === teacherId);
@@ -15,6 +16,7 @@ export function getTeacherDashboardHTML(teacherId, activeTab = 'overview') {
         { id: 'classes', label: state.lang === 'ar' ? 'الصفوف' : 'Classes', icon: '🏫' },
         { id: 'subjects', label: state.lang === 'ar' ? 'المواد' : 'Subjects', icon: '📖' },
         { id: 'hr', label: state.lang === 'ar' ? 'الموارد البشرية' : 'HR', icon: '💰' },
+        { id: 'documents', label: state.lang === 'ar' ? 'الوثائق والشهادات' : 'Documents', icon: '📎' },
         { id: 'notifications', label: state.lang === 'ar' ? 'الإشعارات' : 'Notifications', icon: '🔔' }
     ];
 
@@ -140,6 +142,27 @@ export function getTeacherDashboardHTML(teacherId, activeTab = 'overview') {
                 `).join('') || `<div class="empty-state"><p>${t('noData')}</p></div>`}
             </div>
         `,
+        documents: `
+            <div class="sp-section-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h4 class="sp-section-title" style="margin-bottom: 0;">📎 ${state.lang === 'ar' ? 'الوثائق والمستندات' : 'Documents & Certificates'}</h4>
+                    <button class="btn btn-sm btn-primary" onclick="document.getElementById('doc-upload-input').click()">+ ${state.lang === 'ar' ? 'رفع وثيقة' : 'Upload Doc'}</button>
+                    <input type="file" id="doc-upload-input" style="display: none;" accept=".pdf,.doc,.docx,.jpg,.png">
+                </div>
+                <div class="grid-container" style="grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem;">
+                    ${(teacher.documents || []).map(doc => `
+                        <div class="glass-card p-3 animate-in" style="display: flex; align-items: center; gap: 1rem;">
+                            <div style="font-size: 1.5rem;">${doc.name.endsWith('.pdf') ? '📕' : '📄'}</div>
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${doc.name}">${doc.name}</div>
+                                <div class="text-muted text-sm">${new Date(doc.date).toLocaleDateString()}</div>
+                            </div>
+                            <a href="${doc.url}" target="_blank" class="btn btn-icon" title="${state.lang === 'ar' ? 'تحميل' : 'Download'}">📥</a>
+                        </div>
+                    `).join('') || `<div class="empty-state py-4"><p class="text-muted">${t('noData')}</p></div>`}
+                </div>
+            </div>
+        `,
         notifications: `<div class="empty-state"><h3>🔔 ${state.lang === 'ar' ? 'الإشعارات' : 'Notifications'}</h3><p>${t('noData')}</p></div>`
     };
 
@@ -147,7 +170,11 @@ export function getTeacherDashboardHTML(teacherId, activeTab = 'overview') {
     <div class="student-profile-modal">
         <div class="sp-header">
             <div class="sp-user-info">
-                <div class="avatar avatar-lg gradient-cyan">${getInitials(teacher.name)}</div>
+                <div class="profile-photo-wrapper clickable" data-id="${teacherId}" title="${state.lang === 'ar' ? 'تغيير الصورة' : 'Change Photo'}">
+                    ${renderAvatar(teacher.name, teacher.photoURL, 'avatar-lg')}
+                    <div class="photo-overlay">📷</div>
+                    <input type="file" id="teacher-photo-input" style="display:none;" accept="image/*">
+                </div>
                 <div class="sp-user-details">
                     <h3>${escapeHTML(teacher.name)}</h3>
                     <p>${(teacher.subjects || []).join(', ') || '—'} | ${state.lang === 'ar' ? 'الرقم:' : 'ID:'} ${teacherId.slice(0, 8).toUpperCase()}</p>
@@ -243,4 +270,48 @@ export function attachTeacherProfileEvents() {
             modalBody.innerHTML = getTeacherDashboardHTML(teacherId, activeTab);
         }
     };
+
+    // Photo Upload
+    document.addEventListener('click', (e) => {
+        const wrapper = e.target.closest('.profile-photo-wrapper');
+        if (wrapper) {
+            document.getElementById('teacher-photo-input')?.click();
+        }
+    });
+
+    document.addEventListener('change', async (e) => {
+        if (e.target.id === 'teacher-photo-input' && e.target.files[0]) {
+            const file = e.target.files[0];
+            const teacherId = document.querySelector('.profile-photo-wrapper').dataset.id;
+            try {
+                showToast(state.lang === 'ar' ? 'جاري رفع الصورة...' : 'Uploading photo...', 'info');
+                const url = await uploadFile(file, 'teachers/photos', `${teacherId}_photo`);
+                await updateDoc(doc(db, 'teachers', teacherId), { photoURL: url });
+                showToast(state.lang === 'ar' ? 'تم تحديث الصورة' : 'Photo updated', 'success');
+                window.onTeacherUpdated(teacherId);
+            } catch (err) {
+                showToast(t('errorOccurred'), 'error');
+            }
+        }
+        
+        if (e.target.id === 'doc-upload-input' && e.target.files[0]) {
+            const file = e.target.files[0];
+            const activeBtn = document.querySelector('.sp-tab-btn.active');
+            const teacherId = activeBtn?.dataset.teacherId;
+            if (!teacherId) return;
+
+            try {
+                showToast(state.lang === 'ar' ? 'جاري رفع الوثيقة...' : 'Uploading document...', 'info');
+                const url = await uploadFile(file, `teachers/docs/${teacherId}`);
+                const docData = { name: file.name, url, date: new Date().toISOString() };
+                await updateDoc(doc(db, 'teachers', teacherId), {
+                    documents: arrayUnion(docData)
+                });
+                showToast(state.lang === 'ar' ? 'تم رفع الوثيقة بنجاح' : 'Document uploaded successfully', 'success');
+                window.onTeacherUpdated(teacherId);
+            } catch (err) {
+                showToast(t('errorOccurred'), 'error');
+            }
+        }
+    });
 }

@@ -1,7 +1,8 @@
 import { state, t } from '../state.js';
 import { db, collection, addDoc, updateDoc, deleteDoc, doc, setDoc } from '../firebase-config.js';
 import { adminCreateUser } from '../auth.js';
-import { showModal, closeModal, showConfirm, showToast, escapeHTML } from '../ui.js';
+import { showModal, closeModal, showConfirm, showToast, escapeHTML, renderAvatar } from '../ui.js';
+import { uploadFile } from '../services/uploadService.js';
 
 export function renderTeachers() {
   return `
@@ -10,7 +11,7 @@ export function renderTeachers() {
     <div class="filter-bar glass-card"><input type="text" id="teacher-search" class="form-input" placeholder="🔍 ${t('search')}..."></div>
     <div class="table-responsive glass-card">
       <table class="data-table" id="teachers-table"><thead><tr><th>#</th><th>${t('fullName')}</th><th>${state.lang==='ar'?'المواد':'Subjects'}</th><th>${t('email')}</th><th>${state.lang==='ar'?'الهاتف':'Phone'}</th><th>${state.lang==='ar'?'إجراءات':'Actions'}</th></tr></thead>
-      <tbody>${state.teachers.map((tc, i) => `<tr class="clickable-row teacher-row" data-id="${tc.id}"><td>${i+1}</td><td><div class="user-cell"><div class="avatar avatar-xs gradient-cyan">${(tc.name||'?')[0]}</div>${escapeHTML(tc.name||'')}</div></td><td>${(tc.subjects||[]).join(', ')||'—'}</td><td>${tc.email||'—'}</td><td>${tc.phone||'—'}</td><td><button class="btn btn-sm btn-outline edit-teacher" data-id="${tc.id}">✏️</button> <button class="btn btn-sm btn-danger delete-teacher" data-id="${tc.id}">🗑️</button></td></tr>`).join('')||`<tr><td colspan="6" class="text-center text-muted">${t('noData')}</td></tr>`}</tbody></table>
+      <tbody>${state.teachers.map((tc, i) => `<tr class="clickable-row teacher-row" data-id="${tc.id}"><td>${i+1}</td><td><div class="user-cell">${renderAvatar(tc.name, tc.photoURL, 'avatar-xs')}${escapeHTML(tc.name||'')}</div></td><td>${(tc.subjects||[]).join(', ')||'—'}</td><td>${tc.email||'—'}</td><td>${tc.phone||'—'}</td><td><button class="btn btn-sm btn-outline edit-teacher" data-id="${tc.id}">✏️</button> <button class="btn btn-sm btn-danger delete-teacher" data-id="${tc.id}">🗑️</button></td></tr>`).join('')||`<tr><td colspan="6" class="text-center text-muted">${t('noData')}</td></tr>`}</tbody></table>
     </div>
   </div>`;
 }
@@ -95,6 +96,7 @@ export function showTeacherForm(teacher = null) {
       <div class="form-group"><label>${state.lang==='ar'?'الهاتف':'Phone'}</label><input type="tel" id="tf-phone" class="form-input" value="${teacher?.phone||''}"></div>
       <div class="form-group"><label>${state.lang==='ar'?'المؤهل العلمي':'Qualification'}</label><input type="text" id="tf-qualification" class="form-input" value="${teacher?.qualification||''}" placeholder="${state.lang==='ar'?'مثلاً: بكالوريوس رياضيات':'e.g. BS Mathematics'}"></div>
       <div class="form-group"><label>${state.lang==='ar'?'الراتب الأساسي':'Base Salary'}</label><input type="number" id="tf-salary" class="form-input" value="${teacher?.baseSalary||''}"></div>
+      <div class="form-group"><label>${state.lang==='ar'?'الصورة الشخصية':'Profile Photo'}</label><input type="file" id="tf-photo" class="form-input" accept="image/*"></div>
       
       <div class="form-group full-width">
         <label>${state.lang==='ar'?'المواد الدراسية':'Subjects'}</label>
@@ -162,6 +164,12 @@ export function showTeacherForm(teacher = null) {
       role: 'teacher', 
       updatedAt: new Date().toISOString() 
     };
+
+    const photoFile = document.getElementById('tf-photo').files[0];
+    if (photoFile) {
+      showToast(state.lang === 'ar' ? 'جاري رفع الصورة...' : 'Uploading photo...', 'info');
+      data.photoURL = await uploadFile(photoFile, 'teachers/photos');
+    }
     try { 
       let teacherId = teacher?.id;
       if(isEdit) {
