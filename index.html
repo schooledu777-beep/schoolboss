@@ -23,6 +23,13 @@
   <div id="modal-overlay" class="modal-overlay hidden"></div>
   <div id="confirm-dialog" class="confirm-dialog hidden"></div>
 
+  <div id="image-viewer" class="image-viewer-modal">
+    <div class="image-viewer-content">
+      <button class="close-viewer" onclick="this.parentElement.parentElement.classList.remove('active')">&times;</button>
+      <img id="viewer-img" src="" alt="Viewer">
+      <div class="image-viewer-actions" id="viewer-actions"></div>
+    </div>
+  </div>
   <script type="module" src="js/app.js"></script>
 </body>
 </html>

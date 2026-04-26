@@ -163,7 +163,7 @@ export function getTeacherDashboardHTML(teacherId, activeTab = 'overview') {
                                 <div class="text-muted text-sm">${new Date(doc.date).toLocaleDateString()}</div>
                             </div>
                             <div style="display: flex; gap: 0.25rem;">
-                                <a href="${doc.url}" target="_blank" class="btn btn-icon" title="${state.lang === 'ar' ? 'تحميل' : 'Download'}">📥</a>
+                                <a href="${doc.url}" target="_blank" rel="noopener noreferrer" class="btn btn-icon" title="${state.lang === 'ar' ? 'معاينة / تحميل' : 'View / Download'}">📥</a>
                                 ${state.profile?.role === 'admin' ? `
                                     <button class="btn btn-icon text-danger delete-doc-btn" 
                                             data-teacher-id="${teacherId}" 
@@ -184,7 +184,7 @@ export function getTeacherDashboardHTML(teacherId, activeTab = 'overview') {
     <div class="student-profile-modal">
         <div class="sp-header">
             <div class="sp-user-info">
-                <div class="profile-photo-wrapper clickable" data-id="${teacherId}" title="${state.lang === 'ar' ? 'تغيير الصورة' : 'Change Photo'}">
+                <div class="profile-photo-wrapper clickable" data-id="${teacherId}" onclick="window.openImageViewer('${teacher.photoURL || ''}', '${escapeHTML(teacher.name)}', true)">
                     ${renderAvatar(teacher.name, teacher.photoURL, 'avatar-lg')}
                     <div class="photo-overlay">📷</div>
                     <input type="file" id="teacher-photo-input" style="display:none;" accept="image/*">

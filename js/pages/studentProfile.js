@@ -340,7 +340,7 @@ export function getStudentDashboardHTML(studentId, activeTab = 'overview') {
     <div class="student-profile-modal">
       <div class="sp-header">
         <div class="sp-user-info">
-          <div class="profile-photo-wrapper clickable" data-id="${studentId}" title="${state.lang === 'ar' ? 'تغيير الصورة' : 'Change Photo'}">
+          <div class="profile-photo-wrapper clickable" data-id="${studentId}" onclick="window.openImageViewer('${student.photoURL || ''}', '${escapeHTML(student.name)}', true)">
             ${renderAvatar(student.name, student.photoURL, 'avatar-lg')}
             <div class="photo-overlay">📷</div>
             <input type="file" id="student-photo-input" style="display:none;" accept="image/*">

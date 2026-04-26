@@ -115,3 +115,33 @@ export function escapeHTML(str) {
   div.textContent = str;
   return div.innerHTML;
 }
+
+// ========================= IMAGE VIEWER =========================
+export function openImageViewer(url, title, canChange = false) {
+  const viewer = document.getElementById('image-viewer');
+  if (!viewer) return;
+  
+  const img = document.getElementById('viewer-img');
+  const actions = document.getElementById('viewer-actions');
+  
+  img.src = url || 'https://via.placeholder.com/400?text=No+Photo';
+  actions.innerHTML = '';
+  
+  if (canChange) {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-primary';
+    btn.innerHTML = `✏️ ${state.lang === 'ar' ? 'تغيير الصورة' : 'Change Photo'}`;
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      viewer.classList.remove('active');
+      const input = document.querySelector('input[type="file"][id*="photo-input"]');
+      if (input) input.click();
+    };
+    actions.appendChild(btn);
+  }
+  
+  viewer.onclick = () => viewer.classList.remove('active');
+  viewer.classList.add('active');
+}
+
+window.openImageViewer = openImageViewer;
