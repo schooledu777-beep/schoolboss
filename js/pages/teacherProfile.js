@@ -147,12 +147,16 @@ export function getTeacherDashboardHTML(teacherId, activeTab = 'overview') {
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                     <h4 class="sp-section-title" style="margin-bottom: 0;">📎 ${state.lang === 'ar' ? 'الوثائق والمستندات' : 'Documents & Certificates'}</h4>
                     <button class="btn btn-sm btn-primary" onclick="document.getElementById('doc-upload-input').click()">+ ${state.lang === 'ar' ? 'رفع وثيقة' : 'Upload Doc'}</button>
-                    <input type="file" id="doc-upload-input" style="display: none;" accept=".pdf,.doc,.docx,.jpg,.png">
+                    <input type="file" id="doc-upload-input" style="display: none;" accept=".pdf,.doc,.docx,.jpg,.png,.txt,.xlsx,.xls">
                 </div>
                 <div class="grid-container" style="grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem;">
                     ${(teacher.documents || []).map(doc => `
                         <div class="glass-card p-3 animate-in" style="display: flex; align-items: center; gap: 1rem;">
-                            <div style="font-size: 1.5rem;">${doc.name.endsWith('.pdf') ? '📕' : '📄'}</div>
+                             <div style="font-size: 1.5rem;">
+                                ${doc.name.endsWith('.pdf') ? '📕' : 
+                                  (doc.name.endsWith('.xlsx') || doc.name.endsWith('.xls')) ? '📊' :
+                                  doc.name.endsWith('.txt') ? '📄' : '📎'}
+                             </div>
                             <div style="flex: 1; min-width: 0;">
                                 <div style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${doc.name}">${doc.name}</div>
                                 <div class="text-muted text-sm">${new Date(doc.date).toLocaleDateString()}</div>
@@ -305,9 +309,11 @@ export function attachTeacherProfileEvents() {
         
         if (e.target.id === 'doc-upload-input' && e.target.files[0]) {
             const file = e.target.files[0];
-            const activeBtn = document.querySelector('.sp-tab-btn.active');
-            const teacherId = activeBtn?.dataset.teacherId;
-            if (!teacherId) return;
+            const teacherId = document.querySelector('.sp-tab-btn')?.dataset.teacherId;
+            if (!teacherId) {
+                showToast(t('errorOccurred'), 'error');
+                return;
+            }
 
             try {
                 showToast(state.lang === 'ar' ? 'جاري رفع الوثيقة...' : 'Uploading document...', 'info');
