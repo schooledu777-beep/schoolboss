@@ -42,6 +42,7 @@ export const state = {
   rooms: [],
   bedAllocations: [],
   notificationLogs: [],
+  transfers: [],
   modules: {
     admissions: { enabled: true, monetized: false },
     finance: { enabled: true, monetized: false },

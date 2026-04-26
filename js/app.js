@@ -143,6 +143,7 @@ function startListeners() {
     { name: 'rooms', key: 'rooms' },
     { name: 'bed_allocations', key: 'bedAllocations' },
     { name: 'notification_logs', key: 'notificationLogs' },
+    { name: 'transfers', key: 'transfers' },
   ];
 
   collections.forEach(({ name, key }) => {

@@ -33,7 +33,11 @@ export function renderStudents() {
             return `<tr class="clickable-row" data-id="${s.id}">
               <td>${i + 1}</td><td><div class="user-cell"><div class="avatar avatar-xs gradient-purple">${(s.name || '?')[0]}</div><span class="student-link" style="color:var(--primary-light); font-weight:600;">${escapeHTML(s.name || '')}</span></div></td>
               <td>${cls?.name || '—'}</td><td>${s.gender === 'male' ? '👦' : '👧'}</td><td>${s.email || '—'}</td>
-              <td><button class="btn btn-sm btn-outline edit-student" data-id="${s.id}">✏️</button> <button class="btn btn-sm btn-danger delete-student" data-id="${s.id}">🗑️</button></td>
+              <td>
+                <button class="btn btn-sm btn-outline transfer-student" data-id="${s.id}" title="${state.lang==='ar'?'نقل الطالب':'Transfer Student'}">🔄</button>
+                <button class="btn btn-sm btn-outline edit-student" data-id="${s.id}">✏️</button>
+                <button class="btn btn-sm btn-danger delete-student" data-id="${s.id}">🗑️</button>
+              </td>
             </tr>`;
           }).join('') || `<tr><td colspan="6" class="text-center text-muted">${t('noData')}</td></tr>`}
         </tbody>
@@ -60,7 +64,7 @@ export function attachStudentEvents() {
   document.querySelectorAll('.clickable-row').forEach(row => {
     row.addEventListener('click', (e) => {
       // Don't trigger if clicking action buttons
-      if (e.target.closest('.edit-student') || e.target.closest('.delete-student')) return;
+      if (e.target.closest('button')) return;
       showStudentCardModal(row.dataset.id);
     });
   });
@@ -69,6 +73,12 @@ export function attachStudentEvents() {
     const student = state.students.find(s => s.id === btn.dataset.id);
     if (student) showStudentForm(student);
   }));
+
+  document.querySelectorAll('.transfer-student').forEach(btn => btn.addEventListener('click', () => {
+    const student = state.students.find(s => s.id === btn.dataset.id);
+    if (student) showTransferModal(student);
+  }));
+
   document.querySelectorAll('.delete-student').forEach(btn => btn.addEventListener('click', () => {
     showConfirm(t('delete'), t('confirmDelete'), async () => {
       try {
@@ -92,19 +102,23 @@ export function attachStudentEvents() {
     if (tbody) {
       tbody.innerHTML = filtered.map((s, i) => {
         const cls = state.classes.find(c => c.id === s.classId);
-        return `<tr class="clickable-row" data-id="${s.id}"><td>${i+1}</td><td><div class="user-cell"><div class="avatar avatar-xs gradient-purple">${(s.name || '?')[0]}</div><span class="student-link" style="color:var(--primary-light); font-weight:600;">${escapeHTML(s.name||'')}</span></div></td><td>${cls?.name||'—'}</td><td>${s.gender==='male'?'👦':'👧'}</td><td>${s.email||'—'}</td><td><button class="btn btn-sm btn-outline edit-student" data-id="${s.id}">✏️</button> <button class="btn btn-sm btn-danger delete-student" data-id="${s.id}">🗑️</button></td></tr>`;
+        return `<tr class="clickable-row" data-id="${s.id}"><td>${i+1}</td><td><div class="user-cell"><div class="avatar avatar-xs gradient-purple">${(s.name || '?')[0]}</div><span class="student-link" style="color:var(--primary-light); font-weight:600;">${escapeHTML(s.name||'')}</span></div></td><td>${cls?.name||'—'}</td><td>${s.gender==='male'?'👦':'👧'}</td><td>${s.email||'—'}</td><td><button class="btn btn-sm btn-outline transfer-student" data-id="${s.id}" title="${state.lang==='ar'?'نقل الطالب':'Transfer Student'}">🔄</button> <button class="btn btn-sm btn-outline edit-student" data-id="${s.id}">✏️</button> <button class="btn btn-sm btn-danger delete-student" data-id="${s.id}">🗑️</button></td></tr>`;
       }).join('') || `<tr><td colspan="6" class="text-center text-muted">${t('noData')}</td></tr>`;
       
       // Re-attach events for the new rows
       tbody.querySelectorAll('.clickable-row').forEach(row => {
         row.addEventListener('click', (e) => {
-          if (e.target.closest('.edit-student') || e.target.closest('.delete-student')) return;
+          if (e.target.closest('button')) return;
           showStudentCardModal(row.dataset.id);
         });
       });
       tbody.querySelectorAll('.edit-student').forEach(btn => btn.addEventListener('click', () => {
         const student = state.students.find(s => s.id === btn.dataset.id);
         if (student) showStudentForm(student);
+      }));
+      tbody.querySelectorAll('.transfer-student').forEach(btn => btn.addEventListener('click', () => {
+        const student = state.students.find(s => s.id === btn.dataset.id);
+        if (student) showTransferModal(student);
       }));
       tbody.querySelectorAll('.delete-student').forEach(btn => btn.addEventListener('click', () => {
         showConfirm(t('delete'), t('confirmDelete'), async () => {
@@ -114,6 +128,76 @@ export function attachStudentEvents() {
           } catch(e) { showToast(t('errorOccurred'), 'error'); }
         });
       }));
+    }
+  });
+}
+
+function showTransferModal(student) {
+  const currentClass = state.classes.find(c => c.id === student.classId);
+  showModal(state.lang === 'ar' ? 'نقل طالب' : 'Transfer Student', `
+    <form id="transfer-form" class="form-grid">
+      <div class="form-group full-width">
+        <label>${state.lang === 'ar' ? 'الطالب' : 'Student'}</label>
+        <input type="text" class="form-input" value="${student.name}" disabled>
+      </div>
+      <div class="form-group">
+        <label>${state.lang === 'ar' ? 'الصف الحالي' : 'Current Level'}</label>
+        <input type="text" class="form-input" value="${currentClass?.name || '—'}" disabled>
+      </div>
+      <div class="form-group">
+        <label>${state.lang === 'ar' ? 'النقل إلى' : 'Transfer To'}</label>
+        <select id="tr-new-class" class="form-select" required>
+          <option value="">${state.lang === 'ar' ? 'اختر الصف الجديد...' : 'Select new level...'}</option>
+          ${state.classes.filter(c => c.id !== student.classId).map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group full-width">
+        <label>${state.lang === 'ar' ? 'سبب النقل' : 'Transfer Reason'}</label>
+        <textarea id="tr-reason" class="form-input" placeholder="${state.lang === 'ar' ? 'أدخل السبب هنا...' : 'Enter reason here...'}"></textarea>
+      </div>
+      <div class="form-actions" style="grid-column: 1 / -1;">
+        <button type="button" class="btn btn-outline" onclick="closeModal()">${t('cancel')}</button>
+        <button type="submit" class="btn btn-primary">${state.lang === 'ar' ? 'إكمال النقل' : 'Complete Transfer'}</button>
+      </div>
+    </form>
+  `);
+
+  document.getElementById('transfer-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const newClassId = document.getElementById('tr-new-class').value;
+    const reason = document.getElementById('tr-reason').value.trim();
+    const newClass = state.classes.find(c => c.id === newClassId);
+
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-sm"></span>';
+
+    try {
+      // 1. Log the transfer
+      await addDoc(collection(db, 'transfers'), {
+        studentId: student.id,
+        fromClassId: student.classId || null,
+        fromClassName: currentClass?.name || '—',
+        toClassId: newClassId,
+        toClassName: newClass?.name || '—',
+        reason: reason,
+        date: new Date().toISOString(),
+        by: state.user.email
+      });
+
+      // 2. Update student record
+      await updateDoc(doc(db, 'students', student.id), {
+        classId: newClassId,
+        updatedAt: new Date().toISOString()
+      });
+
+      closeModal();
+      showToast(state.lang === 'ar' ? 'تم نقل الطالب بنجاح' : 'Student transferred successfully', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast(t('errorOccurred'), 'error');
+      btn.disabled = false;
+      btn.innerHTML = state.lang === 'ar' ? 'إكمال النقل' : 'Complete Transfer';
     }
   });
 }

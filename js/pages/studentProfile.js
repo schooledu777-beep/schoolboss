@@ -99,6 +99,7 @@ export function getStudentDashboardHTML(studentId, activeTab = 'overview') {
     { id: 'performance', label: state.lang === 'ar' ? 'الأداء الأكاديمي' : 'Performance', icon: '🏆' },
     { id: 'tasks', label: state.lang === 'ar' ? 'المهام والواجبات' : 'Tasks', icon: '📝' },
     { id: 'attendance', label: state.lang === 'ar' ? 'الحضور والغياب' : 'Attendance', icon: '📋' },
+    { id: 'transfers', label: state.lang === 'ar' ? 'سجل التنقلات' : 'Transfers', icon: '🔄' },
     { id: 'resources', label: state.lang === 'ar' ? 'الموارد التعليمية' : 'Resources', icon: '📚' },
     { id: 'notifications', label: state.lang === 'ar' ? 'الإشعارات' : 'Notifications', icon: '🔔' },
     { id: 'messages', label: state.lang === 'ar' ? 'الرسائل' : 'Messages', icon: '✉️' }
@@ -162,6 +163,25 @@ export function getStudentDashboardHTML(studentId, activeTab = 'overview') {
     performance: `<div class="empty-state"><h3>🏆 ${state.lang === 'ar' ? 'الأداء الأكاديمي' : 'Performance'}</h3><p>${t('noData')}</p></div>`,
     tasks: `<div class="empty-state"><h3>📝 ${state.lang === 'ar' ? 'المهام والواجبات' : 'Tasks'}</h3><p>${t('noData')}</p></div>`,
     attendance: `<div class="empty-state"><h3>📋 ${state.lang === 'ar' ? 'الحضور والغياب' : 'Attendance'}</h3><p>${t('noData')}</p></div>`,
+    transfers: `
+      <div class="sp-section-card">
+        <h4 class="sp-section-title">🔄 ${state.lang === 'ar' ? 'سجل التنقلات' : 'Transfer History'}</h4>
+        <div class="transfer-list">
+          ${state.transfers.filter(t => t.studentId === studentId).sort((a, b) => new Date(b.date) - new Date(a.date)).map(tr => `
+            <div class="transfer-item" style="border-left: 3px solid var(--primary); padding-left: 1rem; margin-bottom: 1.5rem; position: relative;">
+              <div style="font-size: 0.8rem; color: var(--primary-light); font-weight: 600;">${new Date(tr.date).toLocaleDateString(state.lang === 'ar' ? 'ar-EG' : 'en-US')}</div>
+              <div style="margin: 0.25rem 0; font-weight: 600;">
+                <span class="text-muted">${tr.fromClassName}</span> 
+                <span style="margin: 0 0.5rem; opacity: 0.5;">→</span> 
+                <span style="color: var(--primary);">${tr.toClassName}</span>
+              </div>
+              ${tr.reason ? `<div style="font-size: 0.85rem; color: rgba(255,255,255,0.6);">${tr.reason}</div>` : ''}
+              <div style="font-size: 0.75rem; color: rgba(255,255,255,0.4); margin-top: 0.25rem;">${state.lang === 'ar' ? 'بواسطة:' : 'By:'} ${tr.by}</div>
+            </div>
+          `).join('') || `<p class="text-muted">${state.lang === 'ar' ? 'لا توجد عمليات نقل مسجلة' : 'No recorded transfers'}</p>`}
+        </div>
+      </div>
+    `,
     resources: `<div class="empty-state"><h3>📚 ${state.lang === 'ar' ? 'الموارد التعليمية' : 'Resources'}</h3><p>${t('noData')}</p></div>`,
     notifications: `<div class="empty-state"><h3>🔔 ${state.lang === 'ar' ? 'الإشعارات' : 'Notifications'}</h3><p>${t('noData')}</p></div>`,
     messages: `<div class="empty-state"><h3>✉️ ${state.lang === 'ar' ? 'الرسائل' : 'Messages'}</h3><p>${t('noData')}</p></div>`
