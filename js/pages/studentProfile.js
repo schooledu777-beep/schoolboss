@@ -416,7 +416,7 @@ export function attachStudentProfileEvents() {
         const studentId = e.target.closest('.profile-photo-wrapper').dataset.id;
         try {
             showToast(state.lang === 'ar' ? 'جاري رفع الصورة...' : 'Uploading photo...', 'info');
-            const url = await uploadFile(file, 'students/photos', `${studentId}_photo`);
+            const url = await uploadFile(file);
             await updateDoc(doc(db, 'students', studentId), { photoURL: url });
             showToast(state.lang === 'ar' ? 'تم تحديث الصورة بنجاح' : 'Photo updated successfully', 'success');
             

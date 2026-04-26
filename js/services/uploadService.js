@@ -1,24 +1,31 @@
-import { storage, ref, uploadBytes, getDownloadURL } from '../firebase-config.js';
+const IMGBB_API_KEY = '6e45d0954c9e0237267c61579f096faf';
 
 /**
- * Uploads a file to Firebase Storage
+ * Uploads a file to imgBB (Free Image Hosting)
  * @param {File} file - The file to upload
- * @param {string} folder - The folder name (e.g., 'teachers', 'students', 'docs')
- * @param {string} fileName - Optional filename (defaults to file.name)
  * @returns {Promise<string>} - The download URL
  */
-export async function uploadFile(file, folder, fileName = null) {
+export async function uploadFile(file) {
   if (!file) return null;
   
-  const name = fileName || `${Date.now()}_${file.name}`;
-  const storageRef = ref(storage, `${folder}/${name}`);
-  
+  const formData = new FormData();
+  formData.append('image', file);
+
   try {
-    const snapshot = await uploadBytes(storageRef, file);
-    const url = await getDownloadURL(snapshot.ref);
-    return url;
+    const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+      method: 'POST',
+      body: formData
+    });
+
+    const result = await response.json();
+    
+    if (result.success) {
+      return result.data.url;
+    } else {
+      throw new Error(result.error?.message || 'Upload failed');
+    }
   } catch (error) {
-    console.error('Upload failed:', error);
+    console.error('imgBB Upload failed:', error);
     throw error;
   }
 }

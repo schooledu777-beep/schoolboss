@@ -147,7 +147,7 @@ export function getTeacherDashboardHTML(teacherId, activeTab = 'overview') {
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                     <h4 class="sp-section-title" style="margin-bottom: 0;">📎 ${state.lang === 'ar' ? 'الوثائق والمستندات' : 'Documents & Certificates'}</h4>
                     <button class="btn btn-sm btn-primary" onclick="document.getElementById('doc-upload-input').click()">+ ${state.lang === 'ar' ? 'رفع وثيقة' : 'Upload Doc'}</button>
-                    <input type="file" id="doc-upload-input" style="display: none;" accept=".pdf,.doc,.docx,.jpg,.png,.txt,.xlsx,.xls">
+                    <input type="file" id="doc-upload-input" style="display: none;" accept="image/*">
                 </div>
                 <div class="grid-container" style="grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem;">
                     ${(teacher.documents || []).map(doc => `
@@ -298,7 +298,7 @@ export function attachTeacherProfileEvents() {
             const teacherId = document.querySelector('.profile-photo-wrapper').dataset.id;
             try {
                 showToast(state.lang === 'ar' ? 'جاري رفع الصورة...' : 'Uploading photo...', 'info');
-                const url = await uploadFile(file, 'teachers/photos', `${teacherId}_photo`);
+                const url = await uploadFile(file);
                 await updateDoc(doc(db, 'teachers', teacherId), { photoURL: url });
                 showToast(state.lang === 'ar' ? 'تم تحديث الصورة' : 'Photo updated', 'success');
                 window.onTeacherUpdated(teacherId);
@@ -317,7 +317,7 @@ export function attachTeacherProfileEvents() {
 
             try {
                 showToast(state.lang === 'ar' ? 'جاري رفع الوثيقة...' : 'Uploading document...', 'info');
-                const url = await uploadFile(file, `teachers/docs/${teacherId}`);
+                const url = await uploadFile(file);
                 const docData = { name: file.name, url, date: new Date().toISOString() };
                 await updateDoc(doc(db, 'teachers', teacherId), {
                     documents: arrayUnion(docData)
