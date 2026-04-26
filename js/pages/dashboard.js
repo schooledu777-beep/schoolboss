@@ -1,6 +1,6 @@
 import { state, t } from '../state.js';
-import { db, collection, getDocs, query, where, onSnapshot, addDoc, doc, setDoc } from '../firebase-config.js';
-import { formatCurrency, showToast } from '../ui.js';
+import { db, collection, getDocs, query, where, onSnapshot, addDoc, doc, setDoc, writeBatch } from '../firebase-config.js';
+import { formatCurrency, showToast, showConfirm } from '../ui.js';
 import { adminCreateUser } from '../auth.js';
 import { portalService } from '../services/portalService.js';
 
@@ -66,6 +66,7 @@ function renderAdminDash() {
           <a href="#attendance" class="quick-action-btn"><span>📋</span><span>${state.lang === 'ar' ? 'تسجيل حضور' : 'Take Attendance'}</span></a>
           <a href="#announcements" class="quick-action-btn"><span>📢</span><span>${state.lang === 'ar' ? 'إعلان جديد' : 'New Announcement'}</span></a>
           <a href="#" id="btn-mock-data" class="quick-action-btn"><span>🧪</span><span>${state.lang === 'ar' ? 'بيانات تجريبية' : 'Mock Data'}</span></a>
+          <a href="#" id="btn-clear-dash" class="quick-action-btn danger"><span>🗑️</span><span>${state.lang === 'ar' ? 'مسح البيانات' : 'Clear Data'}</span></a>
         </div>
       </div>
       <div class="card glass-card">
@@ -227,6 +228,48 @@ function renderStudentDash() {
 }
 
 export function attachDashboardEvents() {
+  // Clear Data Button
+  document.getElementById('btn-clear-dash')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    const clearBtn = document.getElementById('clear-data-btn');
+    if (clearBtn) clearBtn.click();
+    else {
+      // Fallback implementation if settings page not loaded
+      const isAr = state.lang === 'ar';
+      showConfirm(
+        isAr ? 'مسح كافة البيانات' : 'Clear All Data',
+        isAr ? 'سيتم حذف كافة الطلاب والمعلمين والصفوف والبيانات الأخرى نهائياً. هل أنت متأكد؟' : 'All students, teachers, classes, and other data will be permanently deleted. Are you sure?',
+        async () => {
+          try {
+            showToast(isAr ? 'جاري مسح البيانات...' : 'Clearing data...', 'info');
+            const collectionsToClear = [
+              'students', 'teachers', 'parents', 'classes', 'subjects', 
+              'attendance', 'grades', 'schedules', 'fees', 'announcements', 
+              'messages', 'homework', 'rewards', 'transfers', 'academic_alerts', 
+              'salary_slips', 'leaves', 'books', 'borrowing_records'
+            ];
+            
+            for (const collName of collectionsToClear) {
+              const snapshot = await getDocs(collection(db, collName));
+              const batch = writeBatch(db);
+              snapshot.docs.forEach(d => {
+                // Preserve admin profiles
+                if ((collName === 'teachers' || collName === 'parents') && d.data().email === state.profile?.email) return;
+                batch.delete(d.ref);
+              });
+              await batch.commit();
+            }
+            showToast(isAr ? 'تم مسح البيانات بنجاح' : 'Data cleared successfully', 'success');
+            setTimeout(() => window.location.reload(), 1500);
+          } catch (err) {
+            console.error(err);
+            showToast(isAr ? 'حدث خطأ أثناء المسح' : 'Error clearing data', 'error');
+          }
+        }
+      );
+    }
+  });
+
   document.getElementById('btn-mock-data')?.addEventListener('click', async (e) => {
     e.preventDefault();
     const isAr = state.lang === 'ar';
@@ -248,9 +291,14 @@ export function attachDashboardEvents() {
       for (let t of teachersData) {
         try {
           const uid = await adminCreateUser(t.email, '123456', 'teacher', t.name);
-          await setDoc(doc(db, 'teachers', uid), { ...t, createdAt: new Date().toISOString() }, { merge: true });
+          await setDoc(doc(db, 'teachers', uid), { ...t, id: uid, createdAt: new Date().toISOString() }, { merge: true });
           teacherIds.push(uid);
-        } catch (err) { console.warn(`Skipping teacher ${t.email}:`, err); }
+        } catch (err) { 
+            console.warn(`Skipping teacher ${t.email}:`, err);
+            // If user exists, try to get ID from existing list
+            const existing = state.teachers.find(x => x.email === t.email);
+            if (existing) teacherIds.push(existing.id);
+        }
       }
 
       // 2. Add Parents
@@ -262,16 +310,19 @@ export function attachDashboardEvents() {
       for (let p of parentsData) {
         try {
           const uid = await adminCreateUser(p.email, '123456', 'parent', p.name);
-          await setDoc(doc(db, 'parents', uid), { ...p, createdAt: new Date().toISOString() }, { merge: true });
+          await setDoc(doc(db, 'parents', uid), { ...p, id: uid, createdAt: new Date().toISOString() }, { merge: true });
           parentIds.push(uid);
-        } catch (err) { console.warn(`Skipping parent ${p.email}:`, err); }
+        } catch (err) { 
+            console.warn(`Skipping parent ${p.email}:`, err); 
+            const existing = state.parents.find(x => x.email === p.email);
+            if (existing) parentIds.push(existing.id);
+        }
       }
 
       // 3. Add Subjects
       const subjectsData = ['رياضيات', 'لغة عربية', 'علوم', 'لغة إنجليزية', 'تاريخ'];
       for (let s of subjectsData) {
         try {
-          // Check if subject exists first to avoid duplicates
           const q = query(collection(db, 'subjects'), where('name', '==', s));
           const snap = await getDocs(q);
           if (snap.empty) {
@@ -282,40 +333,70 @@ export function attachDashboardEvents() {
 
       // 4. Add Students
       const studentsData = [
-        { name: 'عمر خالد', email: 'omar@student.com', parentId: parentIds[0] || 'mock-parent-1', role: 'student' },
-        { name: 'محمد علي', email: 'mohammed@student.com', parentId: parentIds[1] || 'mock-parent-2', role: 'student' }
+        { name: 'عمر خالد', email: 'omar@student.com', parentId: parentIds[0] || 'mock-p1', role: 'student' },
+        { name: 'محمد علي', email: 'mohammed@student.com', parentId: parentIds[1] || 'mock-p2', role: 'student' }
       ];
       const studentIds = [];
       for (let s of studentsData) {
         try {
           const uid = await adminCreateUser(s.email, '123456', 'student', s.name);
-          await setDoc(doc(db, 'students', uid), { ...s, createdAt: new Date().toISOString() }, { merge: true });
+          await setDoc(doc(db, 'students', uid), { ...s, id: uid, createdAt: new Date().toISOString() }, { merge: true });
           studentIds.push(uid);
-        } catch (err) { console.warn(`Skipping student ${s.email}:`, err); }
+        } catch (err) { 
+            console.warn(`Skipping student ${s.email}:`, err); 
+            const existing = state.students.find(x => x.email === s.email);
+            if (existing) studentIds.push(existing.id);
+        }
       }
 
-      // 5. Add Classes (only if we have teachers and students)
+      // 5. Add Classes and linked data
       if (teacherIds.length > 0 && studentIds.length > 0) {
-        try {
-          await addDoc(collection(db, 'classes'), { 
-            name: 'الصف الأول - أ', 
-            grade: 'الصف الأول', 
-            teacherId: teacherIds[0], 
-            studentIds: studentIds,
-            createdAt: new Date().toISOString() 
+        const classRef = await addDoc(collection(db, 'classes'), { 
+          name: 'الصف الأول - أ', 
+          grade: 'الصف الأول', 
+          teacherId: teacherIds[0], 
+          studentIds: studentIds,
+          createdAt: new Date().toISOString() 
+        });
+
+        // 6. Add Attendance for today
+        const todayStr = new Date().toISOString().split('T')[0];
+        for (let sid of studentIds) {
+          await addDoc(collection(db, 'attendance'), {
+            studentId: sid,
+            date: todayStr,
+            status: Math.random() > 0.1 ? 'present' : 'absent',
+            classId: classRef.id
           });
-        } catch (err) { console.warn("Skipping class creation:", err); }
+          
+          // 7. Add Grades
+          await addDoc(collection(db, 'grades'), {
+            studentId: sid,
+            subject: 'رياضيات',
+            score: Math.floor(Math.random() * 20) + 80,
+            maxScore: 100,
+            date: todayStr
+          });
+
+          // 8. Add Fees
+          await addDoc(collection(db, 'fees'), {
+            studentId: sid,
+            amount: 5000,
+            paidAmount: 2000,
+            status: 'partial',
+            dueDate: '2026-05-01'
+          });
+        }
       }
 
-      showToast(isAr ? 'تمت إضافة البيانات التجريبية بنجاح' : 'Mock data added successfully', 'success');
+      showToast(isAr ? 'تمت إضافة البيانات التجريبية والربط بنجاح' : 'Mock data and links added successfully', 'success');
       btn.innerHTML = oldHtml;
       btn.style.pointerEvents = 'auto';
-      // Reload to see new data
       setTimeout(() => window.location.reload(), 1500);
 
     } catch (err) {
       console.error("Mock data fatal error:", err);
-      showToast(t('errorOccurred'), 'error');
+      showToast(isAr ? 'حدث خطأ أثناء إضافة البيانات' : 'Error adding mock data', 'error');
       btn.innerHTML = oldHtml;
       btn.style.pointerEvents = 'auto';
     }

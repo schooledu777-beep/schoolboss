@@ -1,6 +1,6 @@
 import { state, t } from '../state.js';
 import { db, doc, getDoc } from '../firebase-config.js';
-import { escapeHTML, getInitials } from '../ui.js';
+import { escapeHTML, getInitials, formatCurrency } from '../ui.js';
 
 export function renderStudentProfile() {
   const hash = window.location.hash.slice(1);
@@ -51,21 +51,19 @@ function getStudentMetrics(studentId) {
     const studentAtt = state.attendance.filter(a => a.studentId === studentId);
     let attRate = 0;
     if (studentAtt.length > 0) {
-        const presentCount = studentAtt.filter(a => a.status === 'present').length;
+        const presentCount = studentAtt.filter(a => a.status === 'present' || a.status === 'late').length;
         attRate = Math.round((presentCount / studentAtt.length) * 100);
     }
 
     // 3. Upcoming Class Calculation
     const now = new Date();
-    const dayIndex = now.getDay(); // 0-indexed (Sunday=0 in my days array)
+    const dayIndex = now.getDay(); 
     const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
     
-    const studentClass = state.classes.find(c => (c.studentIds || []).includes(studentId));
+    const studentClass = state.classes.find(c => c.id === student?.classId || (c.studentIds || []).includes(studentId));
     let nextClass = null;
     
     if (studentClass) {
-        // Adjust dayIndex for my days array: Sunday is 0, but in state it might be different.
-        // Let's assume 0=Sunday as per schedules logic.
         const classSchedules = state.schedules.filter(s => s.classId === studentClass.id && (s.dayOfWeek === dayIndex || s.dayIndex === dayIndex));
         const upcoming = classSchedules
             .map(s => {
@@ -99,10 +97,9 @@ export function getStudentDashboardHTML(studentId, activeTab = 'overview') {
     { id: 'performance', label: state.lang === 'ar' ? 'الأداء الأكاديمي' : 'Performance', icon: '🏆' },
     { id: 'tasks', label: state.lang === 'ar' ? 'المهام والواجبات' : 'Tasks', icon: '📝' },
     { id: 'attendance', label: state.lang === 'ar' ? 'الحضور والغياب' : 'Attendance', icon: '📋' },
-    { id: 'transfers', label: state.lang === 'ar' ? 'سجل التنقلات' : 'Transfers', icon: '🔄' },
-    { id: 'resources', label: state.lang === 'ar' ? 'الموارد التعليمية' : 'Resources', icon: '📚' },
-    { id: 'notifications', label: state.lang === 'ar' ? 'الإشعارات' : 'Notifications', icon: '🔔' },
-    { id: 'messages', label: state.lang === 'ar' ? 'الرسائل' : 'Messages', icon: '✉️' }
+    { id: 'finance', label: state.lang === 'ar' ? 'الموارد المالية' : 'Financials', icon: '💰' },
+    { id: 'library', label: state.lang === 'ar' ? 'المكتبة' : 'Library', icon: '📚' },
+    { id: 'transfers', label: state.lang === 'ar' ? 'سجل التنقلات' : 'Transfers', icon: '🔄' }
   ];
 
   const content = {
@@ -159,10 +156,164 @@ export function getStudentDashboardHTML(studentId, activeTab = 'overview') {
         <p class="text-muted text-sm">${state.lang === 'ar' ? 'لا توجد مهام عاجلة حالياً' : 'No urgent tasks at the moment'}</p>
       </div>
     `,
-    schedule: `<div class="empty-state"><h3>📅 ${state.lang === 'ar' ? 'الجدول الدراسي' : 'Schedule'}</h3><p>${t('noData')}</p></div>`,
-    performance: `<div class="empty-state"><h3>🏆 ${state.lang === 'ar' ? 'الأداء الأكاديمي' : 'Performance'}</h3><p>${t('noData')}</p></div>`,
-    tasks: `<div class="empty-state"><h3>📝 ${state.lang === 'ar' ? 'المهام والواجبات' : 'Tasks'}</h3><p>${t('noData')}</p></div>`,
-    attendance: `<div class="empty-state"><h3>📋 ${state.lang === 'ar' ? 'الحضور والغياب' : 'Attendance'}</h3><p>${t('noData')}</p></div>`,
+    schedule: `
+      <div class="sp-section-card">
+        <h4 class="sp-section-title">📅 ${state.lang === 'ar' ? 'الجدول الأسبوعي' : 'Weekly Schedule'}</h4>
+        <div class="schedule-grid-container">
+          <table class="schedule-table">
+            <thead>
+              <tr>
+                <th>${state.lang === 'ar' ? 'الوقت' : 'Time'}</th>
+                ${[0,1,2,3,4,5].map(d => `<th>${[t('sun'),t('mon'),t('tue'),t('wed'),t('thu'),t('fri')][d]}</th>`).join('')}
+              </tr>
+            </thead>
+            <tbody>
+              ${state.timeslots.map(slot => `
+                <tr>
+                  <td class="time-cell">${slot.startTime}</td>
+                  ${[0,1,2,3,4,5].map(day => {
+                    const entry = state.schedules.find(s => (s.dayOfWeek === day || s.dayIndex === day) && s.timeslotId === slot.id && s.classId === cls?.id);
+                    return `<td>${entry ? `<div class="sch-item"><strong>${entry.subject}</strong><span>${entry.teacherName || ''}</span></div>` : ''}</td>`;
+                  }).join('')}
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `,
+    performance: `
+      <div class="sp-section-card">
+        <h4 class="sp-section-title">🏆 ${state.lang === 'ar' ? 'الأداء الأكاديمي' : 'Performance'}</h4>
+        <div class="data-table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>${state.lang === 'ar' ? 'المادة' : 'Subject'}</th>
+                <th>${state.lang === 'ar' ? 'الدرجة' : 'Score'}</th>
+                <th>${state.lang === 'ar' ? 'النسبة' : 'Percentage'}</th>
+                <th>${state.lang === 'ar' ? 'التاريخ' : 'Date'}</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${state.grades.filter(g => g.studentId === studentId).map(g => `
+                <tr>
+                  <td>${g.subject}</td>
+                  <td>${g.score} / ${g.maxScore}</td>
+                  <td><span class="badge ${g.score/g.maxScore >= 0.5 ? 'badge-success' : 'badge-danger'}">${Math.round((g.score/g.maxScore)*100)}%</span></td>
+                  <td>${new Date(g.date).toLocaleDateString()}</td>
+                </tr>
+              `).join('') || `<tr><td colspan="4" class="text-center text-muted">${t('noData')}</td></tr>`}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `,
+    tasks: `
+      <div class="sp-section-card">
+        <h4 class="sp-section-title">📝 ${state.lang === 'ar' ? 'المهام والواجبات' : 'Tasks & Homework'}</h4>
+        <div class="homework-list">
+          ${state.homework.filter(h => h.classId === cls?.id).map(hw => {
+            const submission = hw.submissions?.find(s => s.studentId === studentId);
+            return `
+              <div class="hw-item glass-card" style="margin-bottom: 1rem; padding: 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <strong>${hw.title}</strong>
+                  <span class="badge ${submission ? 'badge-success' : 'badge-warning'}">${submission ? (state.lang === 'ar' ? 'تم التسليم' : 'Submitted') : (state.lang === 'ar' ? 'معلق' : 'Pending')}</span>
+                </div>
+                <div class="text-muted text-sm" style="margin-top: 0.5rem;">${state.lang === 'ar' ? 'المادة:' : 'Subject:'} ${hw.subject} | ${state.lang === 'ar' ? 'الموعد:' : 'Due:'} ${hw.dueDate}</div>
+              </div>
+            `;
+          }).join('') || `<p class="text-muted text-center">${t('noData')}</p>`}
+        </div>
+      </div>
+    `,
+    attendance: `
+      <div class="sp-section-card">
+        <h4 class="sp-section-title">📋 ${state.lang === 'ar' ? 'سجل الحضور والغياب' : 'Attendance History'}</h4>
+        <div class="data-table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>${state.lang === 'ar' ? 'التاريخ' : 'Date'}</th>
+                <th>${state.lang === 'ar' ? 'الحالة' : 'Status'}</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${state.attendance.filter(a => a.studentId === studentId).sort((a, b) => new Date(b.date) - new Date(a.date)).map(a => `
+                <tr>
+                  <td>${new Date(a.date).toLocaleDateString(state.lang === 'ar' ? 'ar-EG' : 'en-US')}</td>
+                  <td>
+                    <span class="status-indicator status-${a.status}"></span>
+                    ${{ present: t('present'), absent: t('absent'), late: t('late'), excused: t('excused') }[a.status] || a.status}
+                  </td>
+                </tr>
+              `).join('') || `<tr><td colspan="2" class="text-center text-muted">${t('noData')}</td></tr>`}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `,
+    finance: `
+      <div class="sp-section-card">
+        <h4 class="sp-section-title">💰 ${state.lang === 'ar' ? 'الموقف المالي' : 'Financial Status'}</h4>
+        <div class="data-table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>${state.lang === 'ar' ? 'المبلغ' : 'Amount'}</th>
+                <th>${state.lang === 'ar' ? 'المدفوع' : 'Paid'}</th>
+                <th>${state.lang === 'ar' ? 'المتبقي' : 'Remaining'}</th>
+                <th>${state.lang === 'ar' ? 'الحالة' : 'Status'}</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${state.fees.filter(f => f.studentId === studentId).map(f => {
+                const remaining = (f.amount || 0) - (f.paidAmount || 0);
+                const status = remaining <= 0 ? 'paid' : (f.paidAmount > 0 ? 'partial' : 'unpaid');
+                const statusLabel = { paid: {ar:'مدفوع',en:'Paid',cls:'success'}, partial: {ar:'جزئي',en:'Partial',cls:'warning'}, unpaid: {ar:'غير مدفوع',en:'Unpaid',cls:'danger'} }[status];
+                return `
+                  <tr>
+                    <td>${formatCurrency(f.amount)}</td>
+                    <td>${formatCurrency(f.paidAmount)}</td>
+                    <td style="color:var(--danger); font-weight:bold;">${formatCurrency(remaining)}</td>
+                    <td><span class="badge badge-${statusLabel.cls}">${statusLabel[state.lang]}</span></td>
+                  </tr>
+                `;
+              }).join('') || `<tr><td colspan="4" class="text-center text-muted">${t('noData')}</td></tr>`}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `,
+    library: `
+      <div class="sp-section-card">
+        <h4 class="sp-section-title">📚 ${state.lang === 'ar' ? 'الكتب المستعارة' : 'Borrowed Books'}</h4>
+        <div class="data-table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>${state.lang === 'ar' ? 'الكتاب' : 'Book'}</th>
+                <th>${state.lang === 'ar' ? 'تاريخ الاستحقاق' : 'Due Date'}</th>
+                <th>${state.lang === 'ar' ? 'الحالة' : 'Status'}</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${state.borrowingRecords.filter(r => r.studentId === studentId).map(r => {
+                const book = state.books.find(b => b.id === r.bookId);
+                return `
+                  <tr>
+                    <td>${book?.title || '—'}</td>
+                    <td>${r.dueDate}</td>
+                    <td><span class="badge badge-${r.status === 'active' ? 'warning' : 'success'}">${r.status === 'active' ? (state.lang === 'ar' ? 'نشط' : 'Active') : (state.lang === 'ar' ? 'مُرجع' : 'Returned')}</span></td>
+                  </tr>
+                `;
+              }).join('') || `<tr><td colspan="3" class="text-center text-muted">${t('noData')}</td></tr>`}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `,
     transfers: `
       <div class="sp-section-card">
         <h4 class="sp-section-title">🔄 ${state.lang === 'ar' ? 'سجل التنقلات' : 'Transfer History'}</h4>
@@ -181,10 +332,7 @@ export function getStudentDashboardHTML(studentId, activeTab = 'overview') {
           `).join('') || `<p class="text-muted">${state.lang === 'ar' ? 'لا توجد عمليات نقل مسجلة' : 'No recorded transfers'}</p>`}
         </div>
       </div>
-    `,
-    resources: `<div class="empty-state"><h3>📚 ${state.lang === 'ar' ? 'الموارد التعليمية' : 'Resources'}</h3><p>${t('noData')}</p></div>`,
-    notifications: `<div class="empty-state"><h3>🔔 ${state.lang === 'ar' ? 'الإشعارات' : 'Notifications'}</h3><p>${t('noData')}</p></div>`,
-    messages: `<div class="empty-state"><h3>✉️ ${state.lang === 'ar' ? 'الرسائل' : 'Messages'}</h3><p>${t('noData')}</p></div>`
+    `
   };
 
   return `
@@ -223,21 +371,28 @@ export function attachStudentProfileEvents() {
 
   document.addEventListener('click', e => {
     const tabBtn = e.target.closest('.sp-tab-btn');
-    if (tabBtn) {
+    if (tabBtn && tabBtn.dataset.studentId) {
       const tabId = tabBtn.dataset.tab;
       const studentId = tabBtn.dataset.studentId;
       
+      const sidebar = tabBtn.closest('.sp-sidebar');
+      if (!sidebar) return;
+
       // Update active state
-      tabBtn.parentElement.querySelectorAll('.sp-tab-btn').forEach(b => b.classList.remove('active'));
+      sidebar.querySelectorAll('.sp-tab-btn').forEach(b => b.classList.remove('active'));
       tabBtn.classList.add('active');
       
       // Update content
       const contentArea = document.getElementById('sp-tab-content');
       if (contentArea) {
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = getStudentDashboardHTML(studentId, tabId);
-        const newContent = tempDiv.querySelector('#sp-tab-content').innerHTML;
-        contentArea.innerHTML = newContent;
+        contentArea.innerHTML = '<div class="text-center p-4"><span class="spinner-sm"></span></div>';
+        setTimeout(() => {
+            const html = getStudentDashboardHTML(studentId, tabId);
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            const newContent = tempDiv.querySelector('#sp-tab-content').innerHTML;
+            contentArea.innerHTML = newContent;
+        }, 50);
       }
     }
   });

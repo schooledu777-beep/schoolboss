@@ -73,10 +73,72 @@ export function getTeacherDashboardHTML(teacherId, activeTab = 'overview') {
                 </div>
             </div>
         `,
-        schedule: `<div class="empty-state"><h3>📅 ${state.lang === 'ar' ? 'الجدول الدراسي' : 'Schedule'}</h3><p>${t('noData')}</p></div>`,
-        classes: `<div class="empty-state"><h3>🏫 ${state.lang === 'ar' ? 'الصفوف' : 'Classes'}</h3><p>${t('noData')}</p></div>`,
-        subjects: `<div class="empty-state"><h3>📖 ${state.lang === 'ar' ? 'المواد' : 'Subjects'}</h3><p>${t('noData')}</p></div>`,
-        hr: `<div class="empty-state"><h3>💰 ${state.lang === 'ar' ? 'الموارد البشرية' : 'HR'}</h3><p>${t('noData')}</p></div>`,
+        schedule: `
+            <div class="sp-section-card">
+                <h4 class="sp-section-title">📅 ${state.lang === 'ar' ? 'جدول الحصص' : 'Teaching Schedule'}</h4>
+                <div class="schedule-grid-container">
+                    <table class="schedule-table">
+                        <thead>
+                            <tr>
+                                <th>${state.lang === 'ar' ? 'الوقت' : 'Time'}</th>
+                                ${[0,1,2,3,4,5].map(d => `<th>${[t('sun'),t('mon'),t('tue'),t('wed'),t('thu'),t('fri')][d]}</th>`).join('')}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${state.timeslots.map(slot => `
+                                <tr>
+                                    <td class="time-cell">${slot.startTime}</td>
+                                    ${[0,1,2,3,4,5].map(day => {
+                                        const entry = state.schedules.find(s => s.teacherId === teacherId && (s.dayOfWeek === day || s.dayIndex === day) && s.timeslotId === slot.id);
+                                        return `<td>${entry ? `<div class="sch-item"><strong>${entry.subject}</strong><span>${entry.className || ''}</span></div>` : ''}</td>`;
+                                    }).join('')}
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `,
+        classes: `
+            <div class="sp-section-card">
+                <h4 class="sp-section-title">🏫 ${state.lang === 'ar' ? 'الصفوف التي أدرسها' : 'My Classes'}</h4>
+                <div class="grid-container" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    ${state.classes.filter(c => c.teacherId === teacherId || (c.teacherIds || []).includes(teacherId)).map(c => `
+                        <div class="glass-card p-3 text-center">
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem;">🏫</div>
+                            <div style="font-weight: 600;">${c.name}</div>
+                            <div class="text-muted text-sm">${c.studentIds?.length || 0} ${state.lang === 'ar' ? 'طالب' : 'Students'}</div>
+                        </div>
+                    `).join('') || `<p class="text-muted">${t('noData')}</p>`}
+                </div>
+            </div>
+        `,
+        subjects: `
+            <div class="sp-section-card">
+                <h4 class="sp-section-title">📖 ${state.lang === 'ar' ? 'المواد الدراسية' : 'Subjects'}</h4>
+                <div class="grid-container" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    ${(teacher.subjects || []).map(s => `
+                        <div class="glass-card p-3 text-center" style="border-bottom: 3px solid var(--primary);">
+                            <div style="font-weight: 600;">${s}</div>
+                        </div>
+                    `).join('') || `<p class="text-muted">${t('noData')}</p>`}
+                </div>
+            </div>
+        `,
+        hr: `
+            <div class="sp-section-card">
+                <h4 class="sp-section-title">💰 ${state.lang === 'ar' ? 'كشوف الرواتب' : 'Salary Slips'}</h4>
+                ${state.salarySlips?.filter(s => s.teacherId === teacherId).map(s => `
+                    <div class="glass-card p-3" style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <strong>${s.month} / ${s.year}</strong>
+                            <div class="text-muted text-sm">${state.lang === 'ar' ? 'الإجمالي:' : 'Total:'} ${s.netSalary}</div>
+                        </div>
+                        <button class="btn btn-sm btn-outline">${state.lang === 'ar' ? 'تحميل PDF' : 'Download PDF'}</button>
+                    </div>
+                `).join('') || `<div class="empty-state"><p>${t('noData')}</p></div>`}
+            </div>
+        `,
         notifications: `<div class="empty-state"><h3>🔔 ${state.lang === 'ar' ? 'الإشعارات' : 'Notifications'}</h3><p>${t('noData')}</p></div>`
     };
 
