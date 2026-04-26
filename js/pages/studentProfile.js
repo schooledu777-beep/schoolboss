@@ -33,12 +33,65 @@ export function renderStudentProfile() {
   </div>`;
 }
 
+function getStudentMetrics(studentId) {
+    const student = state.students.find(s => s.id === studentId);
+    
+    // 1. GPA Calculation
+    const studentGrades = state.grades.filter(g => g.studentId === studentId);
+    let gpa = 0;
+    if (studentGrades.length > 0) {
+        const totalPct = studentGrades.reduce((sum, g) => {
+            const pct = g.maxScore > 0 ? (g.score / g.maxScore) * 100 : 0;
+            return sum + pct;
+        }, 0);
+        gpa = Math.round(totalPct / studentGrades.length);
+    }
+
+    // 2. Attendance Calculation
+    const studentAtt = state.attendance.filter(a => a.studentId === studentId);
+    let attRate = 0;
+    if (studentAtt.length > 0) {
+        const presentCount = studentAtt.filter(a => a.status === 'present').length;
+        attRate = Math.round((presentCount / studentAtt.length) * 100);
+    }
+
+    // 3. Upcoming Class Calculation
+    const now = new Date();
+    const dayIndex = now.getDay(); // 0-indexed (Sunday=0 in my days array)
+    const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+    
+    const studentClass = state.classes.find(c => (c.studentIds || []).includes(studentId));
+    let nextClass = null;
+    
+    if (studentClass) {
+        // Adjust dayIndex for my days array: Sunday is 0, but in state it might be different.
+        // Let's assume 0=Sunday as per schedules logic.
+        const classSchedules = state.schedules.filter(s => s.classId === studentClass.id && (s.dayOfWeek === dayIndex || s.dayIndex === dayIndex));
+        const upcoming = classSchedules
+            .map(s => {
+                const ts = state.timeslots.find(t => t.id === s.timeslotId);
+                return { ...s, timeslot: ts };
+            })
+            .filter(s => s.timeslot && s.timeslot.startTime > currentTime)
+            .sort((a, b) => a.timeslot.startTime.localeCompare(b.timeslot.startTime));
+        
+        nextClass = upcoming[0] || null;
+    }
+
+    // 4. Homework count
+    const studentHomework = state.homework.filter(h => h.classId === studentClass?.id);
+    const pendingHw = studentHomework.filter(h => !h.submissions?.find(sub => sub.studentId === studentId));
+
+    return { gpa, attRate, nextClass, pendingHwCount: pendingHw.length };
+}
+
 export function getStudentDashboardHTML(studentId, activeTab = 'overview') {
   const student = state.students.find(s => s.id === studentId);
   if (!student) return '';
 
-  const cls = state.classes.find(c => c.id === student.classId);
+  const cls = state.classes.find(c => c.id === student.classId || (c.studentIds||[]).includes(studentId));
   const parent = state.parents.find(p => p.id === student.parentId);
+  const metrics = getStudentMetrics(studentId);
   
   const tabs = [
     { id: 'overview', label: state.lang === 'ar' ? 'نظرة عامة' : 'Overview', icon: '📊' },
@@ -55,33 +108,28 @@ export function getStudentDashboardHTML(studentId, activeTab = 'overview') {
     overview: `
       <div class="sp-widgets-grid">
         <div class="sp-widget widget-blue">
-          <div class="sp-widget-icon">📅</div>
-          <div class="sp-widget-info">
-            <div class="sp-widget-title">${state.lang === 'ar' ? 'الحصة القادمة' : 'Upcoming Class'}</div>
-            <div class="sp-widget-value">${state.lang === 'ar' ? 'اللغة العربية' : 'Arabic'}</div>
-          </div>
-          <div class="sp-widget-footer">09:00 ص - 10:00 ص</div>
+          <span class="sp-widget-icon">📅</span>
+          <span class="sp-widget-title">${state.lang === 'ar' ? 'الحصة القادمة' : 'Upcoming Class'}</span>
+          <span class="sp-widget-value">${metrics.nextClass ? metrics.nextClass.subject : (state.lang === 'ar' ? 'لا يوجد' : 'None')}</span>
+          <span class="sp-widget-footer">${metrics.nextClass ? `${metrics.nextClass.timeslot?.startTime} - ${metrics.nextClass.timeslot?.endTime}` : (state.lang === 'ar' ? 'انتهت حصص اليوم' : 'Classes ended today')}</span>
         </div>
         <div class="sp-widget widget-dark">
-          <div class="sp-widget-icon">📝</div>
-          <div class="sp-widget-info">
-            <div class="sp-widget-title">${state.lang === 'ar' ? 'المهام المكتملة' : 'Completed Tasks'}</div>
-            <div class="sp-widget-value">0/3</div>
-          </div>
+          <span class="sp-widget-icon">📝</span>
+          <span class="sp-widget-title">${state.lang === 'ar' ? 'المهام المعلقة' : 'Pending Tasks'}</span>
+          <span class="sp-widget-value">${metrics.pendingHwCount}</span>
+          <span class="sp-widget-footer">${state.lang === 'ar' ? 'تحتاج إلى تسليم' : 'Need submission'}</span>
         </div>
         <div class="sp-widget widget-dark">
-          <div class="sp-widget-icon">📋</div>
-          <div class="sp-widget-info">
-            <div class="sp-widget-title">${state.lang === 'ar' ? 'نسبة الحضور' : 'Attendance Rate'}</div>
-            <div class="sp-widget-value">0%</div>
-          </div>
+          <span class="sp-widget-icon">📋</span>
+          <span class="sp-widget-title">${state.lang === 'ar' ? 'نسبة الحضور' : 'Attendance Rate'}</span>
+          <span class="sp-widget-value">${metrics.attRate}%</span>
+          <span class="sp-widget-footer">${state.lang === 'ar' ? 'خلال الفصل الحالي' : 'This semester'}</span>
         </div>
         <div class="sp-widget widget-dark">
-          <div class="sp-widget-icon">🏆</div>
-          <div class="sp-widget-info">
-            <div class="sp-widget-title">${state.lang === 'ar' ? 'المعدل التراكمي' : 'GPA'}</div>
-            <div class="sp-widget-value">0%</div>
-          </div>
+          <span class="sp-widget-icon">🏆</span>
+          <span class="sp-widget-title">${state.lang === 'ar' ? 'المعدل التراكمي' : 'GPA'}</span>
+          <span class="sp-widget-value">${metrics.gpa}%</span>
+          <span class="sp-widget-footer">${state.lang === 'ar' ? 'بناءً على آخر النتائج' : 'Based on latest results'}</span>
         </div>
       </div>
       
@@ -89,12 +137,18 @@ export function getStudentDashboardHTML(studentId, activeTab = 'overview') {
         <h4 class="sp-section-title">👥 ${state.lang === 'ar' ? 'بيانات ولي الأمر' : 'Parent Details'}</h4>
         <div class="sp-info-grid">
           <div class="sp-info-item">
-            <span class="icon">👤</span>
-            <div><span class="sp-info-label">${state.lang === 'ar' ? 'اسم ولي الأمر' : 'Parent Name'}</span><span class="sp-info-value">${parent?.name || (state.lang === 'ar' ? 'غير مسجل' : 'Not Registered')}</span></div>
+            <span class="avatar avatar-sm gradient-cyan">${parent?.name ? parent.name[0] : '?'}</span>
+            <div>
+                <span class="sp-info-label">${state.lang === 'ar' ? 'اسم ولي الأمر' : 'Parent Name'}</span>
+                <span class="sp-info-value">${parent?.name || (state.lang === 'ar' ? 'غير مسجل' : 'Not Registered')}</span>
+            </div>
           </div>
           <div class="sp-info-item">
-            <span class="icon">📞</span>
-            <div><span class="sp-info-label">${state.lang === 'ar' ? 'رقم الهاتف' : 'Phone Number'}</span><span class="sp-info-value">${parent?.phone || (state.lang === 'ar' ? 'غير مسجل' : 'Not Registered')}</span></div>
+            <span class="sp-info-icon">📞</span>
+            <div>
+                <span class="sp-info-label">${state.lang === 'ar' ? 'رقم الهاتف' : 'Phone Number'}</span>
+                <span class="sp-info-value">${parent?.phone || (state.lang === 'ar' ? 'غير مسجل' : 'Not Registered')}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -160,8 +214,6 @@ export function attachStudentProfileEvents() {
       // Update content
       const contentArea = document.getElementById('sp-tab-content');
       if (contentArea) {
-        // Here we could just call getStudentDashboardHTML again or have a specific content getter
-        // For now, let's just re-render the specific section
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = getStudentDashboardHTML(studentId, tabId);
         const newContent = tempDiv.querySelector('#sp-tab-content').innerHTML;
@@ -170,4 +222,3 @@ export function attachStudentProfileEvents() {
     }
   });
 }
-

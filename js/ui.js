@@ -61,7 +61,6 @@ export function showModal(title, contentHTML, options = {}) {
   dialog.classList.remove('hidden');
   document.getElementById('modal-close-x').onclick = () => closeModal();
   overlay.onclick = () => closeModal();
-  dialog.querySelector('.modal-card').onclick = e => e.stopPropagation();
   if (options.onOpen) options.onOpen();
 }
 
