@@ -41,18 +41,65 @@ async function showTeacherCard(teacherId) {
     showModal(state.lang === 'ar' ? 'بطاقة المعلم' : 'Teacher Card', getTeacherDashboardHTML(teacherId), 'large');
 }
 
+
 function showTeacherForm(teacher = null) {
   const isEdit = !!teacher;
+  let selectedSubjects = teacher?.subjects || [];
+
+  const updateSubjectTags = () => {
+    const container = document.getElementById('selected-subjects-tags');
+    if (!container) return;
+    container.innerHTML = selectedSubjects.map(s => `
+      <div class="tag-chip animate-in">
+        <span>${s}</span>
+        <span class="tag-remove" data-val="${s}">&times;</span>
+      </div>
+    `).join('');
+    
+    // Attach remove events
+    container.querySelectorAll('.tag-remove').forEach(btn => {
+      btn.onclick = () => {
+        selectedSubjects = selectedSubjects.filter(v => v !== btn.dataset.val);
+        updateSubjectTags();
+      };
+    });
+  };
+
   showModal(isEdit ? (state.lang==='ar'?'تعديل معلم':'Edit Teacher') : (state.lang==='ar'?'إضافة معلم':'Add Teacher'), `
     <form id="teacher-form" class="form-grid">
       <div class="form-group"><label>${t('fullName')}</label><input type="text" id="tf-name" class="form-input" value="${teacher?.name||''}" required></div>
       <div class="form-group"><label>${t('email')}</label><input type="email" id="tf-email" class="form-input" value="${teacher?.email||''}" required></div>
-      ${!isEdit ? `<div class="form-group"><label>${state.lang==='ar'?'كلمة المرور':'Password'}</label><input type="text" id="tf-password" class="form-input" value="123456" required></div>` : ''}
-      <div class="form-group"><label>${state.lang==='ar'?'المواد':'Subjects'}</label><input type="text" id="tf-subjects" class="form-input" value="${(teacher?.subjects||[]).join(', ')}" placeholder="${state.lang==='ar'?'رياضيات, علوم, ...':'Math, Science, ...'}"></div>
+      ${!isEdit ? `<div class="form-group"><label>${state.lang==='ar'?'كلمة مور':'Password'}</label><input type="text" id="tf-password" class="form-input" value="123456" required></div>` : ''}
+      
+      <div class="form-group full-width">
+        <label>${state.lang==='ar'?'المواد الدراسية':'Subjects'}</label>
+        <div class="multi-select-container">
+          <div id="selected-subjects-tags" class="multi-select-tags"></div>
+          <select id="tf-subjects-select" class="form-select">
+            <option value="">${state.lang==='ar'?'اختر مادة لإضافتها...':'Select a subject to add...'}</option>
+            ${state.subjects.map(s => `<option value="${s.name}">${s.name}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+
       <div class="form-group"><label>${state.lang==='ar'?'الهاتف':'Phone'}</label><input type="tel" id="tf-phone" class="form-input" value="${teacher?.phone||''}"></div>
       <div class="form-group"><label>${state.lang==='ar'?'الراتب الأساسي':'Base Salary'}</label><input type="number" id="tf-salary" class="form-input" value="${teacher?.baseSalary||''}"></div>
       <div class="form-actions"><button type="button" class="btn btn-outline" onclick="document.getElementById('modal-close-x').click()">${t('cancel')}</button><button type="submit" class="btn btn-primary">${t('save')}</button></div>
     </form>`);
+
+  // Initial tags
+  updateSubjectTags();
+
+  // Add subject listener
+  document.getElementById('tf-subjects-select')?.addEventListener('change', (e) => {
+    const val = e.target.value;
+    if (val && !selectedSubjects.includes(val)) {
+      selectedSubjects.push(val);
+      updateSubjectTags();
+    }
+    e.target.value = ''; // Reset select
+  });
+
   document.getElementById('teacher-form')?.addEventListener('submit', async e => {
     e.preventDefault();
     const btn = e.target.querySelector('button[type="submit"]');
@@ -63,7 +110,7 @@ function showTeacherForm(teacher = null) {
     const data = { 
       name: document.getElementById('tf-name').value.trim(), 
       email: document.getElementById('tf-email').value.trim(), 
-      subjects: document.getElementById('tf-subjects').value.split(',').map(s=>s.trim()).filter(Boolean), 
+      subjects: selectedSubjects, 
       phone: document.getElementById('tf-phone').value.trim(), 
       baseSalary: Number(document.getElementById('tf-salary').value) || 0,
       role: 'teacher', 
@@ -75,11 +122,7 @@ function showTeacherForm(teacher = null) {
       } else { 
         data.createdAt=new Date().toISOString(); 
         const password = document.getElementById('tf-password').value;
-        // 1. Create Auth Account (also saves basic profile to users collection)
         const newUid = await adminCreateUser(data.email, password, 'teacher', data.name);
-        
-        // 2. Save detailed profile to 'teachers' collection
-        // We use the same UID as document ID to keep them linked
         await setDoc(doc(db, 'teachers', newUid), data);
       } 
       closeModal(); 
