@@ -147,13 +147,14 @@ export function getTeacherDashboardHTML(teacherId, activeTab = 'overview') {
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                     <h4 class="sp-section-title" style="margin-bottom: 0;">📎 ${state.lang === 'ar' ? 'الوثائق والمستندات' : 'Documents & Certificates'}</h4>
                     <button class="btn btn-sm btn-primary" onclick="document.getElementById('doc-upload-input').click()">+ ${state.lang === 'ar' ? 'رفع وثيقة' : 'Upload Doc'}</button>
-                    <input type="file" id="doc-upload-input" style="display: none;" accept="image/*">
+                    <input type="file" id="doc-upload-input" style="display: none;" accept=".pdf,.doc,.docx,.jpg,.png,.txt,.xlsx,.xls">
                 </div>
                 <div class="grid-container" style="grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem;">
                     ${(teacher.documents || []).map(doc => `
                         <div class="glass-card p-3 animate-in" style="display: flex; align-items: center; gap: 1rem;">
                              <div style="font-size: 1.5rem;">
-                                ${doc.name.endsWith('.pdf') ? '📕' : 
+                                ${doc.url.match(/\.(jpg|jpeg|png|gif|webp|svg)/i) ? '🖼️' : 
+                                  doc.name.endsWith('.pdf') ? '📕' : 
                                   (doc.name.endsWith('.xlsx') || doc.name.endsWith('.xls')) ? '📊' :
                                   doc.name.endsWith('.txt') ? '📄' : '📎'}
                              </div>
