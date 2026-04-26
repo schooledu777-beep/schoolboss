@@ -157,7 +157,16 @@ export function getTeacherDashboardHTML(teacherId, activeTab = 'overview') {
                                 <div style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${doc.name}">${doc.name}</div>
                                 <div class="text-muted text-sm">${new Date(doc.date).toLocaleDateString()}</div>
                             </div>
-                            <a href="${doc.url}" target="_blank" class="btn btn-icon" title="${state.lang === 'ar' ? 'تحميل' : 'Download'}">📥</a>
+                            <div style="display: flex; gap: 0.25rem;">
+                                <a href="${doc.url}" target="_blank" class="btn btn-icon" title="${state.lang === 'ar' ? 'تحميل' : 'Download'}">📥</a>
+                                ${state.profile?.role === 'admin' ? `
+                                    <button class="btn btn-icon text-danger delete-doc-btn" 
+                                            data-teacher-id="${teacherId}" 
+                                            data-doc-name="${escapeHTML(doc.name)}" 
+                                            data-doc-url="${doc.url}" 
+                                            title="${state.lang === 'ar' ? 'حذف' : 'Delete'}">🗑️</button>
+                                ` : ''}
+                            </div>
                         </div>
                     `).join('') || `<div class="empty-state py-4"><p class="text-muted">${t('noData')}</p></div>`}
                 </div>
@@ -310,6 +319,38 @@ export function attachTeacherProfileEvents() {
                 showToast(state.lang === 'ar' ? 'تم رفع الوثيقة بنجاح' : 'Document uploaded successfully', 'success');
                 window.onTeacherUpdated(teacherId);
             } catch (err) {
+                showToast(t('errorOccurred'), 'error');
+            }
+        }
+    });
+    
+    // Document Deletion
+    document.addEventListener('click', async (e) => {
+        const btn = e.target.closest('.delete-doc-btn');
+        if (!btn) return;
+
+        const { teacherId, docName, docUrl } = btn.dataset;
+        
+        const confirmed = await showConfirm(
+            state.lang === 'ar' ? 'حذف الوثيقة' : 'Delete Document',
+            state.lang === 'ar' ? `هل أنت متأكد من حذف الوثيقة: ${docName}؟` : `Are you sure you want to delete: ${docName}?`
+        );
+
+        if (confirmed) {
+            try {
+                const teacherRef = doc(db, 'teachers', teacherId);
+                const teacherData = state.teachers.find(t => t.id === teacherId);
+                const docToRemove = teacherData.documents.find(d => d.url === docUrl);
+
+                if (docToRemove) {
+                    await updateDoc(teacherRef, {
+                        documents: arrayRemove(docToRemove)
+                    });
+                    showToast(state.lang === 'ar' ? 'تم حذف الوثيقة' : 'Document deleted', 'success');
+                    window.onTeacherUpdated(teacherId);
+                }
+            } catch (err) {
+                console.error(err);
                 showToast(t('errorOccurred'), 'error');
             }
         }
