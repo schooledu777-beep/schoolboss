@@ -178,26 +178,62 @@ export function getTeacherDashboardHTML(teacherId, activeTab = 'overview') {
                 </div>
             </div>
         `,
-        notifications: `<div class="empty-state"><h3>🔔 ${state.lang === 'ar' ? 'الإشعارات' : 'Notifications'}</h3><p>${t('noData')}</p></div>`,
         preferences: `
-            <div class="sp-section-card">
-                <h4 class="sp-section-title">⚙️ ${state.lang === 'ar' ? 'تفضيلات الجدول الدراسي' : 'Schedule Preferences'}</h4>
-                <div class="pref-grid">
-                    <div class="form-group full-width">
-                        <label>${state.lang === 'ar' ? 'ساعات العمل المفضلة' : 'Preferred Working Hours'}</label>
-                        <input type="text" id="pref-hours" class="form-input" value="${teacher.preferences?.hours || ''}" placeholder="${state.lang === 'ar' ? 'مثال: 8:00 ص - 2:00 م' : 'e.g. 8:00 AM - 2:00 PM'}">
+            <div class="sp-section-card pref-container">
+                <div class="pref-header-row">
+                    <div class="pref-title-group">
+                        <h4>${state.lang === 'ar' ? 'تفضيلات الجدول الدراسي' : 'Schedule Preferences'}</h4>
+                        <p>${state.lang === 'ar' ? 'حدد الأوقات المناسبة والمفضلة وغير المناسبة للتدريس' : 'Select suitable, preferred, and unsuitable times for teaching'}</p>
                     </div>
-                    <div class="form-group full-width">
-                        <label>${state.lang === 'ar' ? 'أيام الإجازة المفضلة' : 'Preferred Days Off'}</label>
-                        <input type="text" id="pref-days" class="form-input" value="${teacher.preferences?.daysOff || ''}" placeholder="${state.lang === 'ar' ? 'مثال: الأحد، الثلاثاء' : 'e.g. Sunday, Tuesday'}">
+                    <button class="btn btn-primary" id="save-prefs-btn" data-id="${teacherId}">
+                        <span>✅</span> ${state.lang === 'ar' ? 'حفظ التفضيلات' : 'Save Preferences'}
+                    </button>
+                </div>
+
+                <div class="pref-selector">
+                    <div class="pref-type active" data-type="preferred">
+                        <span class="pref-dot dot-preferred"></span>
+                        <span>${state.lang === 'ar' ? 'وقت مفضل' : 'Preferred Time'}</span>
                     </div>
-                    <div class="form-group full-width">
-                        <label>${state.lang === 'ar' ? 'ملاحظات إضافية' : 'Additional Notes'}</label>
-                        <textarea id="pref-notes" class="form-input" rows="4" placeholder="${state.lang === 'ar' ? 'أي ملاحظات أخرى تتعلق بالجدول...' : 'Any other scheduling notes...'}">${teacher.preferences?.notes || ''}</textarea>
+                    <div class="pref-type" data-type="suitable">
+                        <span class="pref-dot dot-suitable"></span>
+                        <span>${state.lang === 'ar' ? 'وقت مناسب' : 'Suitable Time'}</span>
+                    </div>
+                    <div class="pref-type" data-type="unsuitable">
+                        <span class="pref-dot dot-unsuitable"></span>
+                        <span>${state.lang === 'ar' ? 'وقت غير مناسب' : 'Unsuitable Time'}</span>
                     </div>
                 </div>
-                <div style="margin-top: 1.5rem; display: flex; justify-content: flex-end;">
-                    <button class="btn btn-primary" id="save-prefs-btn" data-id="${teacherId}">${state.lang === 'ar' ? 'حفظ التفضيلات' : 'Save Preferences'}</button>
+
+                <div class="pref-table-wrapper">
+                    <table class="pref-table">
+                        <thead>
+                            <tr>
+                                <th class="pref-time-col">${state.lang === 'ar' ? 'الوقت / اليوم' : 'Time / Day'}</th>
+                                ${[0, 1, 2, 3, 4].map(d => `<th>${[t('sun'), t('mon'), t('tue'), t('wed'), t('thu')][d]}</th>`).join('')}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${state.timeslots.map(slot => `
+                                <tr>
+                                    <td class="pref-time-col">${slot.startTime}-${slot.endTime}</td>
+                                    ${[0, 1, 2, 3, 4].map(day => {
+                                        const key = `${day}_${slot.id}`;
+                                        const status = teacher.preferences?.grid?.[key] || '';
+                                        const statusClass = status ? `selected-${status}` : '';
+                                        return `
+                                            <td>
+                                                <div class="pref-cell ${statusClass}" data-day="${day}" data-slot="${slot.id}" data-key="${key}">
+                                                    <span class="plus-icon">+</span>
+                                                    <span class="status-icon">✔️</span>
+                                                </div>
+                                            </td>
+                                        `;
+                                    }).join('')}
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         `
@@ -386,20 +422,50 @@ export function attachTeacherProfileEvents() {
         }
     });
 
+    // Schedule Preferences Interaction
+    document.addEventListener('click', (e) => {
+        const typeBtn = e.target.closest('.pref-type');
+        if (typeBtn) {
+            document.querySelectorAll('.pref-type').forEach(b => b.classList.remove('active'));
+            typeBtn.classList.add('active');
+            return;
+        }
+
+        const cell = e.target.closest('.pref-cell');
+        if (cell) {
+            const activeTypeBtn = document.querySelector('.pref-type.active');
+            const selectedType = activeTypeBtn ? activeTypeBtn.dataset.type : 'suitable';
+            
+            // Cycle or toggle
+            if (cell.classList.contains(`selected-${selectedType}`)) {
+                cell.classList.remove(`selected-${selectedType}`);
+            } else {
+                // Remove existing classes
+                cell.classList.remove('selected-preferred', 'selected-suitable', 'selected-unsuitable');
+                cell.classList.add(`selected-${selectedType}`);
+            }
+        }
+    });
+
     // Schedule Preferences Save
     document.addEventListener('click', async (e) => {
         const btn = e.target.closest('#save-prefs-btn');
         if (!btn) return;
 
         const teacherId = btn.dataset.id;
-        const preferences = {
-            hours: document.getElementById('pref-hours').value,
-            daysOff: document.getElementById('pref-days').value,
-            notes: document.getElementById('pref-notes').value
-        };
+        const gridData = {};
+        document.querySelectorAll('.pref-cell').forEach(cell => {
+            const key = cell.dataset.key;
+            if (cell.classList.contains('selected-preferred')) gridData[key] = 'preferred';
+            else if (cell.classList.contains('selected-suitable')) gridData[key] = 'suitable';
+            else if (cell.classList.contains('selected-unsuitable')) gridData[key] = 'unsuitable';
+        });
+
+        const preferences = { grid: gridData };
 
         try {
             btn.disabled = true;
+            const originalContent = btn.innerHTML;
             btn.innerHTML = `<span class="spinner-sm"></span> ${state.lang === 'ar' ? 'جاري الحفظ...' : 'Saving...'}`;
             
             const teacherRef = doc(db, 'teachers', teacherId);
@@ -416,7 +482,7 @@ export function attachTeacherProfileEvents() {
             showToast(t('errorOccurred'), 'error');
         } finally {
             btn.disabled = false;
-            btn.innerHTML = state.lang === 'ar' ? 'حفظ التفضيلات' : 'Save Preferences';
+            btn.innerHTML = `<span>✅</span> ${state.lang === 'ar' ? 'حفظ التفضيلات' : 'Save Preferences'}`;
         }
     });
 }
