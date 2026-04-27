@@ -409,28 +409,25 @@ textarea.form-input{resize:vertical}
 .pref-title-group h4 { margin: 0; font-size: 1.25rem; font-weight: 800; color: var(--text); }
 .pref-title-group p { margin: 0.25rem 0 0; font-size: 0.9rem; color: var(--text2); }
 
-.pref-selector { display: flex; gap: 1.25rem; justify-content: center; margin: 0.5rem 0; }
+.pref-selector { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1rem 0; }
 .pref-type { 
     display: flex; 
     align-items: center; 
-    gap: 0.75rem; 
-    padding: 0.85rem 1.5rem; 
-    border-radius: 50px; 
-    border: 2px solid transparent; 
+    justify-content: space-between;
+    padding: 1rem 1.5rem; 
+    border-radius: 12px; 
+    border: 1px solid var(--border); 
     cursor: pointer; 
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); 
     background: var(--surface);
-    min-width: 180px;
-    justify-content: center;
     font-weight: 700;
-    color: var(--text2);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
-.pref-type:hover { transform: translateY(-2px); background: var(--surface2); color: var(--text); }
-.pref-type.active { color: #fff; transform: translateY(-2px); }
-.pref-type[data-type="preferred"].active { background: var(--success); box-shadow: 0 10px 20px -5px rgba(16, 185, 129, 0.4); }
-.pref-type[data-type="suitable"].active { background: var(--info); box-shadow: 0 10px 20px -5px rgba(59, 130, 246, 0.4); }
-.pref-type[data-type="unsuitable"].active { background: var(--danger); box-shadow: 0 10px 20px -5px rgba(239, 68, 68, 0.4); }
+.pref-type:hover { transform: translateY(-2px); border-color: var(--text3); }
+.pref-type.active { transform: scale(0.98); }
+
+.pref-type[data-type="preferred"].active { background: var(--success); color: #fff !important; border-color: var(--success); }
+.pref-type[data-type="suitable"].active { background: var(--info); color: #fff !important; border-color: var(--info); }
+.pref-type[data-type="unsuitable"].active { background: var(--danger); color: #fff !important; border-color: var(--danger); }
 
 .pref-dot { width: 10px; height: 10px; border-radius: 50%; background: currentColor; }
 .pref-type:not(.active) .dot-preferred { background: var(--success); }

@@ -191,17 +191,17 @@ export function getTeacherDashboardHTML(teacherId, activeTab = 'overview') {
                 </div>
 
                 <div class="pref-selector">
-                    <div class="pref-type active" data-type="preferred">
-                        <span class="pref-dot dot-preferred"></span>
+                    <div class="pref-type active" data-type="preferred" style="border: 1px solid var(--success); color: var(--success); background: rgba(16, 185, 129, 0.05);">
                         <span>${state.lang === 'ar' ? 'وقت مفضل' : 'Preferred'}</span>
+                        <span class="pref-dot dot-preferred"></span>
                     </div>
-                    <div class="pref-type" data-type="suitable">
-                        <span class="pref-dot dot-suitable"></span>
+                    <div class="pref-type" data-type="suitable" style="border: 1px solid var(--info); color: var(--info); background: rgba(59, 130, 246, 0.05);">
                         <span>${state.lang === 'ar' ? 'وقت مناسب' : 'Suitable'}</span>
+                        <span class="pref-dot dot-suitable"></span>
                     </div>
-                    <div class="pref-type" data-type="unsuitable">
+                    <div class="pref-type" data-type="unsuitable" style="border: 1px solid var(--danger); color: var(--danger); background: rgba(239, 68, 68, 0.05);">
+                        <span>${state.lang === 'ar' ? 'وقت غير مناسب' : 'Unsuitable'}</span>
                         <span class="pref-dot dot-unsuitable"></span>
-                        <span>${state.lang === 'ar' ? 'غير مناسب' : 'Unsuitable'}</span>
                     </div>
                 </div>
 
@@ -209,25 +209,25 @@ export function getTeacherDashboardHTML(teacherId, activeTab = 'overview') {
                     <table class="pref-table">
                         <thead>
                             <tr>
-                                <th class="pref-time-col">${state.lang === 'ar' ? 'اليوم' : 'Day'}</th>
-                                ${state.timeslots.map(slot => `<th><div style="font-size:0.8rem;">${slot.startTime}</div><div style="font-size:0.7rem;opacity:0.7;">${slot.endTime}</div></th>`).join('')}
+                                <th class="pref-time-col">${state.lang === 'ar' ? 'الوقت / اليوم' : 'Time / Day'}</th>
+                                ${[0, 1, 2, 3, 4].map(d => `<th>${[t('sun'), t('mon'), t('tue'), t('wed'), t('thu')][d]}</th>`).join('')}
                             </tr>
                         </thead>
                         <tbody>
-                            ${[0, 1, 2, 3, 4].map(day => `
+                            ${state.timeslots.map(slot => `
                                 <tr>
                                     <td class="pref-time-col">
-                                        <strong>${[t('sun'), t('mon'), t('tue'), t('wed'), t('thu')][day]}</strong>
+                                        <strong>${slot.startTime}-${slot.endTime}</strong>
                                     </td>
-                                    ${state.timeslots.map(slot => {
+                                    ${[0, 1, 2, 3, 4].map(day => {
                                         const key = `${day}_${slot.id}`;
                                         const status = teacher.preferences?.grid?.[key] || '';
                                         const statusClass = status ? `selected-${status}` : '';
                                         return `
                                             <td>
-                                                <div class="pref-cell ${statusClass}" data-day="${day}" data-slot="${slot.id}" data-key="${key}" title="${slot.startTime} - ${slot.endTime}">
-                                                    <span class="plus-icon" style="font-size: 1.1rem; opacity: 0.3;">+</span>
-                                                    <span class="status-icon" style="font-size: 1.1rem;">${status === 'preferred' ? '⭐' : status === 'suitable' ? '✔️' : '❌'}</span>
+                                                <div class="pref-cell ${statusClass}" data-day="${day}" data-slot="${slot.id}" data-key="${key}">
+                                                    <span class="plus-icon" style="font-size: 1rem; opacity: 0.3;">+</span>
+                                                    <span class="status-icon" style="font-size: 1rem;">${status === 'preferred' ? '⭐' : status === 'suitable' ? '✔️' : '❌'}</span>
                                                 </div>
                                             </td>
                                         `;
