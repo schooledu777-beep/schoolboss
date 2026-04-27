@@ -1,6 +1,6 @@
 import { state, t } from '../state.js';
 import { db, doc, updateDoc } from '../firebase-config.js';
-import { escapeHTML, getInitials, formatCurrency, renderAvatar, showToast } from '../ui.js';
+import { escapeHTML, getInitials, formatCurrency, renderAvatar, showToast, showModal, closeModal } from '../ui.js';
 import { uploadFile } from '../services/uploadService.js';
 
 export function renderStudentProfile() {
@@ -350,7 +350,10 @@ export function getStudentDashboardHTML(studentId, activeTab = 'overview') {
             <p>${cls?.name || '—'} | ${state.lang === 'ar' ? 'الرقم:' : 'ID:'} ${student.id.substring(0, 8).toUpperCase()}</p>
           </div>
         </div>
-        <div class="sp-status-badge">${state.lang === 'ar' ? 'طالب' : 'Student'}</div>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <button class="btn btn-sm btn-outline print-id-card-btn" data-id="${studentId}">🪪 ${state.lang === 'ar' ? 'بطاقة الطالب' : 'Student ID'}</button>
+          <div class="sp-status-badge">${state.lang === 'ar' ? 'طالب' : 'Student'}</div>
+        </div>
       </div>
       
       <div class="sp-layout">
@@ -375,6 +378,12 @@ export function attachStudentProfileEvents() {
   window._studentProfileEventsAttached = true;
 
   document.addEventListener('click', e => {
+    const printBtn = e.target.closest('.print-id-card-btn');
+    if (printBtn) {
+      showStudentCardModal(printBtn.dataset.id);
+      return;
+    }
+
     const tabBtn = e.target.closest('.sp-tab-btn');
     if (tabBtn && tabBtn.dataset.studentId) {
       const tabId = tabBtn.dataset.tab;
@@ -433,4 +442,70 @@ export function attachStudentProfileEvents() {
         }
     }
   });
+}
+
+function showStudentCardModal(studentId) {
+  const student = state.students.find(s => s.id === studentId);
+  if (!student) return;
+
+  const cls = state.classes.find(c => c.id === student.classId || (c.studentIds || []).includes(studentId));
+
+  const cardHTML = `
+    <div class="id-card-container">
+      <div id="student-id-card" class="id-card">
+        <div class="id-card-header">
+          <div class="id-card-logo">EduManage Pro</div>
+          <div class="id-card-school">${state.lang === 'ar' ? 'أكاديمية المستقبل التعليمية' : 'Future Educational Academy'}</div>
+        </div>
+        <div class="id-card-body">
+          <div class="id-card-photo">
+            ${student.photoURL ? `<img src="${student.photoURL}" alt="${student.name}">` : `<div style="font-size: 3rem; margin-top: 2rem;">👤</div>`}
+          </div>
+          <h2 class="id-card-name">${escapeHTML(student.name)}</h2>
+          <div class="id-card-role">${state.lang === 'ar' ? 'طالب' : 'STUDENT'}</div>
+          
+          <div class="id-card-info">
+            <div class="id-info-row">
+              <span class="id-info-label">${state.lang === 'ar' ? 'الرقم التسلسلي' : 'Student ID'}</span>
+              <span class="id-info-value">${student.id.substring(0, 8).toUpperCase()}</span>
+            </div>
+            <div class="id-info-row">
+              <span class="id-info-label">${state.lang === 'ar' ? 'الصف الدراسي' : 'Grade / Class'}</span>
+              <span class="id-info-value">${cls?.name || '—'}</span>
+            </div>
+            <div class="id-info-row">
+              <span class="id-info-label">${state.lang === 'ar' ? 'العام الدراسي' : 'Academic Year'}</span>
+              <span class="id-info-value">2026/2027</span>
+            </div>
+          </div>
+          
+          <div class="id-qr">QR</div>
+        </div>
+        <div class="id-card-footer">
+          <div class="id-barcode"></div>
+          <div style="font-size: 0.6rem; margin-top: 0.5rem; opacity: 0.5;">www.edumanage-pro.com</div>
+        </div>
+      </div>
+      
+      <div class="modal-actions" style="display: flex; gap: 1rem; width: 100%; justify-content: center;">
+        <button class="btn btn-primary" onclick="window.print()">🖨️ ${state.lang === 'ar' ? 'طباعة' : 'Print'}</button>
+        <button class="btn btn-success" id="export-pdf-btn">📄 ${state.lang === 'ar' ? 'تصدير PDF' : 'Export PDF'}</button>
+        <button class="btn btn-outline" onclick="closeModal()">${state.lang === 'ar' ? 'إغلاق' : 'Close'}</button>
+      </div>
+    </div>
+  `;
+
+  showModal(state.lang === 'ar' ? 'معاينة بطاقة الطالب' : 'Student ID Card Preview', cardHTML, { wide: false });
+
+  document.getElementById('export-pdf-btn').onclick = () => {
+    const element = document.getElementById('student-id-card');
+    const opt = {
+      margin: 0,
+      filename: `student_id_${studentId.substring(0, 8)}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'mm', format: [85, 120], orientation: 'portrait' }
+    };
+    html2pdf().set(opt).from(element).save();
+  };
 }

@@ -17,6 +17,7 @@ export function getTeacherDashboardHTML(teacherId, activeTab = 'overview') {
         { id: 'subjects', label: state.lang === 'ar' ? 'المواد' : 'Subjects', icon: '📖' },
         { id: 'hr', label: state.lang === 'ar' ? 'الموارد البشرية' : 'HR', icon: '💰' },
         { id: 'documents', label: state.lang === 'ar' ? 'الوثائق والشهادات' : 'Documents', icon: '📎' },
+        { id: 'preferences', label: state.lang === 'ar' ? 'تفضيلات الجدول' : 'Schedule Prefs', icon: '⚙️' },
         { id: 'notifications', label: state.lang === 'ar' ? 'الإشعارات' : 'Notifications', icon: '🔔' }
     ];
 
@@ -177,7 +178,29 @@ export function getTeacherDashboardHTML(teacherId, activeTab = 'overview') {
                 </div>
             </div>
         `,
-        notifications: `<div class="empty-state"><h3>🔔 ${state.lang === 'ar' ? 'الإشعارات' : 'Notifications'}</h3><p>${t('noData')}</p></div>`
+        notifications: `<div class="empty-state"><h3>🔔 ${state.lang === 'ar' ? 'الإشعارات' : 'Notifications'}</h3><p>${t('noData')}</p></div>`,
+        preferences: `
+            <div class="sp-section-card">
+                <h4 class="sp-section-title">⚙️ ${state.lang === 'ar' ? 'تفضيلات الجدول الدراسي' : 'Schedule Preferences'}</h4>
+                <div class="pref-grid">
+                    <div class="form-group full-width">
+                        <label>${state.lang === 'ar' ? 'ساعات العمل المفضلة' : 'Preferred Working Hours'}</label>
+                        <input type="text" id="pref-hours" class="form-input" value="${teacher.preferences?.hours || ''}" placeholder="${state.lang === 'ar' ? 'مثال: 8:00 ص - 2:00 م' : 'e.g. 8:00 AM - 2:00 PM'}">
+                    </div>
+                    <div class="form-group full-width">
+                        <label>${state.lang === 'ar' ? 'أيام الإجازة المفضلة' : 'Preferred Days Off'}</label>
+                        <input type="text" id="pref-days" class="form-input" value="${teacher.preferences?.daysOff || ''}" placeholder="${state.lang === 'ar' ? 'مثال: الأحد، الثلاثاء' : 'e.g. Sunday, Tuesday'}">
+                    </div>
+                    <div class="form-group full-width">
+                        <label>${state.lang === 'ar' ? 'ملاحظات إضافية' : 'Additional Notes'}</label>
+                        <textarea id="pref-notes" class="form-input" rows="4" placeholder="${state.lang === 'ar' ? 'أي ملاحظات أخرى تتعلق بالجدول...' : 'Any other scheduling notes...'}">${teacher.preferences?.notes || ''}</textarea>
+                    </div>
+                </div>
+                <div style="margin-top: 1.5rem; display: flex; justify-content: flex-end;">
+                    <button class="btn btn-primary" id="save-prefs-btn" data-id="${teacherId}">${state.lang === 'ar' ? 'حفظ التفضيلات' : 'Save Preferences'}</button>
+                </div>
+            </div>
+        `
     };
 
     return `
@@ -360,6 +383,40 @@ export function attachTeacherProfileEvents() {
                 console.error(err);
                 showToast(t('errorOccurred'), 'error');
             }
+        }
+    });
+
+    // Schedule Preferences Save
+    document.addEventListener('click', async (e) => {
+        const btn = e.target.closest('#save-prefs-btn');
+        if (!btn) return;
+
+        const teacherId = btn.dataset.id;
+        const preferences = {
+            hours: document.getElementById('pref-hours').value,
+            daysOff: document.getElementById('pref-days').value,
+            notes: document.getElementById('pref-notes').value
+        };
+
+        try {
+            btn.disabled = true;
+            btn.innerHTML = `<span class="spinner-sm"></span> ${state.lang === 'ar' ? 'جاري الحفظ...' : 'Saving...'}`;
+            
+            const teacherRef = doc(db, 'teachers', teacherId);
+            await updateDoc(teacherRef, { preferences });
+            
+            // Update local state
+            const teacher = state.teachers.find(t => t.id === teacherId);
+            if (teacher) teacher.preferences = preferences;
+
+            showToast(state.lang === 'ar' ? 'تم حفظ التفضيلات بنجاح' : 'Preferences saved successfully', 'success');
+            window.onTeacherUpdated(teacherId);
+        } catch (err) {
+            console.error(err);
+            showToast(t('errorOccurred'), 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = state.lang === 'ar' ? 'حفظ التفضيلات' : 'Save Preferences';
         }
     });
 }
