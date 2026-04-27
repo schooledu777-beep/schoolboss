@@ -1,5 +1,5 @@
 import { state, t } from '../state.js';
-import { db, doc, updateDoc, arrayUnion } from '../firebase-config.js';
+import { db, doc, updateDoc, arrayUnion, arrayRemove } from '../firebase-config.js';
 import { escapeHTML, getInitials, renderAvatar, showToast } from '../ui.js';
 import { showTeacherForm } from './teachers.js';
 import { uploadFile } from '../services/uploadService.js';
@@ -209,26 +209,25 @@ export function getTeacherDashboardHTML(teacherId, activeTab = 'overview') {
                     <table class="pref-table">
                         <thead>
                             <tr>
-                                <th class="pref-time-col">${state.lang === 'ar' ? 'الفترة الزمنية' : 'Time Slot'}</th>
-                                ${[0, 1, 2, 3, 4].map(d => `<th>${[t('sun'), t('mon'), t('tue'), t('wed'), t('thu')][d]}</th>`).join('')}
+                                <th class="pref-time-col">${state.lang === 'ar' ? 'اليوم' : 'Day'}</th>
+                                ${state.timeslots.map(slot => `<th><div style="font-size:0.8rem;">${slot.startTime}</div><div style="font-size:0.7rem;opacity:0.7;">${slot.endTime}</div></th>`).join('')}
                             </tr>
                         </thead>
                         <tbody>
-                            ${state.timeslots.map(slot => `
+                            ${[0, 1, 2, 3, 4].map(day => `
                                 <tr>
                                     <td class="pref-time-col">
-                                        <div style="font-size: 0.8rem; opacity: 0.8;">${slot.startTime}</div>
-                                        <div style="font-size: 0.8rem; opacity: 0.8;">${slot.endTime}</div>
+                                        <strong>${[t('sun'), t('mon'), t('tue'), t('wed'), t('thu')][day]}</strong>
                                     </td>
-                                    ${[0, 1, 2, 3, 4].map(day => {
+                                    ${state.timeslots.map(slot => {
                                         const key = `${day}_${slot.id}`;
                                         const status = teacher.preferences?.grid?.[key] || '';
                                         const statusClass = status ? `selected-${status}` : '';
                                         return `
                                             <td>
-                                                <div class="pref-cell ${statusClass}" data-day="${day}" data-slot="${slot.id}" data-key="${key}">
-                                                    <span class="plus-icon" style="font-size: 1.2rem; opacity: 0.3;">+</span>
-                                                    <span class="status-icon" style="font-size: 1.2rem;">${status === 'preferred' ? '⭐' : status === 'suitable' ? '✔️' : '❌'}</span>
+                                                <div class="pref-cell ${statusClass}" data-day="${day}" data-slot="${slot.id}" data-key="${key}" title="${slot.startTime} - ${slot.endTime}">
+                                                    <span class="plus-icon" style="font-size: 1.1rem; opacity: 0.3;">+</span>
+                                                    <span class="status-icon" style="font-size: 1.1rem;">${status === 'preferred' ? '⭐' : status === 'suitable' ? '✔️' : '❌'}</span>
                                                 </div>
                                             </td>
                                         `;

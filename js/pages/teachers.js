@@ -39,7 +39,7 @@ export function attachTeacherEvents() {
 
 async function showTeacherCard(teacherId) {
     const { getTeacherDashboardHTML } = await import('./teacherProfile.js');
-    showModal(state.lang === 'ar' ? 'بطاقة المعلم' : 'Teacher Card', getTeacherDashboardHTML(teacherId), 'large');
+    showModal(state.lang === 'ar' ? 'بطاقة المعلم' : 'Teacher Card', getTeacherDashboardHTML(teacherId), { wide: true });
 }
 
 
