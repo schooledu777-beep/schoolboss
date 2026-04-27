@@ -494,3 +494,168 @@ textarea.form-input{resize:vertical}
 .pref-cell.selected-suitable .plus-icon,
 .pref-cell.selected-unsuitable .plus-icon { display: none; }
 
+/* ====== Modern Schedule Grid ====== */
+.schedule-table-wrap {
+    overflow-x: auto;
+    border-radius: var(--radius);
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    margin-top: 1rem;
+}
+
+.schedule-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    min-width: 800px;
+}
+
+.schedule-table th {
+    padding: 1.25rem 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 2px solid var(--border);
+    color: var(--text2);
+    font-weight: 800;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.schedule-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border);
+    border-inline-end: 1px solid var(--border);
+    vertical-align: middle;
+}
+
+.period-cell {
+    width: 110px;
+    background: rgba(255, 255, 255, 0.02);
+    text-align: center;
+}
+
+.period-number {
+    font-size: 1.3rem;
+    font-weight: 900;
+    color: var(--primary-light);
+    line-height: 1;
+    margin-bottom: 0.25rem;
+}
+
+.period-time {
+    font-size: 0.7rem;
+    color: var(--text3);
+    font-weight: 600;
+}
+
+.schedule-cell {
+    min-width: 140px;
+    height: 90px;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.schedule-cell.has-entry {
+    background: rgba(99, 102, 241, 0.02);
+}
+
+.sched-entry {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.75rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.4rem;
+    height: 100%;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    cursor: default;
+}
+
+.sched-entry::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.sched-entry:hover {
+    transform: translateY(-3px) scale(1.02);
+    border-color: var(--primary-light);
+    box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.2);
+    background: var(--surface);
+}
+
+.sched-entry:hover::before { opacity: 1; }
+
+.sched-entry-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    flex: 1;
+    z-index: 1;
+}
+
+.sched-subject {
+    font-weight: 800;
+    font-size: 0.9rem;
+    color: var(--text);
+}
+
+.sched-teacher {
+    font-size: 0.75rem;
+    color: var(--text2);
+    font-weight: 600;
+}
+
+.sched-del-btn {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger);
+    border: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    opacity: 0;
+    z-index: 2;
+}
+
+.sched-entry:hover .sched-del-btn { opacity: 1; }
+.sched-del-btn:hover { background: var(--danger); color: #fff; transform: scale(1.1); }
+
+.sched-add-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    color: var(--text3);
+    cursor: pointer;
+    transition: all 0.2s;
+    background: transparent;
+}
+
+.sched-add-placeholder:hover {
+    background: var(--surface);
+    border-color: var(--primary-light);
+    color: var(--primary-light);
+    transform: scale(0.98);
+}
+
+.sched-add-placeholder .plus-icon {
+    font-size: 1.4rem;
+    font-weight: 300;
+}
