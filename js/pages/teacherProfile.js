@@ -183,7 +183,7 @@ export function getTeacherDashboardHTML(teacherId, activeTab = 'overview') {
                 <div class="pref-header-row">
                     <div class="pref-title-group">
                         <h4>${state.lang === 'ar' ? 'تفضيلات الجدول الدراسي' : 'Schedule Preferences'}</h4>
-                        <p>${state.lang === 'ar' ? 'حدد الأوقات المناسبة والمفضلة وغير المناسبة للتدريس' : 'Select suitable, preferred, and unsuitable times for teaching'}</p>
+                        <p>${state.lang === 'ar' ? 'قم بتحديد تفضيلاتك الزمنية للحصص الدراسية' : 'Manage your teaching time preferences'}</p>
                     </div>
                     <button class="btn btn-primary" id="save-prefs-btn" data-id="${teacherId}">
                         <span>✅</span> ${state.lang === 'ar' ? 'حفظ التفضيلات' : 'Save Preferences'}
@@ -193,15 +193,15 @@ export function getTeacherDashboardHTML(teacherId, activeTab = 'overview') {
                 <div class="pref-selector">
                     <div class="pref-type active" data-type="preferred">
                         <span class="pref-dot dot-preferred"></span>
-                        <span>${state.lang === 'ar' ? 'وقت مفضل' : 'Preferred Time'}</span>
+                        <span>${state.lang === 'ar' ? 'وقت مفضل' : 'Preferred'}</span>
                     </div>
                     <div class="pref-type" data-type="suitable">
                         <span class="pref-dot dot-suitable"></span>
-                        <span>${state.lang === 'ar' ? 'وقت مناسب' : 'Suitable Time'}</span>
+                        <span>${state.lang === 'ar' ? 'وقت مناسب' : 'Suitable'}</span>
                     </div>
                     <div class="pref-type" data-type="unsuitable">
                         <span class="pref-dot dot-unsuitable"></span>
-                        <span>${state.lang === 'ar' ? 'وقت غير مناسب' : 'Unsuitable Time'}</span>
+                        <span>${state.lang === 'ar' ? 'غير مناسب' : 'Unsuitable'}</span>
                     </div>
                 </div>
 
@@ -209,14 +209,17 @@ export function getTeacherDashboardHTML(teacherId, activeTab = 'overview') {
                     <table class="pref-table">
                         <thead>
                             <tr>
-                                <th class="pref-time-col">${state.lang === 'ar' ? 'الوقت / اليوم' : 'Time / Day'}</th>
+                                <th class="pref-time-col">${state.lang === 'ar' ? 'الفترة الزمنية' : 'Time Slot'}</th>
                                 ${[0, 1, 2, 3, 4].map(d => `<th>${[t('sun'), t('mon'), t('tue'), t('wed'), t('thu')][d]}</th>`).join('')}
                             </tr>
                         </thead>
                         <tbody>
                             ${state.timeslots.map(slot => `
                                 <tr>
-                                    <td class="pref-time-col">${slot.startTime}-${slot.endTime}</td>
+                                    <td class="pref-time-col">
+                                        <div style="font-size: 0.8rem; opacity: 0.8;">${slot.startTime}</div>
+                                        <div style="font-size: 0.8rem; opacity: 0.8;">${slot.endTime}</div>
+                                    </td>
                                     ${[0, 1, 2, 3, 4].map(day => {
                                         const key = `${day}_${slot.id}`;
                                         const status = teacher.preferences?.grid?.[key] || '';
@@ -224,8 +227,8 @@ export function getTeacherDashboardHTML(teacherId, activeTab = 'overview') {
                                         return `
                                             <td>
                                                 <div class="pref-cell ${statusClass}" data-day="${day}" data-slot="${slot.id}" data-key="${key}">
-                                                    <span class="plus-icon">+</span>
-                                                    <span class="status-icon">✔️</span>
+                                                    <span class="plus-icon" style="font-size: 1.2rem; opacity: 0.3;">+</span>
+                                                    <span class="status-icon" style="font-size: 1.2rem;">${status === 'preferred' ? '⭐' : status === 'suitable' ? '✔️' : '❌'}</span>
                                                 </div>
                                             </td>
                                         `;
@@ -435,14 +438,21 @@ export function attachTeacherProfileEvents() {
         if (cell) {
             const activeTypeBtn = document.querySelector('.pref-type.active');
             const selectedType = activeTypeBtn ? activeTypeBtn.dataset.type : 'suitable';
+            const statusIcon = cell.querySelector('.status-icon');
             
             // Cycle or toggle
             if (cell.classList.contains(`selected-${selectedType}`)) {
                 cell.classList.remove(`selected-${selectedType}`);
+                statusIcon.textContent = '';
             } else {
                 // Remove existing classes
                 cell.classList.remove('selected-preferred', 'selected-suitable', 'selected-unsuitable');
                 cell.classList.add(`selected-${selectedType}`);
+                
+                // Update icon
+                if (selectedType === 'preferred') statusIcon.textContent = '⭐';
+                else if (selectedType === 'suitable') statusIcon.textContent = '✔️';
+                else if (selectedType === 'unsuitable') statusIcon.textContent = '❌';
             }
         }
     });

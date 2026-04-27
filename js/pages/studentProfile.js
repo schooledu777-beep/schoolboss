@@ -455,35 +455,39 @@ function showStudentCardModal(studentId) {
       <div id="student-id-card" class="id-card">
         <div class="id-card-header">
           <div class="id-card-logo">EduManage Pro</div>
-          <div class="id-card-school">${state.lang === 'ar' ? 'أكاديمية المستقبل التعليمية' : 'Future Educational Academy'}</div>
+          <div class="id-card-school">${state.lang === 'ar' ? 'أكاديمية المستقبل التعليمية' : 'FUTURE ACADEMY'}</div>
         </div>
         <div class="id-card-body">
-          <div class="id-card-photo">
-            ${student.photoURL ? `<img src="${student.photoURL}" alt="${student.name}">` : `<div style="font-size: 3rem; margin-top: 2rem;">👤</div>`}
+          <div class="id-card-photo-container">
+            <div class="id-card-photo">
+              ${student.photoURL ? `<img src="${student.photoURL}" alt="${student.name}">` : `<div style="font-size: 4rem; display: flex; align-items: center; justify-content: center; height: 100%; background: #f8fafc; color: #cbd5e1;">👤</div>`}
+            </div>
+            <div class="id-verified-badge">✓</div>
           </div>
+          
           <h2 class="id-card-name">${escapeHTML(student.name)}</h2>
-          <div class="id-card-role">${state.lang === 'ar' ? 'طالب' : 'STUDENT'}</div>
+          <div class="id-card-role">${state.lang === 'ar' ? 'طالب معتمد' : 'CERTIFIED STUDENT'}</div>
           
           <div class="id-card-info">
             <div class="id-info-row">
-              <span class="id-info-label">${state.lang === 'ar' ? 'الرقم التسلسلي' : 'Student ID'}</span>
+              <span class="id-info-label">${state.lang === 'ar' ? 'رقم القيد' : 'Student ID'}</span>
               <span class="id-info-value">${student.id.substring(0, 8).toUpperCase()}</span>
             </div>
             <div class="id-info-row">
               <span class="id-info-label">${state.lang === 'ar' ? 'الصف الدراسي' : 'Grade / Class'}</span>
               <span class="id-info-value">${cls?.name || '—'}</span>
             </div>
-            <div class="id-info-row">
+            <div class="id-info-row" style="border-bottom: none;">
               <span class="id-info-label">${state.lang === 'ar' ? 'العام الدراسي' : 'Academic Year'}</span>
               <span class="id-info-value">2026/2027</span>
             </div>
           </div>
-          
-          <div class="id-qr">QR</div>
         </div>
         <div class="id-card-footer">
-          <div class="id-barcode"></div>
-          <div style="font-size: 0.6rem; margin-top: 0.5rem; opacity: 0.5;">www.edumanage-pro.com</div>
+          <div class="id-qr-container">
+            <div style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 0.5rem; color: #cbd5e1; border: 1px dashed #cbd5e1;">QR</div>
+          </div>
+          <div class="id-signature">${state.lang === 'ar' ? 'توقيع المدير' : 'Principal Sign'}</div>
         </div>
       </div>
       
