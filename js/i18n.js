@@ -103,4 +103,10 @@ export const translations = {
   bulkGrading: { ar: 'رصد درجات جماعي', en: 'Bulk Grading' },
   todaySchedule: { ar: 'جدول اليوم', en: "Today's Schedule" },
   notificationHistory: { ar: 'سجل التنبيهات', en: 'Notification History' },
+  // Page title keys (from route camelCase conversion)
+  studentProfile: { ar: 'الملف الشخصي للطالب', en: 'Student Profile' },
+  parentProfile: { ar: 'ملف ولي الأمر', en: 'Parent Profile' },
+  academicAlerts: { ar: 'التنبيهات الأكاديمية', en: 'Academic Alerts' },
+  busTracking: { ar: 'تتبع الحافلات', en: 'Bus Tracking' },
+  period: { ar: 'حصة', en: 'Period' },
 };

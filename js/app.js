@@ -142,13 +142,17 @@ Object.keys(pages).forEach(path => {
 initRouter();
 
 // Subscribe to state changes — only re-render page CONTENT, not full app
+let _isRendering = false;
 state.subscribe(() => {
+  // Don't trigger during renderApp call or when auth not ready
+  if (_isRendering) return;
   if (!state.user || !state.profile) return;
   const mainContent = document.getElementById('main-content');
-  if (!mainContent) return;
+  if (!mainContent) return; // Layout not built yet
   const currentHash = window.location.hash.slice(1) || 'dashboard';
   const basePath = currentHash.split('?')[0];
   const page = pages[basePath] || pages.dashboard;
+  _isRendering = true;
   mainContent.innerHTML = page.render();
   if (typeof page.events === 'function') {
     if (basePath === 'settings') page.events(renderApp);
@@ -157,6 +161,7 @@ state.subscribe(() => {
   attachStudentProfileEvents();
   attachParentProfileEvents();
   attachTeacherProfileEvents();
+  _isRendering = false;
 });
 
 // Init Auth

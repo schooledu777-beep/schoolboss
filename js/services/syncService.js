@@ -50,23 +50,37 @@ class SyncService {
       if (!collectionsNeeded.includes(collName)) {
         unsub();
         this.activeSubscriptions.delete(collName);
-        console.log(`[Sync] Unsubscribed from ${collName}`);
       }
     }
+
+    // Debounce batch: collect all incoming updates, then notify once
+    let debounceTimer = null;
+    const pendingUpdates = {};
+
+    const flushUpdates = () => {
+      if (Object.keys(pendingUpdates).length > 0) {
+        Object.assign(state, pendingUpdates);
+        Object.keys(pendingUpdates).forEach(k => delete pendingUpdates[k]);
+        state.notify();
+      }
+      debounceTimer = null;
+    };
 
     // Subscribe to new collections
     collectionsNeeded.forEach(collName => {
       if (!this.activeSubscriptions.has(collName)) {
         const key = this.getStateKey(collName);
         const unsub = onSnapshot(collection(db, collName), (snap) => {
-          state.update({ [key]: snap.docs.map(d => ({ id: d.id, ...d.data() })) });
-          console.log(`[Sync] Updated ${collName}`);
+          pendingUpdates[key] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          if (debounceTimer) clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(flushUpdates, 80);
         }, (err) => {
           console.warn(`[Sync] Listener error for ${collName}:`, err);
-          state.update({ [key]: [] });
+          pendingUpdates[key] = [];
+          if (debounceTimer) clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(flushUpdates, 80);
         });
         this.activeSubscriptions.set(collName, unsub);
-        console.log(`[Sync] Subscribed to ${collName}`);
       }
     });
   }
