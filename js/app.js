@@ -1,10 +1,14 @@
-// ERP Sync - 2026-04-25
+// ERP Sync - 2026-04-28
 import { state, applyTheme, applyLang } from './state.js';
-import { db, collection, onSnapshot } from './firebase-config.js';
 import { hideLoading } from './ui.js';
-import { registerRoute, initRouter, handleRoute, navigate } from './router.js';
+import { registerRoute, initRouter } from './router.js';
 import { renderAuthPage, attachAuthEvents, initAuth } from './auth.js';
 import { renderSidebar, renderHeader, attachLayoutEvents } from './components.js';
+import { syncService } from './services/syncService.js';
+import { academicService } from './services/academicService.js';
+import { libraryService } from './services/libraryService.js';
+
+// Import all page renderers
 import { renderDashboard, attachDashboardEvents } from './pages/dashboard.js';
 import { renderStudents, attachStudentEvents } from './pages/students.js';
 import { renderTeachers, attachTeacherEvents } from './pages/teachers.js';
@@ -24,8 +28,6 @@ import { renderHostel, attachHostelEvents } from './pages/hostel.js';
 import { renderStudentProfile, attachStudentProfileEvents } from './pages/studentProfile.js';
 import { renderParentProfile, attachParentProfileEvents } from './pages/parentProfile.js';
 import { attachTeacherProfileEvents } from './pages/teacherProfile.js';
-import { academicService } from './services/academicService.js';
-import { libraryService } from './services/libraryService.js';
 
 // ========================= APPLY INITIAL SETTINGS =========================
 applyTheme();
@@ -53,63 +55,84 @@ const pages = {
   'student-profile': { render: renderStudentProfile, events: attachStudentProfileEvents },
   'parent-profile': { render: renderParentProfile, events: attachParentProfileEvents },
   settings:        { render: renderSettings, events: (renderApp) => attachSettingsEvents(renderApp) },
-  // Placeholder pages for future features
-  exams:          { render: () => placeholderPage('📑', 'exams'), events: () => {} },
-  homework:       { render: () => placeholderPage('📚', 'homework'), events: () => {} },
-  rewards:        { render: () => placeholderPage('⭐', 'rewards'), events: () => {} },
-  clinic:         { render: () => placeholderPage('🏥', 'clinic'), events: () => {} },
-  library:        { render: () => placeholderPage('📖', 'library'), events: () => {} },
-  'bus-tracking': { render: () => placeholderPage('🚌', 'busTracking'), events: () => {} },
-  'my-children':  { render: renderDashboard, events: attachDashboardEvents },
-  materials:      { render: () => placeholderPage('📖', 'materials'), events: () => {} },
 };
 
 function placeholderPage(icon, key) {
   return `<div class="page-content animate-in"><div class="empty-state glass-card"><span class="empty-icon">${icon}</span><h3>${state.lang === 'ar' ? 'قريباً' : 'Coming Soon'}</h3><p class="text-muted">${state.lang === 'ar' ? 'هذه الميزة قيد التطوير' : 'This feature is under development'}</p></div></div>`;
 }
 
+// Additional pages
+['exams', 'homework', 'rewards', 'clinic', 'bus-tracking', 'materials'].forEach(key => {
+  if (!pages[key]) pages[key] = { render: () => placeholderPage('🚀', key), events: () => {} };
+});
+pages['my-children'] = pages.dashboard;
+
 // ========================= RENDER APP =========================
+let currentLayout = null; // Track current layout type (auth or app)
+
 function renderApp() {
   const app = document.getElementById('app');
+  
+  // Handle Auth State
   if (!state.user || !state.profile) {
-    app.innerHTML = renderAuthPage();
-    attachAuthEvents();
+    if (currentLayout !== 'auth') {
+      app.innerHTML = renderAuthPage();
+      attachAuthEvents();
+      currentLayout = 'auth';
+    }
     return;
   }
 
+  // Determine current page
   const currentHash = window.location.hash.slice(1) || 'dashboard';
   const basePath = currentHash.split('?')[0];
   let page = pages[basePath] || pages.dashboard;
 
-  // Route Guard for Admin-only pages
-  const adminOnlyPages = ['admissions', 'settings'];
+  // Route Guard
+  const adminOnlyPages = ['admissions', 'settings', 'hr'];
   if (adminOnlyPages.includes(basePath) && state.profile.role !== 'admin') {
     page = pages.dashboard;
     window.location.hash = 'dashboard';
   }
 
-  app.innerHTML = `
-    <div class="app-layout">
-      ${renderSidebar()}
-      <div class="main-area">
-        ${renderHeader()}
-        <main class="main-content" id="main-content">
-          ${page.render()}
-        </main>
-      </div>
-    </div>`;
-
-  attachLayoutEvents(renderApp);
-  attachStudentProfileEvents(); // Ensure student profile tab switching works
-  attachParentProfileEvents(); // Ensure parent profile tab switching works
-  attachTeacherProfileEvents(); // Ensure teacher profile tab switching works
-  if (typeof page.events === 'function') {
-    if (basePath === 'settings') page.events(renderApp);
-    else page.events();
+  // Render Full Layout if needed
+  if (currentLayout !== 'app') {
+    app.innerHTML = `
+      <div class="app-layout">
+        ${renderSidebar()}
+        <div class="main-area">
+          ${renderHeader()}
+          <main class="main-content" id="main-content"></main>
+        </div>
+      </div>`;
+    attachLayoutEvents(renderApp);
+    currentLayout = 'app';
   }
+
+  // Render Page Content
+  const mainContent = document.getElementById('main-content');
+  if (mainContent) {
+    mainContent.innerHTML = page.render();
+    
+    // Attach Page Events
+    if (typeof page.events === 'function') {
+      if (basePath === 'settings') page.events(renderApp);
+      else page.events();
+    }
+    
+    // Global profile events (tab switching etc)
+    attachStudentProfileEvents();
+    attachParentProfileEvents();
+    attachTeacherProfileEvents();
+  }
+
+  // Sync data for current page
+  syncService.syncPage(basePath);
 }
 
-// ========================= REGISTER ROUTES =========================
+// ========================= INITIALIZATION =========================
+
+// Register all routes
 Object.keys(pages).forEach(path => {
   registerRoute(path, () => {
     state.currentPage = path;
@@ -117,63 +140,19 @@ Object.keys(pages).forEach(path => {
   });
 });
 
-// ========================= DATA LISTENERS =========================
-function startListeners() {
-  const collections = [
-    { name: 'students', key: 'students' },
-    { name: 'teachers', key: 'teachers' },
-    { name: 'parents', key: 'parents' },
-    { name: 'classes', key: 'classes' },
-    { name: 'subjects', key: 'subjects' },
-    { name: 'attendance', key: 'attendance' },
-    { name: 'grades', key: 'grades' },
-    { name: 'schedules', key: 'schedules' },
-    { name: 'fees', key: 'fees' },
-    { name: 'announcements', key: 'announcements' },
-    { name: 'messages', key: 'messages' },
-    { name: 'homework', key: 'homework' },
-    { name: 'rewards', key: 'rewards' },
-    { name: 'assessment_types', key: 'assessmentTypes' },
-    { name: 'subject_weights', key: 'subjectWeights' },
-    { name: 'academic_alerts', key: 'academicAlerts' },
-    { name: 'timeslots', key: 'timeslots' },
-    { name: 'classrooms', key: 'classrooms' },
-    { name: 'teacher_availability', key: 'teacherAvailability' },
-    { name: 'leaves', key: 'leaves' },
-    { name: 'salary_slips', key: 'salarySlips' },
-    { name: 'books', key: 'books' },
-    { name: 'borrowing_records', key: 'borrowingRecords' },
-    { name: 'rooms', key: 'rooms' },
-    { name: 'bed_allocations', key: 'bedAllocations' },
-    { name: 'notification_logs', key: 'notificationLogs' },
-    { name: 'transfers', key: 'transfers' },
-  ];
-
-  collections.forEach(({ name, key }) => {
-    try {
-      const unsub = onSnapshot(collection(db, name), (snap) => {
-        state[key] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        // Re-render only if the current page is relevant to this collection
-        const relevantPages = [name, 'dashboard', state.currentPage];
-        if (state.user && state.profile && relevantPages.includes(state.currentPage)) {
-          renderApp();
-        }
-      }, (err) => {
-        console.warn(`Listener error for ${name}:`, err);
-        state[key] = [];
-      });
-      state.unsubscribers.push(unsub);
-    } catch(e) {
-      console.warn(`Failed to listen to ${name}:`, e);
-    }
-  });
-}
-
-// ========================= INIT =========================
+// Start Router
 initRouter();
+
+// Subscribe to state changes for reactive UI
+state.subscribe(() => {
+  // Only re-render if the page hasn't changed (data update)
+  // Or handle specific small updates here
+  renderApp();
+});
+
+// Init Auth
 initAuth(
   () => { // onLogin
-    startListeners();
     const route = window.location.hash.slice(1) || 'dashboard';
     state.currentPage = route;
     if (state.profile?.role === 'admin') {
@@ -183,6 +162,9 @@ initAuth(
     renderApp();
   },
   () => { // onLogout
+    syncService.stopAll();
+    currentLayout = null;
     renderApp();
   }
 );
+

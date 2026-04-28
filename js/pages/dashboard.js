@@ -1,8 +1,7 @@
 import { state, t } from '../state.js';
-import { db, collection, getDocs, query, where, onSnapshot, addDoc, doc, setDoc, writeBatch } from '../firebase-config.js';
-import { formatCurrency, showToast, showConfirm } from '../ui.js';
+import { db, collection, getDocs, query, where, addDoc, doc, setDoc, writeBatch } from '../firebase-config.js';
+import { formatCurrency, showToast, showConfirm, renderStatsCard, renderCard, renderBadge } from '../ui.js';
 import { adminCreateUser } from '../auth.js';
-import { portalService } from '../services/portalService.js';
 
 export function renderDashboard() {
   const role = state.profile?.role || 'student';
@@ -11,74 +10,63 @@ export function renderDashboard() {
 }
 
 function renderAdminDash() {
-  const totalStudents = state.students.length;
-  const totalTeachers = state.teachers.length;
-  const totalClasses = state.classes.length;
+  const { students, teachers, classes, attendance, fees, schoolType, lang, profile, announcements } = state;
   const todayStr = new Date().toISOString().split('T')[0];
-  const todayAtt = state.attendance.filter(a => a.date === todayStr);
+  const todayAtt = attendance.filter(a => a.date === todayStr);
   const presentCount = todayAtt.filter(a => a.status === 'present').length;
   const attRate = todayAtt.length > 0 ? Math.round((presentCount / todayAtt.length) * 100) : 0;
-  const isPrivate = state.schoolType === 'private';
-  const totalFees = state.fees.reduce((s, f) => s + (f.amount || 0), 0);
-  const paidFees = state.fees.reduce((s, f) => s + (f.paidAmount || 0), 0);
+  
+  const totalFees = fees.reduce((s, f) => s + (f.amount || 0), 0);
+  const paidFees = fees.reduce((s, f) => s + (f.paidAmount || 0), 0);
+
+  const stats = [
+    renderStatsCard(t('totalStudents'), students.length, '👨‍🎓', 'gradient-purple'),
+    renderStatsCard(t('totalTeachers'), teachers.length, '👨‍🏫', 'gradient-cyan'),
+    renderStatsCard(t('totalClasses'), classes.length, '🏫', 'gradient-green'),
+    renderStatsCard(t('attendanceRate'), `${attRate}%`, '📋', 'gradient-amber')
+  ];
+
+  if (schoolType === 'private') {
+    stats.push(renderStatsCard(t('revenue'), formatCurrency(paidFees), '💰', 'gradient-emerald'));
+    stats.push(renderStatsCard(t('pending'), formatCurrency(totalFees - paidFees), '⏰', 'gradient-red'));
+  }
+
+  const actions = [
+    { href: '#students', icon: '👨‍🎓', label: lang === 'ar' ? 'إضافة طالب' : 'Add Student' },
+    { href: '#teachers', icon: '👨‍🏫', label: lang === 'ar' ? 'إضافة معلم' : 'Add Teacher' },
+    { href: '#attendance', icon: '📋', label: lang === 'ar' ? 'تسجيل حضور' : 'Take Attendance' },
+    { href: '#announcements', icon: '📢', label: lang === 'ar' ? 'إعلان جديد' : 'New Announcement' },
+    { id: 'btn-mock-data', icon: '🧪', label: lang === 'ar' ? 'بيانات تجريبية' : 'Mock Data' },
+    { id: 'btn-clear-dash', icon: '🗑️', label: lang === 'ar' ? 'مسح البيانات' : 'Clear Data', className: 'danger' }
+  ];
+
+  const actionsHtml = actions.map(a => `
+    <a href="${a.href || '#'}" ${a.id ? `id="${a.id}"` : ''} class="quick-action-btn ${a.className || ''}">
+      <span>${a.icon}</span><span>${a.label}</span>
+    </a>`).join('');
+
+  const recentAnnsHtml = announcements.slice(0, 5).map(a => `
+    <div class="recent-item">
+      <span class="recent-icon">📢</span>
+      <div><strong>${a.title}</strong><p class="text-muted text-sm">${a.body?.substring(0, 60) || ''}...</p></div>
+    </div>`).join('') || `<p class="text-muted text-center">${t('noData')}</p>`;
 
   return `
   <div class="page-content animate-in">
     <div class="page-header">
-      <h2>${t('dashboard')}</h2>
-      <p class="text-muted">${state.lang === 'ar' ? 'مرحباً بك، ' : 'Welcome, '}${state.profile?.name}</p>
+      <div>
+        <h2>${t('dashboard')}</h2>
+        <p class="text-muted">${lang === 'ar' ? 'مرحباً بك، ' : 'Welcome, '}${profile?.name}</p>
+      </div>
     </div>
+    
     <div class="stats-grid">
-      <div class="stat-card gradient-purple">
-        <div class="stat-icon">👨‍🎓</div>
-        <div class="stat-info"><h3>${totalStudents}</h3><p>${t('totalStudents')}</p></div>
-      </div>
-      <div class="stat-card gradient-cyan">
-        <div class="stat-icon">👨‍🏫</div>
-        <div class="stat-info"><h3>${totalTeachers}</h3><p>${t('totalTeachers')}</p></div>
-      </div>
-      <div class="stat-card gradient-green">
-        <div class="stat-icon">🏫</div>
-        <div class="stat-info"><h3>${totalClasses}</h3><p>${t('totalClasses')}</p></div>
-      </div>
-      <div class="stat-card gradient-amber">
-        <div class="stat-icon">📋</div>
-        <div class="stat-info"><h3>${attRate}%</h3><p>${t('attendanceRate')}</p></div>
-      </div>
+      ${stats.join('')}
     </div>
-    ${isPrivate ? `
-    <div class="stats-grid grid-2">
-      <div class="stat-card gradient-emerald">
-        <div class="stat-icon">💰</div>
-        <div class="stat-info"><h3>${formatCurrency(paidFees)}</h3><p>${t('revenue')}</p></div>
-      </div>
-      <div class="stat-card gradient-red">
-        <div class="stat-icon">⏰</div>
-        <div class="stat-info"><h3>${formatCurrency(totalFees - paidFees)}</h3><p>${t('pending')}</p></div>
-      </div>
-    </div>` : ''}
+
     <div class="grid-2">
-      <div class="card glass-card">
-        <h3 class="card-title">${state.lang === 'ar' ? 'إجراءات سريعة' : 'Quick Actions'}</h3>
-        <div class="quick-actions">
-          <a href="#students" class="quick-action-btn"><span>👨‍🎓</span><span>${state.lang === 'ar' ? 'إضافة طالب' : 'Add Student'}</span></a>
-          <a href="#teachers" class="quick-action-btn"><span>👨‍🏫</span><span>${state.lang === 'ar' ? 'إضافة معلم' : 'Add Teacher'}</span></a>
-          <a href="#attendance" class="quick-action-btn"><span>📋</span><span>${state.lang === 'ar' ? 'تسجيل حضور' : 'Take Attendance'}</span></a>
-          <a href="#announcements" class="quick-action-btn"><span>📢</span><span>${state.lang === 'ar' ? 'إعلان جديد' : 'New Announcement'}</span></a>
-          <a href="#" id="btn-mock-data" class="quick-action-btn"><span>🧪</span><span>${state.lang === 'ar' ? 'بيانات تجريبية' : 'Mock Data'}</span></a>
-          <a href="#" id="btn-clear-dash" class="quick-action-btn danger"><span>🗑️</span><span>${state.lang === 'ar' ? 'مسح البيانات' : 'Clear Data'}</span></a>
-        </div>
-      </div>
-      <div class="card glass-card">
-        <h3 class="card-title">${state.lang === 'ar' ? 'آخر الإعلانات' : 'Recent Announcements'}</h3>
-        <div class="recent-list">
-          ${state.announcements.slice(0, 5).map(a => `
-            <div class="recent-item">
-              <span class="recent-icon">📢</span>
-              <div><strong>${a.title}</strong><p class="text-muted text-sm">${a.body?.substring(0, 60) || ''}...</p></div>
-            </div>`).join('') || `<p class="text-muted text-center">${t('noData')}</p>`}
-        </div>
-      </div>
+      ${renderCard(lang === 'ar' ? 'إجراءات سريعة' : 'Quick Actions', `<div class="quick-actions">${actionsHtml}</div>`)}
+      ${renderCard(lang === 'ar' ? 'آخر الإعلانات' : 'Recent Announcements', `<div class="recent-list">${recentAnnsHtml}</div>`)}
     </div>
   </div>`;
 }

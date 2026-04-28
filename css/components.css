@@ -1,0 +1,44 @@
+/* Glass Card */
+.glass-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+[data-theme="light"] .glass-card{box-shadow:var(--shadow)}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.6rem 1.25rem;border:none;border-radius:var(--radius-sm);font-family:var(--font);font-size:.9rem;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap}
+.btn:hover{transform:translateY(-1px);filter:brightness(1.1)}
+.btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff}
+.btn-success{background:var(--success);color:#fff}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-outline:hover{background:var(--surface2)}
+.btn-sm{padding:.35rem .75rem;font-size:.8rem}
+.btn-icon{background:none;border:none;cursor:pointer;color:var(--text);font-size:1.2rem;padding:.4rem;border-radius:var(--radius-sm);transition:background .2s}
+.btn-icon:hover{background:var(--surface2)}
+
+/* Forms */
+.form-group{display:flex;flex-direction:column;gap:.35rem}
+.form-group label{font-size:.85rem;font-weight:600;color:var(--text2)}
+.form-input,.form-select{width:100%;padding:.7rem 1rem;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:var(--font);font-size:.95rem;transition:border-color .2s,box-shadow .2s}
+.form-input:focus,.form-select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(99,102,241,.2)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.form-actions{display:flex;gap:.75rem;justify-content:flex-end;margin-top:.5rem}
+
+/* Modals */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:2rem;max-width:600px;width:90%;text-align:start;max-height:85vh;overflow-y:auto;animation:scaleIn .2s ease}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;padding-bottom:.75rem;border-bottom:1px solid var(--border)}
+
+/* Toasts */
+#toast-container{position:fixed;top:1rem;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:.5rem;pointer-events:none}
+.toast{display:flex;align-items:center;gap:.75rem;padding:.75rem 1.25rem;border-radius:var(--radius-sm);font-size:.9rem;font-weight:500;pointer-events:auto;transform:translateY(-20px);opacity:0;transition:all .3s;background:var(--bg2);border:1px solid var(--border);box-shadow:var(--shadow)}
+.toast-show{transform:translateY(0);opacity:1}
+
+/* Avatars */
+.avatar{display:flex;align-items:center;justify-content:center;border-radius:50%;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--primary),var(--secondary));overflow:hidden;flex-shrink:0}
+.avatar-xs{width:28px;height:28px;font-size:.7rem}
+.avatar-sm{width:36px;height:36px;font-size:.8rem}
+.avatar-md{width:48px;height:48px;font-size:1rem}
+
+/* Badges */
+.badge{display:inline-flex;padding:.2rem .6rem;border-radius:20px;font-size:.75rem;font-weight:600;background:var(--surface2);color:var(--text2)}
+.badge-success{background:rgba(16,185,129,.15);color:#10b981}
+.badge-danger{background:rgba(239,68,68,.15);color:#ef4444}

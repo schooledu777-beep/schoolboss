@@ -116,6 +116,63 @@ export function escapeHTML(str) {
   return div.innerHTML;
 }
 
+// ========================= UI COMPONENTS =========================
+export function renderCard(title, content, options = {}) {
+  return `
+    <div class="glass-card card ${options.className || ''}">
+      ${title ? `<div class="card-title">${title}</div>` : ''}
+      <div class="card-body">${content}</div>
+    </div>`;
+}
+
+export function renderStatsCard(label, value, icon, gradient = 'gradient-purple') {
+  return `
+    <div class="stat-card ${gradient}">
+      <div class="stat-icon">${icon}</div>
+      <div class="stat-info">
+        <p>${label}</p>
+        <h3>${value}</h3>
+      </div>
+    </div>`;
+}
+
+export function renderBadge(text, type = 'info') {
+  return `<span class="badge badge-${type}">${text}</span>`;
+}
+
+export function renderTable(headers, rows, options = {}) {
+  if (!rows || rows.length === 0) return renderEmptyState(options.emptyMsg || t('noData'));
+  
+  return `
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
+        </thead>
+        <tbody>
+          ${rows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+export function renderEmptyState(message) {
+  return `
+    <div class="text-center text-muted" style="padding:3rem 1rem;">
+      <div style="font-size:3rem; margin-bottom:1rem; opacity:0.3;">📭</div>
+      <p>${message}</p>
+    </div>`;
+}
+
+export function renderSkeletonCard() {
+  return `
+    <div class="glass-card card skeleton">
+      <div class="skeleton-title"></div>
+      <div class="skeleton-text"></div>
+      <div class="skeleton-text" style="width:80%;"></div>
+    </div>`;
+}
+
 // ========================= IMAGE VIEWER =========================
 export function openImageViewer(url, title, canChange = false) {
   const viewer = document.getElementById('image-viewer');
