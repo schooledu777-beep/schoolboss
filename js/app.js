@@ -96,7 +96,6 @@ function renderApp() {
   }
 
   // Render Full Layout if needed
-  // Render Full Layout if needed
   if (currentLayout !== 'app') {
     app.innerHTML = `
       <div class="app-layout">
@@ -142,11 +141,22 @@ Object.keys(pages).forEach(path => {
 // Start Router
 initRouter();
 
-// Subscribe to state changes for reactive UI
+// Subscribe to state changes — only re-render page CONTENT, not full app
 state.subscribe(() => {
-  // Only re-render if the page hasn't changed (data update)
-  // Or handle specific small updates here
-  renderApp();
+  if (!state.user || !state.profile) return;
+  const mainContent = document.getElementById('main-content');
+  if (!mainContent) return;
+  const currentHash = window.location.hash.slice(1) || 'dashboard';
+  const basePath = currentHash.split('?')[0];
+  const page = pages[basePath] || pages.dashboard;
+  mainContent.innerHTML = page.render();
+  if (typeof page.events === 'function') {
+    if (basePath === 'settings') page.events(renderApp);
+    else page.events();
+  }
+  attachStudentProfileEvents();
+  attachParentProfileEvents();
+  attachTeacherProfileEvents();
 });
 
 // Init Auth

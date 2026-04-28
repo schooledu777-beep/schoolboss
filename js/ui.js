@@ -19,29 +19,25 @@ export function showToast(message, type = 'info', duration = 3000) {
 export function showConfirm(title, message, onConfirm, type = 'danger') {
   const overlay = document.getElementById('modal-overlay');
   const dialog = document.getElementById('confirm-dialog');
-  const colors = {
-    danger: '#ef4444', warning: '#f59e0b', info: '#6366f1', success: '#10b981'
-  };
+  const colors = { danger:'#ef4444', warning:'#f59e0b', info:'#6366f1', success:'#10b981' };
   dialog.innerHTML = `
     <div class="confirm-card">
       <div class="confirm-icon" style="color:${colors[type]}">
-        ${type === 'danger' ? '🗑️' : type === 'warning' ? '⚠️' : type === 'success' ? '✅' : 'ℹ️'}
+        ${type==='danger'?'🗑️':type==='warning'?'⚠️':type==='success'?'✅':'ℹ️'}
       </div>
       <h3 class="confirm-title">${title}</h3>
       <p class="confirm-msg">${message}</p>
       <div class="confirm-actions">
         <button class="btn btn-outline" id="confirm-cancel">${t('cancel')}</button>
-        <button class="btn btn-${type === 'danger' ? 'danger' : 'primary'}" id="confirm-ok">${t('confirm')}</button>
+        <button class="btn btn-${type==='danger'?'danger':'primary'}" id="confirm-ok">${t('confirm')}</button>
       </div>
     </div>`;
   overlay.classList.remove('hidden');
-  dialog.classList.remove('hidden');
-  document.getElementById('confirm-cancel').onclick = () => { overlay.classList.add('hidden'); dialog.classList.add('hidden'); };
-  overlay.onclick = () => { overlay.classList.add('hidden'); dialog.classList.add('hidden'); };
-  document.getElementById('confirm-ok').onclick = () => {
-    overlay.classList.add('hidden'); dialog.classList.add('hidden');
-    onConfirm();
-  };
+  const stopProp = (e) => e.stopPropagation();
+  dialog.querySelector('.confirm-card').addEventListener('click', stopProp);
+  document.getElementById('confirm-cancel').onclick = () => overlay.classList.add('hidden');
+  overlay.onclick = () => overlay.classList.add('hidden');
+  document.getElementById('confirm-ok').onclick = () => { overlay.classList.add('hidden'); onConfirm(); };
 }
 
 // ========================= MODAL =========================
@@ -52,21 +48,21 @@ export function showModal(title, contentHTML, options = {}) {
     <div class="modal-card ${options.wide ? 'modal-wide' : ''}">
       <div class="modal-header">
         <h3>${title}</h3>
-        <button class="btn-icon modal-close-btn" id="modal-close-x">✕</button>
+        <button class="btn-icon" id="modal-close-x">✕</button>
       </div>
       <div class="modal-body">${contentHTML}</div>
       ${options.footer ? `<div class="modal-footer">${options.footer}</div>` : ''}
     </div>`;
   overlay.classList.remove('hidden');
-  dialog.classList.remove('hidden');
+  dialog.querySelector('.modal-card').addEventListener('click', e => e.stopPropagation());
   document.getElementById('modal-close-x').onclick = () => closeModal();
   overlay.onclick = () => closeModal();
   if (options.onOpen) options.onOpen();
 }
 
 export function closeModal() {
-  document.getElementById('modal-overlay').classList.add('hidden');
-  document.getElementById('confirm-dialog').classList.add('hidden');
+  document.getElementById('modal-overlay')?.classList.add('hidden');
+  document.getElementById('confirm-dialog').innerHTML = '';
 }
 
 // ========================= LOADING =========================
@@ -119,9 +115,9 @@ export function escapeHTML(str) {
 // ========================= UI COMPONENTS =========================
 export function renderCard(title, content, options = {}) {
   return `
-    <div class="glass-card card ${options.className || ''}">
-      ${title ? `<div class="card-title">${title}</div>` : ''}
-      <div class="card-body">${content}</div>
+    <div class="glass-card ${options.className || ''}" style="padding:1.25rem;">
+      ${title ? `<h3 style="font-size:1rem; font-weight:700; margin-bottom:1rem; color:var(--text);">${title}</h3>` : ''}
+      <div>${content}</div>
     </div>`;
 }
 
