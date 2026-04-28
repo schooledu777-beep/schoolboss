@@ -129,7 +129,7 @@ export function renderHeader() {
   <header class="header" id="header">
     <div class="header-start">
       <button class="btn-icon hamburger" id="sidebar-toggle">☰</button>
-      <h1 class="header-title">${t(state.currentPage.replace(/-([a-z])/g, (_, c) => c.toUpperCase()) || 'dashboard')}</h1>
+      <h1 class="header-title">${t(state.currentPage.replace('-', '') || 'dashboard')}</h1>
     </div>
     <div class="header-end">
       <button class="btn-icon header-action" id="toggle-lang-btn" title="${state.lang === 'ar' ? 'English' : 'عربي'}">

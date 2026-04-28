@@ -197,6 +197,4 @@ export function openImageViewer(url, title, canChange = false) {
   viewer.classList.add('active');
 }
 
-// Expose functions needed by inline onclick handlers in template strings
 window.openImageViewer = openImageViewer;
-window.closeModal = closeModal;

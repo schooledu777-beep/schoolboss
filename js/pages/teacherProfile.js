@@ -305,9 +305,8 @@ function getTeacherMetrics(teacherId) {
 }
 
 export function attachTeacherProfileEvents() {
-    // Guard: only register document-level delegation once per page load
     if (window._teacherProfileEventsAttached) return;
-    window._teacherProfileEventsAttached = false; // reset; will be set after attach
+    window._teacherProfileEventsAttached = true;
 
     document.addEventListener('click', (e) => {
         const btn = e.target.closest('.sp-tab-btn');
@@ -328,7 +327,6 @@ export function attachTeacherProfileEvents() {
         const newContent = tempDiv.querySelector('#tp-tab-content').innerHTML;
         contentArea.innerHTML = newContent;
     });
-    window._teacherProfileEventsAttached = true;
 
     // Edit Profile Button
     document.addEventListener('click', (e) => {
@@ -398,28 +396,33 @@ export function attachTeacherProfileEvents() {
     document.addEventListener('click', async (e) => {
         const btn = e.target.closest('.delete-doc-btn');
         if (!btn) return;
+
         const { teacherId, docName, docUrl } = btn.dataset;
-        import('../ui.js').then(({ showConfirm }) => {
-          showConfirm(
+        
+        const confirmed = await showConfirm(
             state.lang === 'ar' ? 'حذف الوثيقة' : 'Delete Document',
-            state.lang === 'ar' ? `هل أنت متأكد من حذف الوثيقة: ${docName}؟` : `Are you sure you want to delete: ${docName}?`,
-            async () => {
-              try {
+            state.lang === 'ar' ? `هل أنت متأكد من حذف الوثيقة: ${docName}؟` : `Are you sure you want to delete: ${docName}?`
+        );
+
+        if (confirmed) {
+            try {
                 const teacherRef = doc(db, 'teachers', teacherId);
                 const teacherData = state.teachers.find(t => t.id === teacherId);
-                const docToRemove = teacherData?.documents?.find(d => d.url === docUrl);
+                const docToRemove = teacherData.documents.find(d => d.url === docUrl);
+
                 if (docToRemove) {
-                  await updateDoc(teacherRef, { documents: arrayRemove(docToRemove) });
-                  showToast(state.lang === 'ar' ? 'تم حذف الوثيقة' : 'Document deleted', 'success');
-                  window.onTeacherUpdated?.(teacherId);
+                    await updateDoc(teacherRef, {
+                        documents: arrayRemove(docToRemove)
+                    });
+                    showToast(state.lang === 'ar' ? 'تم حذف الوثيقة' : 'Document deleted', 'success');
+                    window.onTeacherUpdated(teacherId);
                 }
-              } catch (err) {
+            } catch (err) {
+                console.error(err);
                 showToast(t('errorOccurred'), 'error');
-              }
             }
-          );
-        });
-    }); // end document deletion listener
+        }
+    });
 
     // Schedule Preferences Interaction
     document.addEventListener('click', (e) => {
