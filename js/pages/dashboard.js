@@ -73,144 +73,167 @@ function renderAdminDash() {
 
 function renderTeacherDash() {
   const teacherId = state.profile?.uid;
-  const myClasses = state.classes.filter(c => c.teacherId === teacherId);
+  const { classes, attendance, schedules, lang, profile } = state;
+  const myClasses = classes.filter(c => c.teacherId === teacherId);
   const myStudentIds = [...new Set(myClasses.flatMap(c => c.studentIds || []))];
   const todayStr = new Date().toISOString().split('T')[0];
-  const todayAtt = state.attendance.filter(a => a.date === todayStr && myStudentIds.includes(a.studentId));
+  const todayAtt = attendance.filter(a => a.date === todayStr && myStudentIds.includes(a.studentId));
   const presentCount = todayAtt.filter(a => a.status === 'present').length;
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
-  const dailySchedule = state.schedules.filter(s => s.teacherId === teacherId && s.day === today);
+  const dailySchedule = schedules.filter(s => s.teacherId === teacherId && s.day === today);
+
+  const stats = [
+    renderStatsCard(t('myClasses'), myClasses.length, '🏫', 'gradient-purple'),
+    renderStatsCard(t('totalStudents'), myStudentIds.length, '👨‍🎓', 'gradient-cyan'),
+    renderStatsCard(t('todayAttendance'), `${presentCount}/${todayAtt.length || myStudentIds.length}`, '✅', 'gradient-green')
+  ];
+
+  const scheduleHtml = dailySchedule.map(s => `
+    <div class="recent-item">
+      <span class="recent-icon">⏰</span>
+      <div>
+        <strong>${s.subject}</strong>
+        <p class="text-muted text-sm">${s.startTime || ''} - ${s.endTime || ''} | ${classes.find(c => c.id === s.classId)?.name || ''}</p>
+      </div>
+    </div>`).join('') || `<p class="text-muted text-center">${t('noData')}</p>`;
+
+  const actions = [
+    { href: '#attendance', icon: '📋', label: lang === 'ar' ? 'تسجيل حضور' : 'Take Attendance' },
+    { href: '#grades', icon: '📝', label: lang === 'ar' ? 'إدخال درجات' : 'Enter Grades' },
+    { id: 'bulk-grading-btn', icon: '📊', label: t('bulkGrading') },
+    { href: '#messages', icon: '✉️', label: lang === 'ar' ? 'إرسال رسالة' : 'Send Message' }
+  ];
+
+  const actionsHtml = actions.map(a => `
+    <a href="${a.href || '#'}" ${a.id ? `id="${a.id}"` : ''} class="quick-action-btn">
+      <span>${a.icon}</span><span>${a.label}</span>
+    </a>`).join('');
 
   return `
   <div class="page-content animate-in">
     <div class="page-header">
-      <h2>${t('dashboard')}</h2>
-      <p class="text-muted">${state.lang === 'ar' ? 'مرحباً أستاذ/ة ' : 'Welcome, '}${state.profile?.name}</p>
+      <div>
+        <h2>${t('dashboard')}</h2>
+        <p class="text-muted">${lang === 'ar' ? 'مرحباً أستاذ/ة ' : 'Welcome, '}${profile?.name}</p>
+      </div>
     </div>
-    <div class="stats-grid grid-3">
-      <div class="stat-card gradient-purple"><div class="stat-icon">🏫</div><div class="stat-info"><h3>${myClasses.length}</h3><p>${t('myClasses')}</p></div></div>
-      <div class="stat-card gradient-cyan"><div class="stat-icon">👨‍🎓</div><div class="stat-info"><h3>${myStudentIds.length}</h3><p>${t('totalStudents')}</p></div></div>
-      <div class="stat-card gradient-green"><div class="stat-icon">✅</div><div class="stat-info"><h3>${presentCount}/${todayAtt.length || myStudentIds.length}</h3><p>${t('todayAttendance')}</p></div></div>
+    
+    <div class="stats-grid">
+      ${stats.join('')}
     </div>
     
     <div class="grid-2">
-      <div class="card glass-card">
-        <h3 class="card-title">${t('todaySchedule')}</h3>
-        <div class="recent-list">
-          ${dailySchedule.map(s => `
-            <div class="recent-item">
-              <span class="recent-icon">⏰</span>
-              <div>
-                <strong>${s.subject}</strong>
-                <p class="text-muted text-sm">${s.startTime || ''} - ${s.endTime || ''} | ${state.classes.find(c => c.id === s.classId)?.name || ''}</p>
-              </div>
-            </div>
-          `).join('') || `<p class="text-muted text-center">${t('noData')}</p>`}
-        </div>
-      </div>
-      <div class="card glass-card">
-        <h3 class="card-title">${state.lang === 'ar' ? 'إجراءات سريعة' : 'Quick Actions'}</h3>
-        <div class="quick-actions">
-          <a href="#attendance" class="quick-action-btn"><span>📋</span><span>${state.lang === 'ar' ? 'تسجيل حضور' : 'Take Attendance'}</span></a>
-          <a href="#grades" class="quick-action-btn"><span>📝</span><span>${state.lang === 'ar' ? 'إدخال درجات' : 'Enter Grades'}</span></a>
-          <a href="#" id="bulk-grading-btn" class="quick-action-btn"><span>📊</span><span>${t('bulkGrading')}</span></a>
-          <a href="#messages" class="quick-action-btn"><span>✉️</span><span>${state.lang === 'ar' ? 'إرسال رسالة' : 'Send Message'}</span></a>
-        </div>
-      </div>
+      ${renderCard(t('todaySchedule'), `<div class="recent-list">${scheduleHtml}</div>`)}
+      ${renderCard(lang === 'ar' ? 'إجراءات سريعة' : 'Quick Actions', `<div class="quick-actions">${actionsHtml}</div>`)}
     </div>
   </div>`;
 }
 
 function renderParentDash() {
   const parentId = state.profile?.uid;
-  const myStudents = state.students.filter(s => state.profile?.studentIds?.includes(s.id) || s.parentId === parentId);
+  const { students, fees, profile, lang, notificationLogs } = state;
+  const myStudents = students.filter(s => profile?.studentIds?.includes(s.id) || s.parentId === parentId);
   const childrenIds = myStudents.map(s => s.id);
-
-  // Quick aggregation
-  const unpaidFees = state.fees.filter(f => childrenIds.includes(f.studentId) && f.status === 'unpaid');
+  const unpaidFees = fees.filter(f => childrenIds.includes(f.studentId) && f.status === 'unpaid');
   const totalBalance = unpaidFees.reduce((sum, f) => sum + (Number(f.amount) || 0), 0);
-  
+  const pendingNotifs = notificationLogs.filter(n => n.recipientId === parentId && n.status === 'pending');
+
+  const stats = [
+    renderStatsCard(t('balanceDue'), formatCurrency(totalBalance), '💰', 'gradient-purple'),
+    renderStatsCard(t('myChildren'), myStudents.length, '👨‍👩‍👧', 'gradient-cyan'),
+    renderStatsCard(lang === 'ar' ? 'تنبيهات جديدة' : 'New Alerts', pendingNotifs.length, '🔔', 'gradient-green')
+  ];
+
+  const childrenHtml = myStudents.map(s => {
+    const cls = state.classes.find(c => c.id === s.classId);
+    return `
+      <div class="child-card glass-card" style="padding:1rem; text-align:center; display:flex; flex-direction:column; align-items:center; gap:.5rem;">
+        <div class="avatar avatar-md gradient-purple">${s.name?.[0] || '?'}</div>
+        <h4 style="margin:.25rem 0;">${s.name}</h4>
+        <p class="text-muted text-sm">${cls?.name || ''}</p>
+        <div style="display:flex; gap:.5rem; margin-top:.5rem;">
+          <a href="#grades" class="btn btn-sm btn-outline">📝</a>
+          <a href="#attendance" class="btn btn-sm btn-outline">📋</a>
+        </div>
+      </div>`;
+  }).join('') || `<p class="text-muted text-center">${t('noData')}</p>`;
+
+  const notifsHtml = notificationLogs.filter(n => n.recipientId === parentId).slice(0, 5).map(n => `
+    <div class="recent-item">
+      <span class="recent-icon">🔔</span>
+      <div><strong>${n.title}</strong><p class="text-muted text-sm">${n.message}</p></div>
+    </div>`).join('') || `<p class="text-muted text-center">${t('noData')}</p>`;
+
   return `
   <div class="page-content animate-in">
     <div class="page-header">
-      <h2>${t('dashboard')}</h2>
-      <p class="text-muted">${state.lang === 'ar' ? 'مرحباً ' : 'Welcome, '}${state.profile?.name}</p>
-    </div>
-    <div class="stats-grid grid-3">
-      <div class="stat-card gradient-purple">
-        <div class="stat-icon">💰</div>
-        <div class="stat-info"><h3>${formatCurrency(totalBalance)}</h3><p>${t('balanceDue')}</p></div>
-      </div>
-      <div class="stat-card gradient-cyan">
-        <div class="stat-icon">👨‍👩‍👧</div>
-        <div class="stat-info"><h3>${myStudents.length}</h3><p>${t('myChildren')}</p></div>
-      </div>
-      <div class="stat-card gradient-green">
-        <div class="stat-icon">🔔</div>
-        <div class="stat-info"><h3>${state.notificationLogs.filter(n => n.recipientId === parentId && n.status === 'pending').length}</h3><p>${state.lang === 'ar' ? 'تنبيهات جديدة' : 'New Alerts'}</p></div>
+      <div>
+        <h2>${t('dashboard')}</h2>
+        <p class="text-muted">${lang === 'ar' ? 'مرحباً ' : 'Welcome, '}${profile?.name}</p>
       </div>
     </div>
+    
+    <div class="stats-grid">
+      ${stats.join('')}
+    </div>
+
     <div class="grid-2">
-      <div class="card glass-card">
-        <h3 class="card-title">${t('myChildren')}</h3>
-        <div class="children-grid">
-          ${myStudents.map(s => {
-            const cls = state.classes.find(c => c.id === s.classId);
-            return `<div class="child-card glass-card"><div class="avatar avatar-md gradient-purple">${s.name?.[0] || '?'}</div><h4>${s.name}</h4><p class="text-muted">${cls?.name || ''}</p><div class="child-actions"><a href="#grades" class="btn btn-sm btn-outline">📝</a><a href="#attendance" class="btn btn-sm btn-outline">📋</a></div></div>`;
-          }).join('') || `<p class="text-muted text-center">${t('noData')}</p>`}
-        </div>
-      </div>
-      <div class="card glass-card">
-        <h3 class="card-title">${t('notificationHistory')}</h3>
-        <div class="recent-list">
-          ${state.notificationLogs.filter(n => n.recipientId === parentId).slice(0, 5).map(n => `
-            <div class="recent-item">
-              <span class="recent-icon">🔔</span>
-              <div><strong>${n.title}</strong><p class="text-muted text-sm">${n.message}</p></div>
-            </div>
-          `).join('') || `<p class="text-muted text-center">${t('noData')}</p>`}
-        </div>
-      </div>
+      ${renderCard(t('myChildren'), `<div class="children-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:1rem;">${childrenHtml}</div>`)}
+      ${renderCard(t('notificationHistory'), `<div class="recent-list">${notifsHtml}</div>`)}
     </div>
   </div>`;
 }
 
 function renderStudentDash() {
-  const myRewards = state.rewards.filter(r => r.studentId === state.profile?.uid);
+  const { rewards, homework, profile, lang, announcements, schedules } = state;
+  const myRewards = rewards.filter(r => r.studentId === profile?.uid);
   const totalPoints = myRewards.reduce((s, r) => s + (r.points || 0), 0);
-  const myHomework = state.homework.filter(h => {
-    const cls = state.classes.find(c => c.studentIds?.includes(state.profile?.uid));
+  const myHomework = homework.filter(h => {
+    const cls = state.classes.find(c => c.studentIds?.includes(profile?.uid));
     return cls && h.classId === cls.id;
   });
-  const pendingHw = myHomework.filter(h => !h.submissions?.find(s => s.studentId === state.profile?.uid));
+  const pendingHw = myHomework.filter(h => !h.submissions?.find(s => s.studentId === profile?.uid));
+
+  const stats = [
+    renderStatsCard(lang === 'ar' ? 'نقاطي' : 'My Points', totalPoints, '⭐', 'gradient-purple'),
+    renderStatsCard(lang === 'ar' ? 'واجبات معلقة' : 'Pending Homework', pendingHw.length, '📚', 'gradient-cyan'),
+    renderStatsCard(t('myRewards'), myRewards.length, '🏆', 'gradient-green')
+  ];
+
+  const actions = [
+    { href: '#schedule', icon: '📅', label: t('mySchedule') },
+    { href: '#grades', icon: '📝', label: t('myGrades') },
+    { href: '#homework', icon: '📚', label: t('myHomework') },
+    { href: '#rewards', icon: '⭐', label: t('myRewards') }
+  ];
+
+  const actionsHtml = actions.map(a => `
+    <a href="${a.href}" class="quick-action-btn">
+      <span>${a.icon}</span><span>${a.label}</span>
+    </a>`).join('');
+
+  const annsHtml = announcements.slice(0, 4).map(a => `
+    <div class="recent-item">
+      <span class="recent-icon">📢</span>
+      <div><strong>${a.title}</strong></div>
+    </div>`).join('') || `<p class="text-muted text-center">${t('noData')}</p>`;
 
   return `
   <div class="page-content animate-in">
     <div class="page-header">
-      <h2>${t('dashboard')}</h2>
-      <p class="text-muted">${state.lang === 'ar' ? 'مرحباً ' : 'Welcome, '}${state.profile?.name}</p>
+      <div>
+        <h2>${t('dashboard')}</h2>
+        <p class="text-muted">${lang === 'ar' ? 'مرحباً ' : 'Welcome, '}${profile?.name}</p>
+      </div>
     </div>
-    <div class="stats-grid grid-3">
-      <div class="stat-card gradient-purple"><div class="stat-icon">⭐</div><div class="stat-info"><h3>${totalPoints}</h3><p>${state.lang === 'ar' ? 'نقاطي' : 'My Points'}</p></div></div>
-      <div class="stat-card gradient-cyan"><div class="stat-icon">📚</div><div class="stat-info"><h3>${pendingHw.length}</h3><p>${state.lang === 'ar' ? 'واجبات معلقة' : 'Pending Homework'}</p></div></div>
-      <div class="stat-card gradient-green"><div class="stat-icon">🏆</div><div class="stat-info"><h3>${myRewards.length}</h3><p>${t('myRewards')}</p></div></div>
+    
+    <div class="stats-grid">
+      ${stats.join('')}
     </div>
+
     <div class="grid-2">
-      <div class="card glass-card">
-        <h3 class="card-title">${state.lang === 'ar' ? 'إجراءات سريعة' : 'Quick Actions'}</h3>
-        <div class="quick-actions">
-          <a href="#schedule" class="quick-action-btn"><span>📅</span><span>${t('mySchedule')}</span></a>
-          <a href="#grades" class="quick-action-btn"><span>📝</span><span>${t('myGrades')}</span></a>
-          <a href="#homework" class="quick-action-btn"><span>📚</span><span>${t('myHomework')}</span></a>
-          <a href="#rewards" class="quick-action-btn"><span>⭐</span><span>${t('myRewards')}</span></a>
-        </div>
-      </div>
-      <div class="card glass-card">
-        <h3 class="card-title">${state.lang === 'ar' ? 'آخر الإعلانات' : 'Recent Announcements'}</h3>
-        <div class="recent-list">
-          ${state.announcements.slice(0, 4).map(a => `<div class="recent-item"><span class="recent-icon">📢</span><div><strong>${a.title}</strong></div></div>`).join('') || `<p class="text-muted text-center">${t('noData')}</p>`}
-        </div>
-      </div>
+      ${renderCard(lang === 'ar' ? 'إجراءات سريعة' : 'Quick Actions', `<div class="quick-actions">${actionsHtml}</div>`)}
+      ${renderCard(lang === 'ar' ? 'آخر الإعلانات' : 'Recent Announcements', `<div class="recent-list">${annsHtml}</div>`)}
     </div>
   </div>`;
 }

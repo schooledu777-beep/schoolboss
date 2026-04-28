@@ -5,7 +5,7 @@ class SyncService {
   constructor() {
     this.activeSubscriptions = new Map();
     this.pageCollectionMap = {
-      dashboard: ['students', 'teachers', 'classes', 'attendance', 'announcements', 'fees', 'notification_logs'],
+      dashboard: ['students', 'teachers', 'classes', 'attendance', 'announcements', 'fees', 'notification_logs', 'schedules', 'rewards', 'homework'],
       students: ['students', 'classes', 'parents'],
       teachers: ['teachers', 'subjects'],
       parents: ['parents', 'students'],

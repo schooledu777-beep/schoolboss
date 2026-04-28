@@ -96,6 +96,7 @@ function renderApp() {
   }
 
   // Render Full Layout if needed
+  // Render Full Layout if needed
   if (currentLayout !== 'app') {
     app.innerHTML = `
       <div class="app-layout">
@@ -125,9 +126,6 @@ function renderApp() {
     attachParentProfileEvents();
     attachTeacherProfileEvents();
   }
-
-  // Sync data for current page
-  syncService.syncPage(basePath);
 }
 
 // ========================= INITIALIZATION =========================
@@ -136,6 +134,7 @@ function renderApp() {
 Object.keys(pages).forEach(path => {
   registerRoute(path, () => {
     state.currentPage = path;
+    syncService.syncPage(path); // Sync only when route changes
     renderApp();
   });
 });
@@ -155,6 +154,7 @@ initAuth(
   () => { // onLogin
     const route = window.location.hash.slice(1) || 'dashboard';
     state.currentPage = route;
+    syncService.syncPage(route); // Initial sync on login
     if (state.profile?.role === 'admin') {
         academicService.seedAssessmentTypes();
         libraryService.processOverdueFees();
