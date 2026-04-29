@@ -348,22 +348,20 @@ function getTeacherMetrics(teacherId) {
     };
 }
 
-export function attachTeacherProfileEvents() {
-    if (window._teacherProfileEventsAttached) return;
-    window._teacherProfileEventsAttached = true;
+export function attachTeacherProfileEvents(modalElement) {
+    if (!modalElement) return;
 
-    // Tab Switching - Use delegated listener on document
-    document.addEventListener('click', (e) => {
+    // Tab Switching
+    modalElement.addEventListener('click', (e) => {
         const btn = e.target.closest('.sp-tab-btn');
         if (!btn || !btn.dataset.teacherId) return;
         
         const teacherId = btn.dataset.teacherId;
         const tabId = btn.dataset.tab;
-        const contentArea = document.getElementById('tp-tab-content');
+        const contentArea = modalElement.querySelector('#tp-tab-content');
         
         if (!contentArea) return;
 
-        // Prevent default if it's a link (though it's a button)
         e.preventDefault();
 
         // Update active class on buttons
@@ -376,7 +374,6 @@ export function attachTeacherProfileEvents() {
         // Render specific tab content
         contentArea.innerHTML = `<div class="p-4 text-center"><span class="spinner"></span></div>`;
         
-        // We use a small timeout to allow UI to show spinner if rendering is slow
         setTimeout(() => {
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = getTeacherDashboardHTML(teacherId, tabId);
@@ -386,7 +383,7 @@ export function attachTeacherProfileEvents() {
     });
 
     // Edit Profile Button
-    document.addEventListener('click', (e) => {
+    modalElement.addEventListener('click', (e) => {
         const btn = e.target.closest('.edit-profile-btn');
         if (!btn) return;
         const teacher = state.teachers.find(t => t.id === btn.dataset.id);
@@ -395,26 +392,23 @@ export function attachTeacherProfileEvents() {
 
     // Refresh on update
     window.onTeacherUpdated = (teacherId) => {
-        const activeBtn = document.querySelector('.sp-tab-btn.active');
+        const activeBtn = modalElement.querySelector('.sp-tab-btn.active');
         const activeTab = activeBtn ? activeBtn.dataset.tab : 'overview';
-        const modalBody = document.querySelector('.student-profile-modal')?.parentElement;
-        if (modalBody) {
-            modalBody.innerHTML = getTeacherDashboardHTML(teacherId, activeTab);
-        }
+        modalElement.innerHTML = getTeacherDashboardHTML(teacherId, activeTab);
     };
 
     // Photo Upload
-    document.addEventListener('click', (e) => {
+    modalElement.addEventListener('click', (e) => {
         const wrapper = e.target.closest('.profile-photo-wrapper');
         if (wrapper) {
-            document.getElementById('teacher-photo-input')?.click();
+            modalElement.querySelector('#teacher-photo-input')?.click();
         }
     });
 
-    document.addEventListener('change', async (e) => {
+    modalElement.addEventListener('change', async (e) => {
         if (e.target.id === 'teacher-photo-input' && e.target.files[0]) {
             const file = e.target.files[0];
-            const teacherId = document.querySelector('.profile-photo-wrapper').dataset.id;
+            const teacherId = modalElement.querySelector('.profile-photo-wrapper').dataset.id;
             try {
                 showToast(state.lang === 'ar' ? 'جاري رفع الصورة...' : 'Uploading photo...', 'info');
                 const url = await uploadFile(file);
@@ -428,7 +422,7 @@ export function attachTeacherProfileEvents() {
         
         if (e.target.id === 'doc-upload-input' && e.target.files[0]) {
             const file = e.target.files[0];
-            const teacherId = document.querySelector('.sp-tab-btn')?.dataset.teacherId;
+            const teacherId = modalElement.querySelector('.sp-tab-btn')?.dataset.teacherId;
             if (!teacherId) {
                 showToast(t('errorOccurred'), 'error');
                 return;
@@ -448,6 +442,7 @@ export function attachTeacherProfileEvents() {
             }
         }
     });
+}
     
     // Document Deletion
     document.addEventListener('click', async (e) => {

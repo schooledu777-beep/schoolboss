@@ -373,14 +373,13 @@ export function getStudentDashboardHTML(studentId, activeTab = 'overview') {
   `;
 }
 
-export function attachStudentProfileEvents() {
-  if (window._studentProfileEventsAttached) return;
-  window._studentProfileEventsAttached = true;
+export function attachStudentProfileEvents(modalElement) {
+  if (!modalElement) return;
 
-  document.addEventListener('click', e => {
+  modalElement.addEventListener('click', e => {
     const printBtn = e.target.closest('.print-id-card-btn');
     if (printBtn) {
-      showStudentCardModal(printBtn.dataset.id);
+      showStudentCardModalPreview(printBtn.dataset.id);
       return;
     }
 
@@ -397,7 +396,7 @@ export function attachStudentProfileEvents() {
       tabBtn.classList.add('active');
       
       // Update content
-      const contentArea = document.getElementById('sp-tab-content');
+      const contentArea = modalElement.querySelector('#sp-tab-content');
       if (contentArea) {
         contentArea.innerHTML = '<div class="text-center p-4"><span class="spinner-sm"></span></div>';
         setTimeout(() => {
@@ -412,17 +411,17 @@ export function attachStudentProfileEvents() {
   });
 
   // Photo Upload Handler
-  document.addEventListener('click', (e) => {
+  modalElement.addEventListener('click', (e) => {
     const wrapper = e.target.closest('.profile-photo-wrapper');
-    if (wrapper && wrapper.querySelector('#student-photo-input')) {
-        document.getElementById('student-photo-input').click();
+    if (wrapper) {
+        modalElement.querySelector('#student-photo-input')?.click();
     }
   });
 
-  document.addEventListener('change', async (e) => {
+  modalElement.addEventListener('change', async (e) => {
     if (e.target.id === 'student-photo-input' && e.target.files[0]) {
         const file = e.target.files[0];
-        const studentId = e.target.closest('.profile-photo-wrapper').dataset.id;
+        const studentId = modalElement.querySelector('.profile-photo-wrapper').dataset.id;
         try {
             showToast(state.lang === 'ar' ? 'جاري رفع الصورة...' : 'Uploading photo...', 'info');
             const url = await uploadFile(file);
@@ -430,12 +429,9 @@ export function attachStudentProfileEvents() {
             showToast(state.lang === 'ar' ? 'تم تحديث الصورة بنجاح' : 'Photo updated successfully', 'success');
             
             // Refresh modal content
-            const activeBtn = document.querySelector('.sp-tab-btn.active');
+            const activeBtn = modalElement.querySelector('.sp-tab-btn.active');
             const activeTab = activeBtn ? activeBtn.dataset.tab : 'overview';
-            const modalBody = document.querySelector('.student-profile-modal')?.parentElement;
-            if (modalBody) {
-                modalBody.innerHTML = getStudentDashboardHTML(studentId, activeTab);
-            }
+            modalElement.innerHTML = getStudentDashboardHTML(studentId, activeTab);
         } catch (err) {
             console.error(err);
             showToast(t('errorOccurred'), 'error');
@@ -443,8 +439,9 @@ export function attachStudentProfileEvents() {
     }
   });
 }
+}
 
-function showStudentCardModal(studentId) {
+export function showStudentCardModalPreview(studentId) {
   const student = state.students.find(s => s.id === studentId);
   if (!student) return;
 

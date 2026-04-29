@@ -40,8 +40,10 @@ export function attachTeacherEvents() {
 async function showTeacherCard(teacherId) {
     const { getTeacherDashboardHTML, attachTeacherProfileEvents } = await import('./teacherProfile.js');
     showModal(state.lang === 'ar' ? 'بطاقة المعلم' : 'Teacher Card', getTeacherDashboardHTML(teacherId), { wide: true });
-    // Ensure events are attached to the newly injected modal content
-    attachTeacherProfileEvents();
+    
+    // Target the modal body to attach events
+    const modalBody = document.querySelector('.student-profile-modal')?.parentElement;
+    if (modalBody) attachTeacherProfileEvents(modalBody);
 }
 
 

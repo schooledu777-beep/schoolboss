@@ -2,7 +2,7 @@ import { state, t } from '../state.js';
 import { db, collection, addDoc, updateDoc, deleteDoc, doc, setDoc, serverTimestamp } from '../firebase-config.js';
 import { adminCreateUser } from '../auth.js';
 import { showModal, closeModal, showConfirm, showToast, escapeHTML, renderAvatar } from '../ui.js';
-import { getStudentDashboardHTML } from './studentProfile.js';
+import { getStudentDashboardHTML, attachStudentProfileEvents } from './studentProfile.js';
 import { uploadFile } from '../services/uploadService.js';
 
 export function renderStudents() {
@@ -56,6 +56,10 @@ export function showStudentCardModal(studentId) {
     getStudentDashboardHTML(studentId),
     { wide: true }
   );
+
+  // Target the modal body to attach events
+  const modalBody = document.querySelector('.student-profile-modal')?.parentElement;
+  if (modalBody) attachStudentProfileEvents(modalBody);
 }
 
 export function attachStudentEvents() {
