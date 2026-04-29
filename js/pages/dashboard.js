@@ -82,10 +82,12 @@ function renderTeacherDash() {
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
   const dailySchedule = schedules.filter(s => s.teacherId === teacherId && s.day === today);
 
+  const myHomework = state.homework?.filter(h => h.teacherId === teacherId) || [];
+
   const stats = [
     renderStatsCard(t('myClasses'), myClasses.length, '🏫', 'gradient-purple'),
     renderStatsCard(t('totalStudents'), myStudentIds.length, '👨‍🎓', 'gradient-cyan'),
-    renderStatsCard(t('todayAttendance'), `${presentCount}/${todayAtt.length || myStudentIds.length}`, '✅', 'gradient-green')
+    renderStatsCard(lang === 'ar' ? 'الواجبات المسندة' : 'Assigned Homework', myHomework.length, '📚', 'gradient-green')
   ];
 
   const scheduleHtml = dailySchedule.map(s => `

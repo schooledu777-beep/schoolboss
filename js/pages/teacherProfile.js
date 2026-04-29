@@ -15,6 +15,7 @@ export function getTeacherDashboardHTML(teacherId, activeTab = 'overview') {
         { id: 'schedule', label: state.lang === 'ar' ? 'الجدول الدراسي' : 'Schedule', icon: '📅' },
         { id: 'classes', label: state.lang === 'ar' ? 'الصفوف' : 'Classes', icon: '🏫' },
         { id: 'subjects', label: state.lang === 'ar' ? 'المواد' : 'Subjects', icon: '📖' },
+        { id: 'tasks', label: state.lang === 'ar' ? 'المهام والواجبات' : 'Tasks', icon: '📝' },
         { id: 'hr', label: state.lang === 'ar' ? 'الموارد البشرية' : 'HR', icon: '💰' },
         { id: 'documents', label: state.lang === 'ar' ? 'الوثائق والشهادات' : 'Documents', icon: '📎' },
         { id: 'preferences', label: state.lang === 'ar' ? 'تفضيلات الجدول' : 'Schedule Prefs', icon: '⚙️' },
@@ -29,6 +30,12 @@ export function getTeacherDashboardHTML(teacherId, activeTab = 'overview') {
                     <span class="sp-widget-title">${state.lang === 'ar' ? 'الحصة القادمة' : 'Upcoming Class'}</span>
                     <span class="sp-widget-value">${metrics.nextClass ? metrics.nextClass.subject : (state.lang === 'ar' ? 'لا يوجد' : 'None')}</span>
                     <span class="sp-widget-footer">${metrics.nextClass ? `${metrics.nextClass.timeslot?.startTime} - ${metrics.nextClass.timeslot?.endTime}` : (state.lang === 'ar' ? 'انتهت حصص اليوم' : 'Classes ended today')}</span>
+                </div>
+                <div class="sp-widget widget-dark">
+                    <span class="sp-widget-icon">📝</span>
+                    <span class="sp-widget-title">${state.lang === 'ar' ? 'المهام المسندة' : 'Assigned Tasks'}</span>
+                    <span class="sp-widget-value">${metrics.assignedTasksCount}</span>
+                    <span class="sp-widget-footer">${state.lang === 'ar' ? 'واجبات تم إنشاؤها' : 'Created homework'}</span>
                 </div>
                 <div class="sp-widget widget-dark">
                     <span class="sp-widget-icon">🏫</span>
@@ -238,6 +245,42 @@ export function getTeacherDashboardHTML(teacherId, activeTab = 'overview') {
                     </table>
                 </div>
             </div>
+        `,
+        tasks: `
+            <div class="sp-section-card">
+                <h4 class="sp-section-title">📝 ${state.lang === 'ar' ? 'المهام والواجبات المسندة' : 'Assigned Tasks & Homework'}</h4>
+                <div class="homework-list">
+                    ${state.homework?.filter(h => h.teacherId === teacherId).map(hw => `
+                        <div class="hw-item glass-card" style="margin-bottom: 1rem; padding: 1rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <strong>${hw.title}</strong>
+                                <span class="badge badge-info">${hw.submissions?.length || 0} ${state.lang === 'ar' ? 'تسليمات' : 'Submissions'}</span>
+                            </div>
+                            <div class="text-muted text-sm" style="margin-top: 0.5rem;">
+                                ${state.lang === 'ar' ? 'الصف:' : 'Class:'} ${state.classes.find(c => c.id === hw.classId)?.name || hw.classId} | 
+                                ${state.lang === 'ar' ? 'المادة:' : 'Subject:'} ${hw.subject} | 
+                                ${state.lang === 'ar' ? 'الموعد:' : 'Due:'} ${hw.dueDate}
+                            </div>
+                        </div>
+                    `).join('') || `<div class="empty-state py-4"><p class="text-muted">${t('noData')}</p></div>`}
+                </div>
+            </div>
+        `,
+        notifications: `
+            <div class="sp-section-card">
+                <h4 class="sp-section-title">🔔 ${state.lang === 'ar' ? 'آخر التنبيهات' : 'Latest Notifications'}</h4>
+                <div class="notification-list">
+                    ${state.notificationLogs?.filter(n => n.recipientId === teacherId).sort((a,b) => new Date(b.date) - new Date(a.date)).map(n => `
+                        <div class="notification-item glass-card p-3 mb-2 animate-in">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                                <strong>${n.title}</strong>
+                                <small class="text-muted">${new Date(n.date).toLocaleString(state.lang === 'ar' ? 'ar-EG' : 'en-US')}</small>
+                            </div>
+                            <p class="mb-0 text-sm">${n.body}</p>
+                        </div>
+                    `).join('') || `<div class="empty-state py-4"><p class="text-muted">${t('noData')}</p></div>`}
+                </div>
+            </div>
         `
     };
 
@@ -300,7 +343,8 @@ function getTeacherMetrics(teacherId) {
     return {
         classCount: myClasses.length,
         studentCount: studentIds.length,
-        nextClass: upcoming[0] || null
+        nextClass: upcoming[0] || null,
+        assignedTasksCount: state.homework?.filter(h => h.teacherId === teacherId).length || 0
     };
 }
 
@@ -308,6 +352,7 @@ export function attachTeacherProfileEvents() {
     if (window._teacherProfileEventsAttached) return;
     window._teacherProfileEventsAttached = true;
 
+    // Tab Switching - Use delegated listener on document
     document.addEventListener('click', (e) => {
         const btn = e.target.closest('.sp-tab-btn');
         if (!btn || !btn.dataset.teacherId) return;
@@ -315,17 +360,29 @@ export function attachTeacherProfileEvents() {
         const teacherId = btn.dataset.teacherId;
         const tabId = btn.dataset.tab;
         const contentArea = document.getElementById('tp-tab-content');
+        
         if (!contentArea) return;
 
-        // Update active state
-        btn.parentElement.querySelectorAll('.sp-tab-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
+        // Prevent default if it's a link (though it's a button)
+        e.preventDefault();
 
-        // Render tab content
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = getTeacherDashboardHTML(teacherId, tabId);
-        const newContent = tempDiv.querySelector('#tp-tab-content').innerHTML;
-        contentArea.innerHTML = newContent;
+        // Update active class on buttons
+        const sidebar = btn.closest('.sp-sidebar');
+        if (sidebar) {
+            sidebar.querySelectorAll('.sp-tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        // Render specific tab content
+        contentArea.innerHTML = `<div class="p-4 text-center"><span class="spinner"></span></div>`;
+        
+        // We use a small timeout to allow UI to show spinner if rendering is slow
+        setTimeout(() => {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = getTeacherDashboardHTML(teacherId, tabId);
+            const newContent = tempDiv.querySelector('#tp-tab-content').innerHTML;
+            contentArea.innerHTML = newContent;
+        }, 10);
     });
 
     // Edit Profile Button
