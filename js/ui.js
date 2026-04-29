@@ -64,6 +64,8 @@ export function closeModal() {
   document.getElementById('modal-overlay')?.classList.add('hidden');
   document.getElementById('confirm-dialog').innerHTML = '';
 }
+// Make closeModal available globally for inline onclick handlers
+window.closeModal = closeModal;
 
 // ========================= LOADING =========================
 export function showLoading() {

@@ -302,3 +302,220 @@ textarea.form-input{min-height:80px;resize:vertical}
 
 /* ========================= MISC ========================= */
 .modal-overlay.hidden,.confirm-dialog.hidden{display:none!important}
+
+/* ========================= PASSWORD WRAPPER ========================= */
+.password-wrapper{position:relative;display:flex;align-items:center}
+.password-wrapper .form-input{padding-right:2.75rem;width:100%}
+[dir="rtl"] .password-wrapper .form-input{padding-right:.75rem;padding-left:2.75rem}
+.password-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--text3);padding:4px;line-height:1;z-index:1}
+[dir="rtl"] .password-toggle{right:auto;left:8px}
+.password-toggle:hover{color:var(--text)}
+
+/* ========================= UTILITY EXTRAS ========================= */
+.p-3{padding:1rem}
+.p-4{padding:1.5rem}
+.py-4{padding-top:1.5rem;padding-bottom:1.5rem}
+.font-bold{font-weight:700}
+.text-success{color:var(--success)}
+.text-danger{color:var(--danger)!important}
+.border-danger{border-color:rgba(239,68,68,.4)!important}
+.gradient-orange{background:linear-gradient(135deg,#f97316,#fb923c);color:#fff}
+
+/* ========================= PROFILE MODAL (Student/Teacher/Parent) ========================= */
+.student-profile-modal{display:flex;flex-direction:column;gap:0}
+
+.sp-header{display:flex;align-items:center;justify-content:space-between;padding:1.5rem;background:linear-gradient(135deg,rgba(99,102,241,.08),rgba(6,182,212,.05));border-radius:var(--radius) var(--radius) 0 0;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:1rem}
+.sp-user-info{display:flex;align-items:center;gap:1rem}
+.sp-user-details h3{font-size:1.15rem;font-weight:800;margin-bottom:.15rem}
+.sp-user-details p{font-size:.85rem;color:var(--text2)}
+.sp-status-badge{display:inline-flex;align-items:center;padding:.35rem 1rem;border-radius:20px;font-size:.8rem;font-weight:600;background:rgba(99,102,241,.12);color:var(--primary-light)}
+
+.sp-layout{display:flex;gap:0;min-height:420px;border-radius:0 0 var(--radius) var(--radius);overflow:hidden}
+.sp-sidebar{width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:.75rem;gap:2px;overflow-y:auto}
+[dir="rtl"] .sp-sidebar{border-right:none;border-left:1px solid var(--border)}
+.sp-main-content{flex:1;padding:1.5rem;overflow-y:auto;max-height:65vh}
+
+.sp-tab-btn{display:flex;align-items:center;gap:.65rem;padding:.6rem .85rem;border:none;background:transparent;border-radius:var(--radius-sm);cursor:pointer;font-family:var(--font);font-size:.85rem;font-weight:500;color:var(--text2);transition:all .2s;text-align:start;width:100%}
+.sp-tab-btn:hover{background:var(--surface2);color:var(--text)}
+.sp-tab-btn.active{background:linear-gradient(135deg,rgba(99,102,241,.15),rgba(6,182,212,.08));color:var(--primary-light);font-weight:700}
+.sp-tab-btn .icon{font-size:1.1rem;width:24px;text-align:center;flex-shrink:0}
+
+/* Profile Widgets Grid */
+.sp-widgets-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:1.5rem}
+.sp-widget{display:flex;flex-direction:column;gap:.25rem;padding:1.15rem;border-radius:var(--radius);position:relative;overflow:hidden}
+.sp-widget::before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,transparent 60%,rgba(255,255,255,.03))}
+.widget-blue{background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff}
+.widget-dark{background:var(--surface);border:1px solid var(--border);color:var(--text)}
+.widget-green{background:linear-gradient(135deg,#10b981,#059669);color:#fff}
+.widget-red{background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff}
+.sp-widget-icon{font-size:1.5rem;margin-bottom:.25rem}
+.sp-widget-title{font-size:.78rem;font-weight:600;opacity:.85}
+.sp-widget-value{font-size:1.6rem;font-weight:800;line-height:1.1}
+.sp-widget-footer{font-size:.72rem;opacity:.7;margin-top:.15rem}
+
+/* Profile Section Cards */
+.sp-section-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1.25rem}
+.sp-section-title{font-size:.95rem;font-weight:700;margin-bottom:1rem;display:flex;align-items:center;gap:.5rem}
+
+/* Profile Info Grid */
+.sp-info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem}
+.sp-info-item{display:flex;align-items:center;gap:.75rem;padding:.65rem;background:var(--surface2);border-radius:var(--radius-sm)}
+.sp-info-icon{font-size:1.25rem;width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-sm);background:rgba(99,102,241,.1);flex-shrink:0}
+.sp-info-label{display:block;font-size:.75rem;color:var(--text3);font-weight:500}
+.sp-info-value{display:block;font-size:.9rem;font-weight:600;color:var(--text)}
+
+/* Photo Overlay */
+.profile-photo-wrapper{position:relative;cursor:pointer;border-radius:50%}
+.profile-photo-wrapper .photo-overlay{position:absolute;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;border-radius:50%;opacity:0;transition:opacity .2s;font-size:1.5rem}
+.profile-photo-wrapper:hover .photo-overlay{opacity:1}
+
+/* ========================= SETTINGS PAGE ========================= */
+.settings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:1.5rem}
+.card{padding:1.5rem}
+.card-title{font-size:1.05rem;font-weight:700;margin-bottom:.75rem}
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:.65rem 0;border-bottom:1px solid var(--border)}
+.setting-row:last-child{border-bottom:none}
+.toggle-group{display:flex;gap:.75rem;flex-wrap:wrap}
+.toggle-label{display:flex;align-items:center;gap:.5rem;padding:.6rem 1.25rem;border:2px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;transition:all .2s;font-weight:500}
+.toggle-label:hover{border-color:var(--primary);background:rgba(99,102,241,.05)}
+.toggle-label.active{border-color:var(--primary);background:rgba(99,102,241,.1);color:var(--primary-light)}
+.toggle-label input[type="radio"]{display:none}
+.modules-grid{display:flex;flex-direction:column;gap:0}
+
+/* Toggle Switch */
+.switch{position:relative;display:inline-block;width:48px;height:26px;flex-shrink:0}
+.switch input{opacity:0;width:0;height:0}
+.slider{position:absolute;cursor:pointer;inset:0;background:var(--surface2);border:1px solid var(--border);transition:.3s}
+.slider.round{border-radius:26px}
+.slider.round::before{border-radius:50%}
+.slider::before{content:"";position:absolute;height:20px;width:20px;left:2px;bottom:2px;background:var(--text3);transition:.3s;border-radius:50%}
+.switch input:checked+.slider{background:var(--primary);border-color:var(--primary)}
+.switch input:checked+.slider::before{transform:translateX(22px);background:#fff}
+
+/* ========================= SCHEDULE TABLE ========================= */
+.schedule-grid-container{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border)}
+.schedule-table{width:100%;border-collapse:collapse;font-size:.85rem;min-width:600px}
+.schedule-table th{padding:.6rem .5rem;text-align:center;font-weight:600;color:var(--text2);border-bottom:2px solid var(--border);background:var(--surface2);font-size:.8rem;white-space:nowrap}
+.schedule-table td{padding:.5rem;border:1px solid var(--border);text-align:center;vertical-align:middle;min-width:80px;height:48px}
+.schedule-table tr:hover td{background:rgba(99,102,241,.03)}
+.time-cell{font-weight:600;color:var(--primary-light);font-size:.8rem;white-space:nowrap;background:var(--surface2)!important;min-width:65px}
+.sch-item{display:flex;flex-direction:column;gap:.1rem;padding:.2rem;border-radius:6px;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.15)}
+.sch-item strong{font-size:.78rem;color:var(--primary-light)}
+.sch-item span{font-size:.7rem;color:var(--text3)}
+
+/* Status Indicators */
+.status-indicator{display:inline-block;width:10px;height:10px;border-radius:50%;margin-inline-end:.4rem;vertical-align:middle}
+.status-present{background:var(--success)}
+.status-absent{background:var(--danger)}
+.status-late{background:var(--warning)}
+.status-excused{background:var(--info)}
+
+/* ========================= ANNOUNCEMENTS ========================= */
+.announcements-list{display:flex;flex-direction:column;gap:1rem}
+.announcement-card{padding:1.25rem;transition:transform .2s}
+.announcement-card:hover{transform:translateY(-1px)}
+.announcement-card.priority-high{border-left:3px solid var(--danger)}
+[dir="rtl"] .announcement-card.priority-high{border-left:none;border-right:3px solid var(--danger)}
+.announce-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.5rem;gap:.5rem}
+.announce-header h3{font-size:1rem;font-weight:700}
+.announcement-card p{color:var(--text2);font-size:.9rem;line-height:1.6;margin-bottom:.75rem}
+.announce-footer{display:flex;align-items:center;justify-content:space-between;gap:.5rem}
+
+/* ========================= MESSAGES ========================= */
+.messages-list{display:flex;flex-direction:column;gap:.75rem}
+.message-card{padding:1rem 1.25rem;transition:all .2s}
+.message-card.unread{border-left:3px solid var(--primary);background:rgba(99,102,241,.04)}
+[dir="rtl"] .message-card.unread{border-left:none;border-right:3px solid var(--primary)}
+.message-card:hover{transform:translateY(-1px)}
+.msg-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.35rem}
+.msg-subject{margin-bottom:.25rem;font-size:.95rem}
+
+/* ========================= TEACHER PREFERENCES ========================= */
+.pref-container{padding:1.5rem}
+.pref-header-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem}
+.pref-title-group h4{font-size:1.1rem;font-weight:700;margin-bottom:.25rem}
+.pref-title-group p{font-size:.85rem;color:var(--text2)}
+.pref-selector{display:flex;gap:.75rem;margin-bottom:1.25rem;flex-wrap:wrap}
+.pref-type{display:flex;align-items:center;gap:.5rem;padding:.5rem 1rem;border-radius:var(--radius-sm);cursor:pointer;font-size:.85rem;font-weight:600;transition:all .2s;border:1px solid var(--border)}
+.pref-type.active{box-shadow:0 0 0 2px rgba(99,102,241,.3)}
+.pref-dot{width:10px;height:10px;border-radius:50%}
+.dot-preferred{background:var(--success)}
+.dot-suitable{background:var(--info)}
+.dot-unsuitable{background:var(--danger)}
+.pref-table-wrapper{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border)}
+.pref-table{width:100%;border-collapse:collapse;min-width:500px}
+.pref-table th{padding:.6rem .5rem;text-align:center;font-weight:600;color:var(--text2);border-bottom:2px solid var(--border);background:var(--surface2);font-size:.82rem}
+.pref-table td{padding:.35rem;border:1px solid var(--border);text-align:center}
+.pref-time-col{font-weight:600;font-size:.8rem;white-space:nowrap;color:var(--text2);min-width:90px;background:var(--surface2)!important}
+.pref-cell{width:48px;height:48px;margin:auto;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-sm);cursor:pointer;transition:all .2s;background:var(--surface2);border:1px solid transparent;position:relative}
+.pref-cell:hover{border-color:var(--primary);background:rgba(99,102,241,.06)}
+.pref-cell .plus-icon{display:block}
+.pref-cell .status-icon{display:none}
+.pref-cell.selected-preferred,.pref-cell.selected-suitable,.pref-cell.selected-unsuitable{border-width:2px}
+.pref-cell.selected-preferred .plus-icon,.pref-cell.selected-suitable .plus-icon,.pref-cell.selected-unsuitable .plus-icon{display:none}
+.pref-cell.selected-preferred .status-icon,.pref-cell.selected-suitable .status-icon,.pref-cell.selected-unsuitable .status-icon{display:block}
+.pref-cell.selected-preferred{background:rgba(16,185,129,.1);border-color:var(--success)}
+.pref-cell.selected-suitable{background:rgba(59,130,246,.1);border-color:var(--info)}
+.pref-cell.selected-unsuitable{background:rgba(239,68,68,.1);border-color:var(--danger)}
+
+/* ========================= STUDENT ID CARD (enhanced) ========================= */
+.id-card-container{display:flex;flex-direction:column;align-items:center;gap:1.5rem;padding:1rem}
+.id-card-logo{font-size:1rem;font-weight:800;letter-spacing:1px;opacity:.9}
+.id-card-school{font-size:.75rem;letter-spacing:2px;opacity:.8;margin-top:.25rem}
+.id-card-photo-container{position:relative;z-index:2}
+.id-verified-badge{position:absolute;bottom:4px;right:4px;width:28px;height:28px;background:linear-gradient(135deg,#10b981,#059669);border:3px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.7rem;font-weight:800;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.id-card-name{font-size:1.15rem;font-weight:800;margin:1rem 0 .15rem;text-align:center;color:#1e293b}
+.id-card-role{font-size:.7rem;color:#6366f1;letter-spacing:1.5px;font-weight:700;text-align:center;margin-bottom:1rem}
+.id-card-info{width:100%;padding:0 .25rem}
+.id-info-row{display:flex;justify-content:space-between;align-items:center;padding:.45rem 0;border-bottom:1px solid #e2e8f0;font-size:.8rem}
+.id-info-label{color:#64748b;font-weight:500}
+.id-info-value{color:#1e293b;font-weight:700;font-size:.82rem}
+.id-card-footer{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1.5rem;margin-top:auto;border-top:1px dashed #cbd5e1}
+.id-qr-container{flex-shrink:0}
+.id-signature{font-size:.7rem;color:#94a3b8;font-style:italic}
+
+/* ========================= PARENT PROFILE EXTRAS ========================= */
+.children-grid-simple{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem}
+.child-profile-card{display:flex;align-items:center;gap:1rem;padding:1rem;transition:transform .2s}
+.child-profile-card:hover{transform:translateY(-2px)}
+.child-profile-info{flex:1;min-width:0}
+.child-profile-info h4{font-size:.95rem;font-weight:700;margin-bottom:.15rem}
+.child-profile-info p{font-size:.82rem;color:var(--text2)}
+.child-fee-status{font-size:.8rem;font-weight:600;margin-top:.25rem}
+
+/* ========================= DATA TABLE CONTAINER ========================= */
+.data-table-container{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border)}
+.data-table-container .data-table{margin:0}
+
+/* ========================= GRID CONTAINER ========================= */
+.grid-container{display:grid}
+
+/* ========================= RESPONSIVE PROFILE ========================= */
+@media(max-width:768px){
+  .sp-layout{flex-direction:column}
+  .sp-sidebar{width:100%;flex-direction:row;overflow-x:auto;border-right:none!important;border-left:none!important;border-bottom:1px solid var(--border);padding:.5rem}
+  .sp-tab-btn{white-space:nowrap;min-width:max-content}
+  .sp-main-content{max-height:none}
+  .sp-header{flex-direction:column;text-align:center}
+  .sp-user-info{flex-direction:column;text-align:center}
+  .sp-widgets-grid{grid-template-columns:1fr 1fr}
+  .sp-info-grid{grid-template-columns:1fr}
+  .settings-grid{grid-template-columns:1fr}
+  .pref-header-row{flex-direction:column}
+  .pref-selector{justify-content:center}
+  .children-grid-simple{grid-template-columns:1fr}
+}
+@media(max-width:480px){
+  .sp-widgets-grid{grid-template-columns:1fr}
+}
+
+/* ========================= PRINT STYLES ========================= */
+@media print{
+  body{background:#fff!important;color:#000!important}
+  .sidebar,.header,.sidebar-overlay,.page-header,.modal-overlay,.toast,.hamburger,#toast-container{display:none!important}
+  .main-area{margin:0!important}
+  .main-content{padding:0!important}
+  .id-card{box-shadow:none!important;border:2px solid #e2e8f0}
+  .modal-actions{display:none!important}
+  .glass-card{box-shadow:none;border:1px solid #e2e8f0;background:#fff!important}
+}

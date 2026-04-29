@@ -399,29 +399,28 @@ export function attachTeacherProfileEvents() {
 
         const { teacherId, docName, docUrl } = btn.dataset;
         
-        const confirmed = await showConfirm(
+        showConfirm(
             state.lang === 'ar' ? 'حذف الوثيقة' : 'Delete Document',
-            state.lang === 'ar' ? `هل أنت متأكد من حذف الوثيقة: ${docName}؟` : `Are you sure you want to delete: ${docName}?`
-        );
+            state.lang === 'ar' ? `هل أنت متأكد من حذف الوثيقة: ${docName}؟` : `Are you sure you want to delete: ${docName}?`,
+            async () => {
+                try {
+                    const teacherRef = doc(db, 'teachers', teacherId);
+                    const teacherData = state.teachers.find(t => t.id === teacherId);
+                    const docToRemove = teacherData.documents.find(d => d.url === docUrl);
 
-        if (confirmed) {
-            try {
-                const teacherRef = doc(db, 'teachers', teacherId);
-                const teacherData = state.teachers.find(t => t.id === teacherId);
-                const docToRemove = teacherData.documents.find(d => d.url === docUrl);
-
-                if (docToRemove) {
-                    await updateDoc(teacherRef, {
-                        documents: arrayRemove(docToRemove)
-                    });
-                    showToast(state.lang === 'ar' ? 'تم حذف الوثيقة' : 'Document deleted', 'success');
-                    window.onTeacherUpdated(teacherId);
+                    if (docToRemove) {
+                        await updateDoc(teacherRef, {
+                            documents: arrayRemove(docToRemove)
+                        });
+                        showToast(state.lang === 'ar' ? 'تم حذف الوثيقة' : 'Document deleted', 'success');
+                        window.onTeacherUpdated(teacherId);
+                    }
+                } catch (err) {
+                    console.error(err);
+                    showToast(t('errorOccurred'), 'error');
                 }
-            } catch (err) {
-                console.error(err);
-                showToast(t('errorOccurred'), 'error');
             }
-        }
+        );
     });
 
     // Schedule Preferences Interaction

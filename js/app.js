@@ -142,21 +142,33 @@ Object.keys(pages).forEach(path => {
 initRouter();
 
 // Subscribe to state changes — only re-render page CONTENT, not full app
+let _isRendering = false;
+let _renderTimer = null;
 state.subscribe(() => {
   if (!state.user || !state.profile) return;
-  const mainContent = document.getElementById('main-content');
-  if (!mainContent) return;
-  const currentHash = window.location.hash.slice(1) || 'dashboard';
-  const basePath = currentHash.split('?')[0];
-  const page = pages[basePath] || pages.dashboard;
-  mainContent.innerHTML = page.render();
-  if (typeof page.events === 'function') {
-    if (basePath === 'settings') page.events(renderApp);
-    else page.events();
-  }
-  attachStudentProfileEvents();
-  attachParentProfileEvents();
-  attachTeacherProfileEvents();
+  if (_isRendering) return; // Guard against recursive renders
+  // Debounce rapid state updates to avoid excessive DOM thrashing
+  clearTimeout(_renderTimer);
+  _renderTimer = setTimeout(() => {
+    _isRendering = true;
+    try {
+      const mainContent = document.getElementById('main-content');
+      if (!mainContent) return;
+      const currentHash = window.location.hash.slice(1) || 'dashboard';
+      const basePath = currentHash.split('?')[0];
+      const page = pages[basePath] || pages.dashboard;
+      mainContent.innerHTML = page.render();
+      if (typeof page.events === 'function') {
+        if (basePath === 'settings') page.events(renderApp);
+        else page.events();
+      }
+      attachStudentProfileEvents();
+      attachParentProfileEvents();
+      attachTeacherProfileEvents();
+    } finally {
+      _isRendering = false;
+    }
+  }, 50);
 });
 
 // Init Auth
