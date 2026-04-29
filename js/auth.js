@@ -112,7 +112,19 @@ function getAuthError(code) {
 }
 
 export function initAuth(onLogin, onLogout) {
+  let resolved = false;
+  const timeout = setTimeout(() => {
+    if (!resolved) {
+      console.warn("Auth initialization timed out after 8s. Forcing login screen.");
+      hideLoading();
+      onLogout();
+    }
+  }, 8000);
+
   onAuthStateChanged(auth, async (user) => {
+    resolved = true;
+    clearTimeout(timeout);
+    
     if (user) {
       state.user = user;
       try {

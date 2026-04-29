@@ -408,10 +408,8 @@ export function attachStudentProfileEvents(modalElement) {
         }, 50);
       }
     }
-  });
 
-  // Photo Upload Handler
-  modalElement.addEventListener('click', (e) => {
+    // Photo Upload Handler
     const wrapper = e.target.closest('.profile-photo-wrapper');
     if (wrapper) {
         modalElement.querySelector('#student-photo-input')?.click();
@@ -438,7 +436,6 @@ export function attachStudentProfileEvents(modalElement) {
         }
     }
   });
-}
 }
 
 export function showStudentCardModalPreview(studentId) {

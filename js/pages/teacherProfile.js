@@ -397,18 +397,118 @@ export function attachTeacherProfileEvents(modalElement) {
         modalElement.innerHTML = getTeacherDashboardHTML(teacherId, activeTab);
     };
 
-    // Photo Upload
-    modalElement.addEventListener('click', (e) => {
-        const wrapper = e.target.closest('.profile-photo-wrapper');
-        if (wrapper) {
+    // Global click handler for modal actions
+    modalElement.addEventListener('click', async (e) => {
+        // Photo Upload
+        const photoWrapper = e.target.closest('.profile-photo-wrapper');
+        if (photoWrapper) {
             modalElement.querySelector('#teacher-photo-input')?.click();
+            return;
+        }
+
+        // Document Deletion
+        const delBtn = e.target.closest('.delete-doc-btn');
+        if (delBtn) {
+            const { teacherId, docName, docUrl } = delBtn.dataset;
+            showConfirm(
+                state.lang === 'ar' ? 'حذف الوثيقة' : 'Delete Document',
+                state.lang === 'ar' ? `هل أنت متأكد من حذف الوثيقة: ${docName}؟` : `Are you sure you want to delete: ${docName}?`,
+                async () => {
+                    try {
+                        const teacherRef = doc(db, 'teachers', teacherId);
+                        const teacherData = state.teachers.find(t => t.id === teacherId);
+                        const docToRemove = teacherData.documents.find(d => d.url === docUrl);
+
+                        if (docToRemove) {
+                            await updateDoc(teacherRef, {
+                                documents: arrayRemove(docToRemove)
+                            });
+                            showToast(state.lang === 'ar' ? 'تم حذف الوثيقة' : 'Document deleted', 'success');
+                            window.onTeacherUpdated(teacherId);
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        showToast(t('errorOccurred'), 'error');
+                    }
+                }
+            );
+            return;
+        }
+
+        // Schedule Preferences Type Selection
+        const typeBtn = e.target.closest('.pref-type');
+        if (typeBtn) {
+            modalElement.querySelectorAll('.pref-type').forEach(b => b.classList.remove('active'));
+            typeBtn.classList.add('active');
+            return;
+        }
+
+        // Schedule Preferences Cell Interaction
+        const cell = e.target.closest('.pref-cell');
+        if (cell) {
+            const activeTypeBtn = modalElement.querySelector('.pref-type.active');
+            const selectedType = activeTypeBtn ? activeTypeBtn.dataset.type : 'suitable';
+            const statusIcon = cell.querySelector('.status-icon');
+            
+            if (cell.classList.contains(`selected-${selectedType}`)) {
+                cell.classList.remove(`selected-${selectedType}`);
+                statusIcon.textContent = '';
+            } else {
+                cell.classList.remove('selected-preferred', 'selected-suitable', 'selected-unsuitable');
+                cell.classList.add(`selected-${selectedType}`);
+                if (selectedType === 'preferred') statusIcon.textContent = '⭐';
+                else if (selectedType === 'suitable') statusIcon.textContent = '✔️';
+                else if (selectedType === 'unsuitable') statusIcon.textContent = '❌';
+            }
+            return;
+        }
+
+        // Schedule Preferences Save
+        const savePrefsBtn = e.target.closest('#save-prefs-btn');
+        if (savePrefsBtn) {
+            const teacherId = savePrefsBtn.dataset.id;
+            const gridData = {};
+            modalElement.querySelectorAll('.pref-cell').forEach(c => {
+                const key = c.dataset.key;
+                if (c.classList.contains('selected-preferred')) gridData[key] = 'preferred';
+                else if (c.classList.contains('selected-suitable')) gridData[key] = 'suitable';
+                else if (c.classList.contains('selected-unsuitable')) gridData[key] = 'unsuitable';
+            });
+
+            const preferences = { grid: gridData };
+
+            try {
+                savePrefsBtn.disabled = true;
+                savePrefsBtn.innerHTML = `<span class="spinner-sm"></span> ${state.lang === 'ar' ? 'جاري الحفظ...' : 'Saving...'}`;
+                
+                const teacherRef = doc(db, 'teachers', teacherId);
+                await updateDoc(teacherRef, { preferences });
+                
+                const teacher = state.teachers.find(t => t.id === teacherId);
+                if (teacher) teacher.preferences = preferences;
+
+                showToast(state.lang === 'ar' ? 'تم حفظ التفضيلات بنجاح' : 'Preferences saved successfully', 'success');
+                window.onTeacherUpdated(teacherId);
+            } catch (err) {
+                console.error(err);
+                showToast(t('errorOccurred'), 'error');
+            } finally {
+                savePrefsBtn.disabled = false;
+                savePrefsBtn.innerHTML = `<span>✅</span> ${state.lang === 'ar' ? 'حفظ التفضيلات' : 'Save Preferences'}`;
+            }
+            return;
         }
     });
 
+    // Inputs Change Handler
     modalElement.addEventListener('change', async (e) => {
+        // Teacher Photo Input
         if (e.target.id === 'teacher-photo-input' && e.target.files[0]) {
             const file = e.target.files[0];
-            const teacherId = modalElement.querySelector('.profile-photo-wrapper').dataset.id;
+            const wrapper = modalElement.querySelector('.profile-photo-wrapper');
+            const teacherId = wrapper ? wrapper.dataset.id : null;
+            if (!teacherId) return;
+
             try {
                 showToast(state.lang === 'ar' ? 'جاري رفع الصورة...' : 'Uploading photo...', 'info');
                 const url = await uploadFile(file);
@@ -420,9 +520,11 @@ export function attachTeacherProfileEvents(modalElement) {
             }
         }
         
+        // Document Upload Input
         if (e.target.id === 'doc-upload-input' && e.target.files[0]) {
             const file = e.target.files[0];
-            const teacherId = modalElement.querySelector('.sp-tab-btn')?.dataset.teacherId;
+            const activeBtn = modalElement.querySelector('.sp-tab-btn');
+            const teacherId = activeBtn ? activeBtn.dataset.teacherId : null;
             if (!teacherId) {
                 showToast(t('errorOccurred'), 'error');
                 return;
@@ -443,106 +545,4 @@ export function attachTeacherProfileEvents(modalElement) {
         }
     });
 }
-    
-    // Document Deletion
-    document.addEventListener('click', async (e) => {
-        const btn = e.target.closest('.delete-doc-btn');
-        if (!btn) return;
-
-        const { teacherId, docName, docUrl } = btn.dataset;
-        
-        showConfirm(
-            state.lang === 'ar' ? 'حذف الوثيقة' : 'Delete Document',
-            state.lang === 'ar' ? `هل أنت متأكد من حذف الوثيقة: ${docName}؟` : `Are you sure you want to delete: ${docName}?`,
-            async () => {
-                try {
-                    const teacherRef = doc(db, 'teachers', teacherId);
-                    const teacherData = state.teachers.find(t => t.id === teacherId);
-                    const docToRemove = teacherData.documents.find(d => d.url === docUrl);
-
-                    if (docToRemove) {
-                        await updateDoc(teacherRef, {
-                            documents: arrayRemove(docToRemove)
-                        });
-                        showToast(state.lang === 'ar' ? 'تم حذف الوثيقة' : 'Document deleted', 'success');
-                        window.onTeacherUpdated(teacherId);
-                    }
-                } catch (err) {
-                    console.error(err);
-                    showToast(t('errorOccurred'), 'error');
-                }
-            }
-        );
-    });
-
-    // Schedule Preferences Interaction
-    document.addEventListener('click', (e) => {
-        const typeBtn = e.target.closest('.pref-type');
-        if (typeBtn) {
-            document.querySelectorAll('.pref-type').forEach(b => b.classList.remove('active'));
-            typeBtn.classList.add('active');
-            return;
-        }
-
-        const cell = e.target.closest('.pref-cell');
-        if (cell) {
-            const activeTypeBtn = document.querySelector('.pref-type.active');
-            const selectedType = activeTypeBtn ? activeTypeBtn.dataset.type : 'suitable';
-            const statusIcon = cell.querySelector('.status-icon');
-            
-            // Cycle or toggle
-            if (cell.classList.contains(`selected-${selectedType}`)) {
-                cell.classList.remove(`selected-${selectedType}`);
-                statusIcon.textContent = '';
-            } else {
-                // Remove existing classes
-                cell.classList.remove('selected-preferred', 'selected-suitable', 'selected-unsuitable');
-                cell.classList.add(`selected-${selectedType}`);
-                
-                // Update icon
-                if (selectedType === 'preferred') statusIcon.textContent = '⭐';
-                else if (selectedType === 'suitable') statusIcon.textContent = '✔️';
-                else if (selectedType === 'unsuitable') statusIcon.textContent = '❌';
-            }
-        }
-    });
-
-    // Schedule Preferences Save
-    document.addEventListener('click', async (e) => {
-        const btn = e.target.closest('#save-prefs-btn');
-        if (!btn) return;
-
-        const teacherId = btn.dataset.id;
-        const gridData = {};
-        document.querySelectorAll('.pref-cell').forEach(cell => {
-            const key = cell.dataset.key;
-            if (cell.classList.contains('selected-preferred')) gridData[key] = 'preferred';
-            else if (cell.classList.contains('selected-suitable')) gridData[key] = 'suitable';
-            else if (cell.classList.contains('selected-unsuitable')) gridData[key] = 'unsuitable';
-        });
-
-        const preferences = { grid: gridData };
-
-        try {
-            btn.disabled = true;
-            const originalContent = btn.innerHTML;
-            btn.innerHTML = `<span class="spinner-sm"></span> ${state.lang === 'ar' ? 'جاري الحفظ...' : 'Saving...'}`;
-            
-            const teacherRef = doc(db, 'teachers', teacherId);
-            await updateDoc(teacherRef, { preferences });
-            
-            // Update local state
-            const teacher = state.teachers.find(t => t.id === teacherId);
-            if (teacher) teacher.preferences = preferences;
-
-            showToast(state.lang === 'ar' ? 'تم حفظ التفضيلات بنجاح' : 'Preferences saved successfully', 'success');
-            window.onTeacherUpdated(teacherId);
-        } catch (err) {
-            console.error(err);
-            showToast(t('errorOccurred'), 'error');
-        } finally {
-            btn.disabled = false;
-            btn.innerHTML = `<span>✅</span> ${state.lang === 'ar' ? 'حفظ التفضيلات' : 'Save Preferences'}`;
-        }
-    });
 }

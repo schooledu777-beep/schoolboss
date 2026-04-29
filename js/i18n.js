@@ -103,4 +103,12 @@ export const translations = {
   bulkGrading: { ar: 'رصد درجات جماعي', en: 'Bulk Grading' },
   todaySchedule: { ar: 'جدول اليوم', en: "Today's Schedule" },
   notificationHistory: { ar: 'سجل التنبيهات', en: 'Notification History' },
+  // Days
+  sun: { ar: 'الأحد', en: 'Sun' },
+  mon: { ar: 'الأثنين', en: 'Mon' },
+  tue: { ar: 'الثلاثاء', en: 'Tue' },
+  wed: { ar: 'الأربعاء', en: 'Wed' },
+  thu: { ar: 'الخميس', en: 'Thu' },
+  fri: { ar: 'الجمعة', en: 'Fri' },
+  sat: { ar: 'السبت', en: 'Sat' },
 };
