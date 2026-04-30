@@ -90,11 +90,33 @@ function sameSlot(entry, slotId) {
   return Boolean(target && entrySlot && target.startTime === entrySlot.startTime && target.endTime === entrySlot.endTime);
 }
 
+function getDisplaySlots(schedules) {
+  const allSlots = getSlots();
+  if (!schedules.length) return allSlots;
+
+  const byKey = new Map();
+  schedules.forEach(entry => {
+    const entrySlotId = String(entry.timeslotId ?? entry.period ?? '');
+    const slot = allSlots.find(s => String(s.id) === entrySlotId) || state.timeslots.find(s => String(s.id) === entrySlotId);
+    if (!slot) return;
+    const key = `${slot.startTime || ''}-${slot.endTime || ''}`;
+    if (!byKey.has(key)) byKey.set(key, slot);
+  });
+
+  const usedSlots = [...byKey.values()].sort((a, b) =>
+    String(a.startTime || '').localeCompare(String(b.startTime || '')) ||
+    String(a.endTime || '').localeCompare(String(b.endTime || '')) ||
+    (Number(a.order ?? 0) - Number(b.order ?? 0))
+  );
+
+  return usedSlots.length ? usedSlots : allSlots;
+}
+
 function renderScheduleGrid(classId, canEdit) {
   const lang = state.lang;
   const dayNames = getDayNames();
   const schedules = state.schedules.filter(s => s.classId === classId);
-  const slots = getSlots();
+  const slots = getDisplaySlots(schedules);
   const selectedClass = state.classes.find(c => c.id === classId);
   const lessonCount = schedules.filter(s => s.type !== 'break').length;
   const breakCount = schedules.filter(s => s.type === 'break').length;

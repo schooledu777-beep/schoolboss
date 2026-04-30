@@ -17,7 +17,7 @@ import { renderClasses, attachClassEvents } from './pages/classes.js';
 import { renderAttendance, attachAttendanceEvents } from './pages/attendance.js';
 import { renderGrades, attachGradeEvents } from './pages/grades.js';
 import { renderSubjects, attachSubjectEvents } from './pages/subjects.js';
-import { renderSchedule, attachScheduleEvents } from './pages/schedule.js?v=20260430-schedule-clear-pdf';
+import { renderSchedule, attachScheduleEvents } from './pages/schedule.js?v=20260430-class-display-slots';
 import { renderFinance, attachFinanceEvents } from './pages/finance.js';
 import { renderAnnouncements, attachAnnouncementEvents, renderMessages, attachMessageEvents, renderSettings, attachSettingsEvents } from './pages/communications.js';
 import { renderAdmissions, attachAdmissionsEvents } from './pages/admissions.js';
