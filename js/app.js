@@ -90,7 +90,7 @@ function renderApp() {
   // Render Full Layout if needed
   if (currentLayout !== 'app') {
     app.innerHTML = `
-      <div class="app-layout">
+      <div class="app-layout ${state.sidebarOpen ? 'sidebar-expanded' : 'sidebar-collapsed'}">
         ${renderSidebar()}
         <div class="main-area">
           ${renderHeader()}

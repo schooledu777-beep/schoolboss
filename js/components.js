@@ -135,24 +135,24 @@ export function renderHeader() {
 
 // ========================= ATTACH LAYOUT EVENTS =========================
 export function attachLayoutEvents(renderApp) {
+  const setSidebarState = (isOpen) => {
+    state.sidebarOpen = isOpen;
+    document.querySelector('.app-layout')?.classList.toggle('sidebar-expanded', isOpen);
+    document.querySelector('.app-layout')?.classList.toggle('sidebar-collapsed', !isOpen);
+    document.getElementById('sidebar')?.classList.toggle('sidebar-open', isOpen);
+    document.getElementById('sidebar')?.classList.toggle('sidebar-closed', !isOpen);
+    document.getElementById('sidebar-overlay')?.classList.toggle('hidden', !isOpen);
+  };
+
   // Sidebar toggle
   document.getElementById('sidebar-toggle')?.addEventListener('click', () => {
-    state.sidebarOpen = !state.sidebarOpen;
-    document.getElementById('sidebar')?.classList.toggle('sidebar-open', state.sidebarOpen);
-    document.getElementById('sidebar')?.classList.toggle('sidebar-closed', !state.sidebarOpen);
-    document.getElementById('sidebar-overlay')?.classList.toggle('hidden', !state.sidebarOpen);
+    setSidebarState(!state.sidebarOpen);
   });
   document.getElementById('sidebar-close')?.addEventListener('click', () => {
-    state.sidebarOpen = false;
-    document.getElementById('sidebar')?.classList.add('sidebar-closed');
-    document.getElementById('sidebar')?.classList.remove('sidebar-open');
-    document.getElementById('sidebar-overlay')?.classList.add('hidden');
+    setSidebarState(false);
   });
   document.getElementById('sidebar-overlay')?.addEventListener('click', () => {
-    state.sidebarOpen = false;
-    document.getElementById('sidebar')?.classList.add('sidebar-closed');
-    document.getElementById('sidebar')?.classList.remove('sidebar-open');
-    document.getElementById('sidebar-overlay')?.classList.add('hidden');
+    setSidebarState(false);
   });
 
   // Nav items
@@ -161,10 +161,7 @@ export function attachLayoutEvents(renderApp) {
       e.preventDefault();
       navigate(item.dataset.page);
       if (window.innerWidth <= 768) {
-        state.sidebarOpen = false;
-        document.getElementById('sidebar')?.classList.add('sidebar-closed');
-        document.getElementById('sidebar')?.classList.remove('sidebar-open');
-        document.getElementById('sidebar-overlay')?.classList.add('hidden');
+        setSidebarState(false);
       }
     });
   });
