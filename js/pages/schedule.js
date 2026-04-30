@@ -216,6 +216,24 @@ function renderTimeslotOptions(selectedTimeslotId = '') {
   }).join('');
 }
 
+function addMinutes(time, minutes) {
+  const [hours, mins] = String(time || '08:00').split(':').map(Number);
+  const date = new Date(2000, 0, 1, hours || 8, mins || 0);
+  date.setMinutes(date.getMinutes() + Number(minutes || 0));
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
+
+function getSmartDayDefaults() {
+  const firstSlot = getSlots()[0];
+  return {
+    startTime: firstSlot?.startTime?.includes(':') ? firstSlot.startTime : '08:00',
+    lessonMinutes: 45,
+    lessonCount: 6,
+    breakMinutes: 15,
+    breakCount: 1
+  };
+}
+
 function showScheduleForm(entry = null, dayOfWeek = 0, timeslotId = '') {
   const classId = document.getElementById('sched-class')?.value || '';
   showModal(state.lang === 'ar' ? 'إضافة حصة' : 'Add Lesson', `
@@ -357,15 +375,48 @@ function showBreakForm(dayOfWeek = 0, timeslotId = '') {
 function showSmartScheduleModal() {
   const classId = document.getElementById('sched-class')?.value || '';
   const selectedClass = state.classes.find(c => c.id === classId);
+  const defaults = getSmartDayDefaults();
+  const dayRows = getDayNames().map((day, dayIndex) => `
+    <div class="smart-day-row" data-day="${dayIndex}">
+      <div class="smart-day-name">${day}</div>
+      <label>
+        <span>${state.lang === 'ar' ? 'بداية اليوم' : 'Start'}</span>
+        <input class="form-input smart-start" type="time" value="${defaults.startTime}" required>
+      </label>
+      <label>
+        <span>${state.lang === 'ar' ? 'وقت الحصة' : 'Lesson Time'}</span>
+        <input class="form-input smart-lesson-min" type="number" min="15" max="120" value="${defaults.lessonMinutes}" required>
+      </label>
+      <label>
+        <span>${state.lang === 'ar' ? 'عدد الحصص' : 'Lessons'}</span>
+        <input class="form-input smart-lesson-count" type="number" min="0" max="12" value="${defaults.lessonCount}" required>
+      </label>
+      <label>
+        <span>${state.lang === 'ar' ? 'وقت الاستراحة' : 'Break Time'}</span>
+        <input class="form-input smart-break-min" type="number" min="5" max="60" value="${defaults.breakMinutes}" required>
+      </label>
+      <label>
+        <span>${state.lang === 'ar' ? 'عدد الاستراحات' : 'Breaks'}</span>
+        <input class="form-input smart-break-count" type="number" min="0" max="6" value="${defaults.breakCount}" required>
+      </label>
+    </div>
+  `).join('');
   showModal(state.lang === 'ar' ? 'إنشاء جدول ذكي' : 'Smart Schedule Generator', `
     <div class="smart-schedule-panel">
       <div class="smart-schedule-icon">✨</div>
       <div>
         <h4>${selectedClass?.name || ''}</h4>
         <p class="text-muted">${state.lang === 'ar'
-          ? 'سيتم ملء الخانات الفارغة فقط. النظام يتجنب تعارض المعلمين ويراعي تفضيلاتهم: المفضل أولاً، ثم المناسب، ويتجنب غير المناسب.'
-          : 'Only empty slots will be filled. The system avoids teacher conflicts and ranks preferred slots first, then suitable ones, while avoiding unsuitable slots.'}</p>
+          ? 'أدخل خطة كل يوم: وقت الحصة وعدد الحصص ووقت الاستراحة وعدد الاستراحات. سيتم ملء الخانات الفارغة فقط مع مراعاة تفضيلات المعلمين.'
+          : 'Enter each day plan: lesson duration/count and break duration/count. Only empty slots will be filled while respecting teacher preferences.'}</p>
       </div>
+    </div>
+    <div class="smart-day-planner">
+      <div class="smart-day-head">
+        <strong>${state.lang === 'ar' ? 'خطة الأيام' : 'Daily Plan'}</strong>
+        <span>${state.lang === 'ar' ? 'الأوقات بالدقائق، وتوزع الاستراحات تلقائياً بين الحصص.' : 'Durations are minutes, and breaks are distributed between lessons.'}</span>
+      </div>
+      ${dayRows}
     </div>
     <div class="schedule-smart-options">
       <label class="smart-check">
@@ -385,10 +436,22 @@ function showSmartScheduleModal() {
   document.getElementById('run-smart-schedule')?.addEventListener('click', async () => {
     const options = {
       avoidRepeat: document.getElementById('smart-avoid-repeat')?.checked !== false,
-      usePreferences: document.getElementById('smart-use-preferences')?.checked !== false
+      usePreferences: document.getElementById('smart-use-preferences')?.checked !== false,
+      dayPlans: collectSmartDayPlans()
     };
     await generateSmartSchedule(classId, options);
   });
+}
+
+function collectSmartDayPlans() {
+  return [...document.querySelectorAll('.smart-day-row')].map(row => ({
+    dayOfWeek: Number(row.dataset.day),
+    startTime: row.querySelector('.smart-start')?.value || '08:00',
+    lessonMinutes: Number(row.querySelector('.smart-lesson-min')?.value || 45),
+    lessonCount: Number(row.querySelector('.smart-lesson-count')?.value || 0),
+    breakMinutes: Number(row.querySelector('.smart-break-min')?.value || 15),
+    breakCount: Number(row.querySelector('.smart-break-count')?.value || 0)
+  }));
 }
 
 function getTeacherSubjects(teacher) {
@@ -455,9 +518,87 @@ function scoreCandidate(candidate, classId, dayOfWeek, timeslotId, options, draf
   return score;
 }
 
+function buildSmartDaySequence(plan, slots) {
+  const lessonCount = Math.max(0, Number(plan.lessonCount || 0));
+  const breakCount = Math.max(0, Number(plan.breakCount || 0));
+  const totalCount = lessonCount + breakCount;
+  const sequence = [];
+  let lessonNumber = 0;
+  let breakNumber = 0;
+
+  for (let index = 0; index < totalCount; index += 1) {
+    const remainingPositions = totalCount - index;
+    const remainingBreaks = breakCount - breakNumber;
+    const shouldBreak = remainingBreaks > 0 && lessonNumber > 0 && (remainingBreaks / remainingPositions) >= 0.5;
+    const type = shouldBreak ? 'break' : 'lesson';
+    if (type === 'break') breakNumber += 1;
+    else lessonNumber += 1;
+    sequence.push({
+      type,
+      slot: slots[index],
+      lessonNumber,
+      breakNumber
+    });
+  }
+
+  return sequence.filter(item => item.slot);
+}
+
+function buildPlannedSlots(maxSlotCount, dayPlans) {
+  const basePlan = dayPlans.find(plan => Number(plan.lessonCount || 0) + Number(plan.breakCount || 0) === maxSlotCount) || dayPlans[0] || getSmartDayDefaults();
+  const slots = [];
+  let current = basePlan.startTime || '08:00';
+  let lessonPlaced = 0;
+  let breakPlaced = 0;
+  const totalBreaks = Number(basePlan.breakCount || 0);
+  const totalLessons = Number(basePlan.lessonCount || 0);
+
+  for (let index = 0; index < maxSlotCount; index += 1) {
+    const remaining = maxSlotCount - index;
+    const shouldBreak = totalBreaks - breakPlaced > 0 && lessonPlaced > 0 && ((totalBreaks - breakPlaced) / remaining) >= 0.5;
+    const minutes = shouldBreak ? basePlan.breakMinutes : basePlan.lessonMinutes;
+    const endTime = addMinutes(current, minutes);
+    slots.push({
+      id: `smart-slot-${index + 1}`,
+      startTime: current,
+      endTime,
+      order: index + 1,
+      kind: shouldBreak ? 'break' : 'lesson'
+    });
+    if (shouldBreak) breakPlaced += 1;
+    else if (lessonPlaced < totalLessons) lessonPlaced += 1;
+    current = endTime;
+  }
+
+  return slots;
+}
+
+function validateSmartPlans(dayPlans) {
+  return dayPlans.every(plan =>
+    plan.startTime &&
+    Number(plan.lessonMinutes) > 0 &&
+    Number(plan.breakMinutes) > 0 &&
+    Number(plan.lessonCount) >= 0 &&
+    Number(plan.breakCount) >= 0
+  );
+}
+
+function getSmartSlotPlan(dayPlans) {
+  const maxSlotCount = Math.max(...dayPlans.map(plan => Number(plan.lessonCount || 0) + Number(plan.breakCount || 0)), 0);
+  const existingSlots = [...state.timeslots].sort((a, b) => Number(a.order ?? 0) - Number(b.order ?? 0) || String(a.startTime || '').localeCompare(String(b.startTime || '')));
+  const plannedSlots = buildPlannedSlots(maxSlotCount, dayPlans);
+  return {
+    maxSlotCount,
+    existingSlots,
+    missingSlots: plannedSlots.slice(existingSlots.length)
+  };
+}
+
 async function generateSmartSchedule(classId, options) {
-  const slots = getSlots();
   const dayNames = getDayNames();
+  const dayPlans = options.dayPlans || dayNames.map((_, dayOfWeek) => ({ dayOfWeek, ...getSmartDayDefaults() }));
+  const slotPlan = getSmartSlotPlan(dayPlans);
+  const slots = [...slotPlan.existingSlots, ...slotPlan.missingSlots];
   const candidates = buildCandidates();
 
   if (!classId) {
@@ -465,8 +606,8 @@ async function generateSmartSchedule(classId, options) {
     return;
   }
 
-  if (slots.length === 0) {
-    showToast(state.lang === 'ar' ? 'أضف أوقات الحصص أولاً' : 'Add timeslots first', 'error');
+  if (!validateSmartPlans(dayPlans) || slotPlan.maxSlotCount === 0) {
+    showToast(state.lang === 'ar' ? 'أدخل خطة صحيحة ليوم واحد على الأقل' : 'Enter a valid plan for at least one day', 'error');
     return;
   }
 
@@ -476,11 +617,26 @@ async function generateSmartSchedule(classId, options) {
   }
 
   const draftEntries = [];
-  dayNames.forEach((_, dayOfWeek) => {
-    slots.forEach(slot => {
+  dayPlans.forEach((plan) => {
+    const dayOfWeek = Number(plan.dayOfWeek);
+    const sequence = buildSmartDaySequence(plan, slots);
+    sequence.forEach(({ slot, type, breakNumber }) => {
       const timeslotId = String(slot.id);
       const alreadyUsed = state.schedules.some(s => s.classId === classId && s.dayOfWeek === dayOfWeek && sameSlot(s, timeslotId));
       if (alreadyUsed) return;
+
+      if (type === 'break') {
+        draftEntries.push({
+          classId,
+          dayOfWeek,
+          timeslotId,
+          subject: state.lang === 'ar' ? `استراحة ${breakNumber}` : `Break ${breakNumber}`,
+          note: `${slot.startTime} - ${slot.endTime}`,
+          type: 'break',
+          generatedBy: 'smart-schedule'
+        });
+        return;
+      }
 
       const ranked = candidates
         .map(candidate => ({ candidate, score: scoreCandidate(candidate, classId, dayOfWeek, timeslotId, options, draftEntries) }))
@@ -508,16 +664,25 @@ async function generateSmartSchedule(classId, options) {
 
   try {
     const batch = writeBatch(db);
+    const createdSlots = slotPlan.missingSlots.map(data => {
+      const ref = doc(collection(db, 'timeslots'));
+      const slotData = { startTime: data.startTime, endTime: data.endTime, order: data.order, generatedBy: 'smart-schedule' };
+      batch.set(ref, slotData);
+      return { id: ref.id, ...slotData };
+    });
+    const slotIdMap = new Map(slotPlan.missingSlots.map((slot, index) => [String(slot.id), createdSlots[index].id]));
     const created = draftEntries.map(data => {
       const ref = doc(collection(db, 'schedules'));
-      batch.set(ref, data);
-      return { id: ref.id, ...data };
+      const scheduleData = { ...data, timeslotId: slotIdMap.get(String(data.timeslotId)) || data.timeslotId };
+      batch.set(ref, scheduleData);
+      return { id: ref.id, ...scheduleData };
     });
     await batch.commit();
+    state.timeslots.push(...createdSlots);
     state.schedules.push(...created);
     closeModal();
     refreshCurrentSchedule();
-    showToast(state.lang === 'ar' ? `تم إنشاء ${created.length} حصة بذكاء` : `Generated ${created.length} lessons`, 'success');
+    showToast(state.lang === 'ar' ? `تم إنشاء ${created.length} خانة بذكاء` : `Generated ${created.length} smart entries`, 'success');
   } catch (err) {
     console.error(err);
     showToast(t('errorOccurred'), 'error');

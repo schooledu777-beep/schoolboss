@@ -478,6 +478,15 @@ textarea.form-input{min-height:80px;resize:vertical}
 .smart-schedule-panel{display:flex;gap:1rem;align-items:flex-start;padding:1rem;border-radius:var(--radius);background:linear-gradient(135deg,rgba(99,102,241,.12),rgba(6,182,212,.06));border:1px solid var(--border)}
 .smart-schedule-icon{width:44px;height:44px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;background:var(--surface2);font-size:1.35rem;flex-shrink:0}
 .smart-schedule-panel h4{font-size:1.05rem;margin-bottom:.35rem}
+.smart-day-planner{display:flex;flex-direction:column;gap:.65rem;padding:.85rem;border:1px solid var(--border);border-radius:var(--radius);background:rgba(255,255,255,.025);overflow:auto}
+.smart-day-head{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;padding-bottom:.5rem;border-bottom:1px solid var(--border)}
+.smart-day-head strong{font-size:.95rem}
+.smart-day-head span{font-size:.78rem;color:var(--text2)}
+.smart-day-row{display:grid;grid-template-columns:minmax(86px,1fr) repeat(5,minmax(104px,1fr));gap:.55rem;align-items:end;min-width:720px;padding:.65rem;border-radius:var(--radius-sm);background:var(--surface2)}
+.smart-day-name{font-weight:900;color:var(--primary-light);padding:.7rem .2rem}
+.smart-day-row label{display:flex;flex-direction:column;gap:.25rem;min-width:0}
+.smart-day-row label span{font-size:.72rem;font-weight:800;color:var(--text2);white-space:nowrap}
+.smart-day-row .form-input{padding:.55rem .65rem;font-size:.86rem}
 .schedule-smart-options{display:flex;flex-direction:column;gap:.65rem;margin-top:.25rem}
 .smart-check{display:flex;align-items:center;gap:.6rem;padding:.75rem .85rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2);cursor:pointer}
 .smart-check input{width:16px;height:16px;accent-color:var(--primary)}
@@ -633,6 +642,7 @@ textarea.form-input{min-height:80px;resize:vertical}
   .schedule-grid-board{grid-template-columns:110px repeat(var(--schedule-days),minmax(160px,76vw));min-width:900px}
   [dir="rtl"] .schedule-grid-board{grid-template-columns:110px repeat(var(--schedule-days),minmax(160px,76vw))}
   .sched-empty-actions{grid-template-columns:1fr}
+  .smart-day-row{min-width:620px;grid-template-columns:92px repeat(5,98px)}
   .schedule-slot{grid-template-columns:68px minmax(0,1fr)}
 }
 @media(max-width:480px){
