@@ -1,127 +1,167 @@
 import { state, t } from '../state.js';
-import { db, collection, addDoc, updateDoc, deleteDoc, doc } from '../firebase-config.js';
+import { db, collection, addDoc, deleteDoc, doc } from '../firebase-config.js';
 import { showModal, closeModal, showConfirm, showToast } from '../ui.js';
 
-const days = { ar: ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس'], en: ['Sunday','Monday','Tuesday','Wednesday','Thursday'] };
-const periods = [1,2,3,4,5,6,7];
+const days = {
+  ar: ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'],
+  en: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday']
+};
+const periods = [1, 2, 3, 4, 5, 6, 7];
+const subjectAccents = ['purple', 'cyan', 'green', 'amber', 'red'];
 
 export function renderSchedule() {
   const role = state.profile?.role;
   const canEdit = role === 'admin';
-
-  // Pick which class schedule to show
-  let classId = '';
   let availableClasses = state.classes;
+  let classId = '';
+
   if (role === 'teacher') {
-    availableClasses = state.classes.filter(c => c.teacherId === state.profile?.uid || (c.teacherIds||[]).includes(state.profile?.uid));
-    classId = availableClasses[0]?.id || '';
+    availableClasses = state.classes.filter(c => c.teacherId === state.profile?.uid || (c.teacherIds || []).includes(state.profile?.uid));
   } else if (role === 'student') {
-    availableClasses = state.classes.filter(c => (c.studentIds||[]).includes(state.profile?.uid));
-    classId = availableClasses[0]?.id || '';
+    availableClasses = state.classes.filter(c => (c.studentIds || []).includes(state.profile?.uid));
   } else if (role === 'parent') {
     const kidIds = state.profile?.studentIds || state.students.filter(s => s.parentId === state.profile?.uid).map(s => s.id);
     availableClasses = state.classes.filter(c => c.studentIds?.some(id => kidIds.includes(id)));
-    classId = availableClasses[0]?.id || '';
   }
-  if (!classId && availableClasses.length > 0) {
-    classId = availableClasses[0].id;
-  }
+  classId = availableClasses[0]?.id || '';
 
   return `
   <div class="page-content animate-in">
     <div class="page-header">
+      <div>
         <h2>${t('schedule')}</h2>
-        <div class="header-actions">
-            ${canEdit ? `<button class="btn btn-outline" id="manage-master-sched-btn">⚙️ ${state.lang==='ar'?'البيانات الأساسية':'Master Data'}</button>` : ''}
-            ${canEdit ? `<button class="btn btn-primary" id="add-schedule-btn">+ ${t('add')}</button>` : ''}
-        </div>
+        <p class="text-muted">${state.lang === 'ar' ? 'لوحة أسبوعية تفاعلية للحصص والمعلمين' : 'Interactive weekly board for periods and teachers'}</p>
+      </div>
+      <div class="header-actions">
+        ${canEdit ? `<button class="btn btn-outline" id="manage-master-sched-btn">⚙️ ${state.lang === 'ar' ? 'الأوقات' : 'Timeslots'}</button>` : ''}
+        ${canEdit ? `<button class="btn btn-primary" id="add-schedule-btn">+ ${t('add')}</button>` : ''}
+      </div>
     </div>
-    <div class="filter-bar glass-card">
-      <select id="sched-class" class="form-select">
-        ${availableClasses.map(c => `<option value="${c.id}" ${c.id===classId?'selected':''}>${c.name}</option>`).join('')}
+
+    <div class="schedule-toolbar glass-card">
+      <div class="schedule-toolbar-main">
+        <span class="schedule-toolbar-icon">📅</span>
+        <div>
+          <span class="schedule-toolbar-label">${state.lang === 'ar' ? 'الجدول الأسبوعي' : 'Weekly Schedule'}</span>
+          <strong>${state.lang === 'ar' ? 'اختر الصف لعرض الحصص' : 'Choose a class to view periods'}</strong>
+        </div>
+      </div>
+      <select id="sched-class" class="form-select schedule-class-select">
+        ${availableClasses.map(c => `<option value="${c.id}" ${c.id === classId ? 'selected' : ''}>${c.name}</option>`).join('')}
       </select>
     </div>
+
     <div id="schedule-grid" class="schedule-container glass-card">
       ${renderScheduleGrid(classId, canEdit)}
     </div>
   </div>`;
 }
 
+function getSlots() {
+  if (state.timeslots.length > 0) {
+    return [...state.timeslots].sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
+  }
+  return periods.map(p => ({ id: p, startTime: `${t('period')} ${p}`, endTime: '' }));
+}
+
 function renderScheduleGrid(classId, canEdit) {
   const lang = state.lang;
   const dayNames = days[lang] || days.ar;
   const schedules = state.schedules.filter(s => s.classId === classId);
-  const activeTimeslots = state.timeslots.sort((a,b) => a.startTime.localeCompare(b.startTime));
+  const slots = getSlots();
+  const selectedClass = state.classes.find(c => c.id === classId);
+  const filledCount = schedules.length;
+  const totalSlots = slots.length * dayNames.length;
+
+  if (!classId) {
+    return `<div class="empty-state"><p class="text-muted">${lang === 'ar' ? 'لا توجد صفوف متاحة لعرض الجدول' : 'No classes available for schedule view'}</p></div>`;
+  }
 
   return `
-  <div class="schedule-table-wrap">
-    <table class="schedule-table">
-      <thead>
-        <tr>
-          <th>${lang==='ar'?'الحصة':'Period'}</th>
-          ${dayNames.map(d => `<th>${d}</th>`).join('')}
-        </tr>
-      </thead>
-      <tbody>
-        ${(activeTimeslots.length > 0 ? activeTimeslots : periods).map((p, pi) => {
-          const slotLabel = p.startTime ? `${p.startTime} - ${p.endTime}` : `${t('period')} ${p}`;
-          const slotId = p.id || p;
-          return `
-          <tr>
-            <td class="period-cell">
-              <div class="period-number">${pi + 1}</div>
-              <div class="period-time">${slotLabel}</div>
-            </td>
-            ${dayNames.map((d, di) => {
-              const entry = schedules.find(s => (s.timeslotId === slotId || s.period === p) && s.dayOfWeek === di);
-              return `
-              <td class="schedule-cell ${entry ? 'has-entry' : ''}" data-day="${di}" data-slot="${slotId}">
-                ${entry ? `
-                  <div class="sched-entry animate-in">
-                    <div class="sched-entry-content">
-                        <span class="sched-subject">${entry.subject||''}</span>
-                        <span class="sched-teacher">${state.teachers.find(tc=>tc.id===entry.teacherId)?.name||''}</span>
-                    </div>
-                    ${canEdit?`<button class="sched-del-btn" data-id="${entry.id}" title="${t('delete')}">✕</button>`:''}
-                  </div>` : (canEdit ? '<div class="sched-add-placeholder"><span class="plus-icon">+</span></div>' : '')}
-              </td>`;
-            }).join('')}
-          </tr>`}).join('')}
-      </tbody>
-    </table>
+  <div class="schedule-board-head">
+    <div>
+      <span class="schedule-eyebrow">${lang === 'ar' ? 'الصف الحالي' : 'Selected Class'}</span>
+      <h3>${selectedClass?.name || (lang === 'ar' ? 'صف غير محدد' : 'Unknown class')}</h3>
+    </div>
+    <div class="schedule-metrics">
+      <span><strong>${filledCount}</strong>${lang === 'ar' ? 'حصة' : 'Periods'}</span>
+      <span><strong>${totalSlots}</strong>${lang === 'ar' ? 'خانة' : 'Slots'}</span>
+    </div>
+  </div>
+
+  <div class="schedule-board" style="--schedule-days:${dayNames.length}">
+    ${dayNames.map((day, dayIndex) => `
+      <section class="schedule-day-column">
+        <div class="schedule-day-header">
+          <span>${day}</span>
+          <small>${schedules.filter(s => s.dayOfWeek === dayIndex).length}</small>
+        </div>
+        <div class="schedule-day-slots">
+          ${slots.map((slot, slotIndex) => {
+            const slotId = slot.id;
+            const slotLabel = slot.endTime ? `${slot.startTime} - ${slot.endTime}` : slot.startTime;
+            const entry = schedules.find(s => (s.timeslotId === slotId || s.period === slotId) && s.dayOfWeek === dayIndex);
+            const teacher = entry ? state.teachers.find(tc => tc.id === entry.teacherId) : null;
+            const accent = subjectAccents[Math.abs((entry?.subject || '').length + dayIndex + slotIndex) % subjectAccents.length];
+            return `
+            <div class="schedule-slot ${entry ? 'has-entry' : 'is-empty'}" data-day="${dayIndex}" data-slot="${slotId}">
+              <div class="schedule-slot-time">${slotLabel}</div>
+              ${entry ? `
+                <article class="schedule-lesson accent-${accent}">
+                  <div class="schedule-lesson-top">
+                    <strong>${entry.subject || ''}</strong>
+                    ${canEdit ? `<button class="sched-del-btn" data-id="${entry.id}" title="${t('delete')}">×</button>` : ''}
+                  </div>
+                  <span>${teacher?.name || (lang === 'ar' ? 'معلم غير محدد' : 'No teacher')}</span>
+                </article>
+              ` : canEdit ? `
+                <button class="sched-add-placeholder" type="button">
+                  <span class="plus-icon">+</span>
+                  <small>${lang === 'ar' ? 'إضافة حصة' : 'Add period'}</small>
+                </button>
+              ` : `<div class="schedule-empty-readonly">${lang === 'ar' ? 'فارغ' : 'Free'}</div>`}
+            </div>`;
+          }).join('')}
+        </div>
+      </section>
+    `).join('')}
   </div>`;
 }
 
-export function attachScheduleEvents() {
+function refreshCurrentSchedule() {
   const classSelect = document.getElementById('sched-class');
-  const renderSelectedSchedule = () => {
-    const grid = document.getElementById('schedule-grid');
-    if (grid) grid.innerHTML = renderScheduleGrid(classSelect?.value || '', state.profile?.role === 'admin');
-    attachScheduleCellEvents();
-  };
-  classSelect?.addEventListener('change', renderSelectedSchedule);
+  const grid = document.getElementById('schedule-grid');
+  if (grid) grid.innerHTML = renderScheduleGrid(classSelect?.value || '', state.profile?.role === 'admin');
+  attachScheduleCellEvents();
+}
+
+export function attachScheduleEvents() {
+  document.getElementById('sched-class')?.addEventListener('change', refreshCurrentSchedule);
   document.getElementById('add-schedule-btn')?.addEventListener('click', () => showScheduleForm());
   document.getElementById('manage-master-sched-btn')?.addEventListener('click', () => showMasterDataModal());
-  renderSelectedSchedule();
-  attachScheduleCellEvents();
+  refreshCurrentSchedule();
 }
 
 function attachScheduleCellEvents() {
   document.querySelectorAll('.sched-add-placeholder').forEach(btn => {
     btn.addEventListener('click', (e) => {
-      const cell = e.target.closest('.schedule-cell');
+      const cell = e.target.closest('.schedule-slot');
       showScheduleForm(null, Number(cell.dataset.day), cell.dataset.slot);
     });
   });
+
   document.querySelectorAll('.sched-del-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      showConfirm(t('delete'), t('confirmDelete'), async()=>{ 
-        try{ 
-            await deleteDoc(doc(db,'schedules',btn.dataset.id)); 
-            showToast(t('deletedSuccess'),'success'); 
-        } catch(e){ 
-            showToast(t('errorOccurred'),'error'); 
+      showConfirm(t('delete'), t('confirmDelete'), async () => {
+        try {
+          await deleteDoc(doc(db, 'schedules', btn.dataset.id));
+          state.schedules = state.schedules.filter(s => s.id !== btn.dataset.id);
+          refreshCurrentSchedule();
+          showToast(t('deletedSuccess'), 'success');
+        } catch (err) {
+          console.error(err);
+          showToast(t('errorOccurred'), 'error');
         }
       });
     });
@@ -130,19 +170,24 @@ function attachScheduleCellEvents() {
 
 function showScheduleForm(entry = null, dayOfWeek = 0, timeslotId = '') {
   const classId = document.getElementById('sched-class')?.value || '';
-  showModal(state.lang==='ar'?'إضافة حصة':'Add Period', `
+  showModal(state.lang === 'ar' ? 'إضافة حصة' : 'Add Period', `
     <form id="sched-form" class="form-grid">
-      <div class="form-group"><label>${state.lang==='ar'?'المادة':'Subject'}</label>
+      <div class="form-group">
+        <label>${state.lang === 'ar' ? 'المادة' : 'Subject'}</label>
         <select id="schf-subject" class="form-select" required>
-            ${state.subjects.map(s => `<option value="${s.name}">${s.name}</option>`).join('')}
+          ${state.subjects.map(s => `<option value="${s.name}">${s.name}</option>`).join('')}
         </select>
       </div>
-      <div class="form-group"><label>${state.lang==='ar'?'المعلم':'Teacher'}</label>
-        <select id="schf-teacher" class="form-select" required>${state.teachers.map(tc=>`<option value="${tc.id}" ${entry?.teacherId===tc.id?'selected':''}>${tc.name}</option>`).join('')}</select>
+      <div class="form-group">
+        <label>${state.lang === 'ar' ? 'المعلم' : 'Teacher'}</label>
+        <select id="schf-teacher" class="form-select" required>
+          ${state.teachers.map(tc => `<option value="${tc.id}" ${entry?.teacherId === tc.id ? 'selected' : ''}>${tc.name}</option>`).join('')}
+        </select>
       </div>
-      <div class="form-group full-width"><label>${state.lang==='ar'?'الفترة':'Timeslot'}</label>
+      <div class="form-group full-width">
+        <label>${state.lang === 'ar' ? 'الفترة' : 'Timeslot'}</label>
         <select id="schf-timeslot" class="form-select" required>
-            ${state.timeslots.map(t => `<option value="${t.id}" ${timeslotId===t.id?'selected':''}>${t.startTime} - ${t.endTime}</option>`).join('')}
+          ${state.timeslots.map(ts => `<option value="${ts.id}" ${timeslotId === ts.id ? 'selected' : ''}>${ts.startTime} - ${ts.endTime}</option>`).join('')}
         </select>
       </div>
       <div class="form-actions">
@@ -150,73 +195,89 @@ function showScheduleForm(entry = null, dayOfWeek = 0, timeslotId = '') {
         <button type="submit" class="btn btn-primary">${t('save')}</button>
       </div>
     </form>`);
-    
+
   document.getElementById('sched-form')?.addEventListener('submit', async e => {
     e.preventDefault();
-    const tid = document.getElementById('schf-teacher').value;
-    const tsid = document.getElementById('schf-timeslot').value;
+    const teacherId = document.getElementById('schf-teacher').value;
+    const selectedTimeslotId = document.getElementById('schf-timeslot').value;
+    const teacherConflict = state.schedules.find(s => s.teacherId === teacherId && s.dayOfWeek === dayOfWeek && s.timeslotId === selectedTimeslotId);
+    if (teacherConflict) {
+      showToast(state.lang === 'ar' ? 'المعلم مشغول في هذا الوقت' : 'Teacher is busy at this time', 'error');
+      return;
+    }
 
-    // Double-booking validation (only teacher now)
-    const teacherConflict = state.schedules.find(s => s.teacherId === tid && s.dayOfWeek === dayOfWeek && s.timeslotId === tsid);
-
-    if (teacherConflict) return showToast(state.lang==='ar'?'المعلم مشغول في هذا الوقت':'Teacher is busy at this time', 'error');
-
-    const data = { 
-        classId, 
-        dayOfWeek, 
-        timeslotId: tsid, 
-        subject: document.getElementById('schf-subject').value, 
-        teacherId: tid 
+    const data = {
+      classId,
+      dayOfWeek,
+      timeslotId: selectedTimeslotId,
+      subject: document.getElementById('schf-subject').value,
+      teacherId
     };
-    try { 
-        await addDoc(collection(db, 'schedules'), data); 
-        closeModal(); 
-        showToast(t('savedSuccess'), 'success'); 
-    } catch(e) { showToast(t('errorOccurred'), 'error'); }
+
+    try {
+      const ref = await addDoc(collection(db, 'schedules'), data);
+      state.schedules.push({ id: ref.id, ...data });
+      closeModal();
+      refreshCurrentSchedule();
+      showToast(t('savedSuccess'), 'success');
+    } catch (err) {
+      console.error(err);
+      showToast(t('errorOccurred'), 'error');
+    }
   });
 }
 
 function showMasterDataModal() {
-    showModal(state.lang==='ar'?'البيانات الأساسية للجدول':'Schedule Master Data', `
-        <div id="timeslots-tab" class="tab-content active">
-            <h4 style="margin-bottom:1rem">${t('timeslots')}</h4>
-            <form id="ts-form" class="form-grid" style="margin-bottom:1.5rem">
-                <div class="form-group">
-                    <label>${state.lang==='ar'?'وقت البداية':'Start Time'}</label>
-                    <input type="time" id="ts-start" class="form-input" required>
-                </div>
-                <div class="form-group">
-                    <label>${state.lang==='ar'?'وقت النهاية':'End Time'}</label>
-                    <input type="time" id="ts-end" class="form-input" required>
-                </div>
-                <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">${t('add')}</button>
-                </div>
-            </form>
-            <div class="table-responsive">
-                <table class="data-table">
-                    <thead><tr><th>${state.lang==='ar'?'البداية':'Start'}</th><th>${state.lang==='ar'?'النهاية':'End'}</th><th></th></tr></thead>
-                    <tbody>${state.timeslots.map(t => `<tr><td>${t.startTime}</td><td>${t.endTime}</td><td><button class="btn btn-sm btn-danger del-ts" data-id="${t.id}">🗑️</button></td></tr>`).join('')}</tbody>
-                </table>
-            </div>
+  showModal(state.lang === 'ar' ? 'أوقات الحصص' : 'Schedule Timeslots', `
+    <div id="timeslots-tab" class="tab-content active">
+      <h4 style="margin-bottom:1rem">${t('timeslots')}</h4>
+      <form id="ts-form" class="form-grid" style="margin-bottom:1.5rem">
+        <div class="form-group">
+          <label>${state.lang === 'ar' ? 'وقت البداية' : 'Start Time'}</label>
+          <input type="time" id="ts-start" class="form-input" required>
         </div>
-    `);
+        <div class="form-group">
+          <label>${state.lang === 'ar' ? 'وقت النهاية' : 'End Time'}</label>
+          <input type="time" id="ts-end" class="form-input" required>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">${t('add')}</button>
+        </div>
+      </form>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead><tr><th>${state.lang === 'ar' ? 'البداية' : 'Start'}</th><th>${state.lang === 'ar' ? 'النهاية' : 'End'}</th><th></th></tr></thead>
+          <tbody>${state.timeslots.map(ts => `<tr><td>${ts.startTime}</td><td>${ts.endTime}</td><td><button class="btn btn-sm btn-danger del-ts" data-id="${ts.id}">🗑️</button></td></tr>`).join('')}</tbody>
+        </table>
+      </div>
+    </div>
+  `);
 
-    document.getElementById('ts-form')?.addEventListener('submit', async e => {
-        e.preventDefault();
-        try {
-            await addDoc(collection(db, 'timeslots'), { 
-                startTime: document.getElementById('ts-start').value, 
-                endTime: document.getElementById('ts-end').value 
-            });
-            showMasterDataModal();
-        } catch(e) { showToast(t('errorOccurred'), 'error'); }
-    });
+  document.getElementById('ts-form')?.addEventListener('submit', async e => {
+    e.preventDefault();
+    try {
+      const ref = await addDoc(collection(db, 'timeslots'), {
+        startTime: document.getElementById('ts-start').value,
+        endTime: document.getElementById('ts-end').value
+      });
+      state.timeslots.push({ id: ref.id, startTime: document.getElementById('ts-start').value, endTime: document.getElementById('ts-end').value });
+      closeModal();
+      refreshCurrentSchedule();
+      showToast(t('savedSuccess'), 'success');
+    } catch (err) {
+      console.error(err);
+      showToast(t('errorOccurred'), 'error');
+    }
+  });
 
-    document.querySelectorAll('.del-ts').forEach(b => b.addEventListener('click', async () => { 
-        try {
-            await deleteDoc(doc(db,'timeslots',b.dataset.id)); 
-            showMasterDataModal(); 
-        } catch(e) { showToast(t('errorOccurred'), 'error'); }
-    }));
+  document.querySelectorAll('.del-ts').forEach(btn => btn.addEventListener('click', async () => {
+    try {
+      await deleteDoc(doc(db, 'timeslots', btn.dataset.id));
+      state.timeslots = state.timeslots.filter(ts => ts.id !== btn.dataset.id);
+      showMasterDataModal();
+    } catch (err) {
+      console.error(err);
+      showToast(t('errorOccurred'), 'error');
+    }
+  }));
 }
