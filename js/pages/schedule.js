@@ -413,8 +413,13 @@ function showSmartScheduleModal() {
     </div>
     <div class="smart-day-planner">
       <div class="smart-day-head">
-        <strong>${state.lang === 'ar' ? 'خطة الأيام' : 'Daily Plan'}</strong>
-        <span>${state.lang === 'ar' ? 'الأوقات بالدقائق، وتوزع الاستراحات تلقائياً بين الحصص.' : 'Durations are minutes, and breaks are distributed between lessons.'}</span>
+        <div>
+          <strong>${state.lang === 'ar' ? 'خطة الأيام' : 'Daily Plan'}</strong>
+          <span>${state.lang === 'ar' ? 'الأوقات بالدقائق، وتوزع الاستراحات تلقائياً بين الحصص.' : 'Durations are minutes, and breaks are distributed between lessons.'}</span>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline" id="smart-copy-first-day">
+          ${state.lang === 'ar' ? 'تطبيق أول يوم على الكل' : 'Apply first day to all'}
+        </button>
       </div>
       ${dayRows}
     </div>
@@ -431,7 +436,21 @@ function showSmartScheduleModal() {
     <div class="form-actions">
       <button type="button" class="btn btn-outline" onclick="closeModal()">${t('cancel')}</button>
       <button type="button" class="btn btn-success" id="run-smart-schedule">${state.lang === 'ar' ? 'ابدأ الإنشاء' : 'Generate'}</button>
-    </div>`);
+    </div>`, { wide: true });
+
+  document.getElementById('smart-copy-first-day')?.addEventListener('click', () => {
+    const rows = [...document.querySelectorAll('.smart-day-row')];
+    const first = rows[0];
+    if (!first) return;
+    const fields = ['smart-start', 'smart-lesson-min', 'smart-lesson-count', 'smart-break-min', 'smart-break-count'];
+    rows.slice(1).forEach(row => {
+      fields.forEach(className => {
+        const source = first.querySelector(`.${className}`);
+        const target = row.querySelector(`.${className}`);
+        if (source && target) target.value = source.value;
+      });
+    });
+  });
 
   document.getElementById('run-smart-schedule')?.addEventListener('click', async () => {
     const options = {
