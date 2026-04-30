@@ -545,4 +545,3 @@ export function attachTeacherProfileEvents(modalElement) {
         }
     });
 }
-}
