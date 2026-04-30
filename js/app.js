@@ -27,7 +27,7 @@ import { renderLibrary, attachLibraryEvents } from './pages/library.js';
 import { renderHostel, attachHostelEvents } from './pages/hostel.js';
 import { renderStudentProfile, attachStudentProfileEvents } from './pages/studentProfile.js';
 import { renderParentProfile, attachParentProfileEvents } from './pages/parentProfile.js';
-import { attachTeacherProfileEvents } from './pages/teacherProfile.js';
+import { attachTeacherProfileEvents } from './pages/teacherProfile.js?v=20260430-fix-loading';
 
 // ========================= APPLY INITIAL SETTINGS =========================
 applyTheme();
