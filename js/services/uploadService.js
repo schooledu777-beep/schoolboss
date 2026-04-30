@@ -14,6 +14,22 @@ function getResourceType(file) {
   return isImage(file) ? 'image' : 'raw';
 }
 
+function isPdf(file) {
+  return file?.type === 'application/pdf' || /\.pdf$/i.test(file?.name || '');
+}
+
+async function assertPdfDelivery(url) {
+  try {
+    const response = await fetch(url, { method: 'HEAD' });
+    if (response.status === 401 || response.status === 403) {
+      throw new Error('Cloudinary is blocking PDF delivery. Enable "Allow delivery of PDF and ZIP files" from Cloudinary security settings, then upload the PDF again.');
+    }
+  } catch (error) {
+    if (error?.message?.includes('Cloudinary is blocking')) throw error;
+    console.warn('Could not verify PDF delivery:', error);
+  }
+}
+
 export async function uploadFile(file, folder = 'uploads') {
   if (!file) return null;
   
@@ -32,6 +48,7 @@ export async function uploadFile(file, folder = 'uploads') {
     const result = await response.json();
     
     if (result.secure_url) {
+      if (isPdf(file)) await assertPdfDelivery(result.secure_url);
       return result.secure_url;
     } else {
       throw new Error(result.error?.message || `Upload failed (${response.status})`);
