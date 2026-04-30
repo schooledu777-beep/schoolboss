@@ -101,22 +101,56 @@ function renderApp() {
     currentLayout = 'app';
   }
 
-  // Render Page Content
+  // Render Page Content — محاطة بـ Error Boundary
   const mainContent = document.getElementById('main-content');
   if (mainContent) {
-    mainContent.innerHTML = page.render();
-    
-    // Attach Page Events
-    if (typeof page.events === 'function') {
-      if (basePath === 'settings') page.events(renderApp);
-      else page.events();
+    try {
+      mainContent.innerHTML = page.render();
+    } catch (renderErr) {
+      console.error('[App] Page render error:', renderErr);
+      mainContent.innerHTML = renderErrorBoundary(renderErr, basePath, state.lang);
+      return;
     }
-    
-    // Global profile events (tab switching etc)
-    attachStudentProfileEvents();
-    attachParentProfileEvents();
-    attachTeacherProfileEvents();
+
+    try {
+      // Attach Page Events
+      if (typeof page.events === 'function') {
+        if (basePath === 'settings') page.events(renderApp);
+        else page.events();
+      }
+      // Global profile events (tab switching etc)
+      attachStudentProfileEvents();
+      attachParentProfileEvents();
+      attachTeacherProfileEvents();
+    } catch (eventsErr) {
+      console.error('[App] Page events error:', eventsErr);
+    }
   }
+}
+
+/** Renders a friendly error page when a page crashes */
+function renderErrorBoundary(err, page, lang) {
+  return `
+  <div class="page-content animate-in" style="display:flex;align-items:center;justify-content:center;min-height:60vh;">
+    <div class="glass-card" style="padding:2.5rem;text-align:center;max-width:480px;">
+      <div style="font-size:3rem;margin-bottom:1rem;">⚠️</div>
+      <h3 style="color:var(--danger);margin-bottom:.75rem;">
+        ${lang === 'ar' ? 'حدث خطأ في تحميل الصفحة' : 'Page failed to load'}
+      </h3>
+      <p class="text-muted" style="margin-bottom:1.5rem;font-size:.85rem;">
+        ${lang === 'ar' ? `الصفحة: ${page}` : `Page: ${page}`}<br>
+        <code style="opacity:.6;">${err?.message || ''}</code>
+      </p>
+      <div style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="window.location.hash='dashboard'">
+          ${lang === 'ar' ? '🏠 الرئيسية' : '🏠 Dashboard'}
+        </button>
+        <button class="btn btn-outline" onclick="window.location.reload()">
+          ${lang === 'ar' ? '🔄 إعادة التحميل' : '🔄 Reload'}
+        </button>
+      </div>
+    </div>
+  </div>`;
 }
 
 // ========================= INITIALIZATION =========================
@@ -149,14 +183,24 @@ state.subscribe(() => {
       const currentHash = window.location.hash.slice(1) || 'dashboard';
       const basePath = currentHash.split('?')[0];
       const page = pages[basePath] || pages.dashboard;
-      mainContent.innerHTML = page.render();
-      if (typeof page.events === 'function') {
-        if (basePath === 'settings') page.events(renderApp);
-        else page.events();
+      try {
+        mainContent.innerHTML = page.render();
+      } catch (renderErr) {
+        console.error('[App] State-triggered render error:', renderErr);
+        mainContent.innerHTML = renderErrorBoundary(renderErr, basePath, state.lang);
+        return;
       }
-      attachStudentProfileEvents();
-      attachParentProfileEvents();
-      attachTeacherProfileEvents();
+      try {
+        if (typeof page.events === 'function') {
+          if (basePath === 'settings') page.events(renderApp);
+          else page.events();
+        }
+        attachStudentProfileEvents();
+        attachParentProfileEvents();
+        attachTeacherProfileEvents();
+      } catch (evErr) {
+        console.error('[App] State-triggered events error:', evErr);
+      }
     } finally {
       _isRendering = false;
     }

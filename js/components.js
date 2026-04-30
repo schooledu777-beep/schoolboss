@@ -116,6 +116,16 @@ export function renderHeader() {
       <button class="btn-icon hamburger" id="sidebar-toggle">☰</button>
       <h1 class="header-title">${t(state.currentPage.replace('-', '') || 'dashboard')}</h1>
     </div>
+    <div class="header-search-wrap" id="header-search-wrap">
+      <div class="header-search-box">
+        <span class="search-icon-inner">🔍</span>
+        <input type="text" id="global-search-input" class="global-search-input"
+          placeholder="${state.lang === 'ar' ? 'بحث عن طالب، معلم، صف...' : 'Search students, teachers, classes...'}"
+          autocomplete="off">
+        <button class="search-clear-btn hidden" id="search-clear-btn">✕</button>
+      </div>
+      <div class="global-search-dropdown hidden" id="global-search-dropdown"></div>
+    </div>
     <div class="header-end">
       <button class="btn-icon header-action" id="toggle-lang-btn" title="${state.lang === 'ar' ? 'English' : 'عربي'}">
         ${state.lang === 'ar' ? 'EN' : 'ع'}
@@ -173,5 +183,155 @@ export function attachLayoutEvents(renderApp) {
   // User menu
   document.getElementById('header-user-menu')?.addEventListener('click', () => {
     showConfirm(t('logout'), state.lang === 'ar' ? 'هل تريد تسجيل الخروج؟' : 'Do you want to logout?', () => logout(), 'warning');
+  });
+
+  // ========================= GLOBAL SEARCH =========================
+  const searchInput   = document.getElementById('global-search-input');
+  const dropdown      = document.getElementById('global-search-dropdown');
+  const clearBtn      = document.getElementById('search-clear-btn');
+
+  if (!searchInput) return;
+
+  let _searchTimer = null;
+
+  function doSearch(query) {
+    const q = query.trim().toLowerCase();
+    dropdown.innerHTML = '';
+
+    if (!q) {
+      dropdown.classList.add('hidden');
+      clearBtn.classList.add('hidden');
+      return;
+    }
+
+    clearBtn.classList.remove('hidden');
+
+    // --- Search across students, teachers, classes ---
+    const results = [];
+
+    // Students
+    (state.students || []).forEach(s => {
+      if ((s.name || '').toLowerCase().includes(q) || (s.email || '').toLowerCase().includes(q)) {
+        results.push({ type: 'student', icon: '🎓', label: s.name, sub: s.grade || s.email || '', page: 'student-profile', id: s.id });
+      }
+    });
+
+    // Teachers
+    (state.teachers || []).forEach(tc => {
+      if ((tc.name || '').toLowerCase().includes(q) || (tc.subject || '').toLowerCase().includes(q)) {
+        results.push({ type: 'teacher', icon: '👨‍🏫', label: tc.name, sub: tc.subject || tc.email || '', page: 'teachers', id: tc.id });
+      }
+    });
+
+    // Classes
+    (state.classes || []).forEach(cl => {
+      if ((cl.name || '').toLowerCase().includes(q)) {
+        results.push({ type: 'class', icon: '🏫', label: cl.name, sub: state.lang === 'ar' ? 'صف دراسي' : 'Class', page: 'classes', id: cl.id });
+      }
+    });
+
+    // Parents
+    (state.parents || []).forEach(p => {
+      if ((p.name || '').toLowerCase().includes(q)) {
+        results.push({ type: 'parent', icon: '👨‍👩‍👧', label: p.name, sub: p.email || '', page: 'parent-profile', id: p.id });
+      }
+    });
+
+    if (results.length === 0) {
+      dropdown.innerHTML = `<div class="search-no-results">${state.lang === 'ar' ? 'لا توجد نتائج' : 'No results found'}</div>`;
+      dropdown.classList.remove('hidden');
+      return;
+    }
+
+    // Cap to 8 results
+    const shown = results.slice(0, 8);
+    dropdown.innerHTML = shown.map(r => `
+      <div class="search-result-item" data-page="${r.page}" data-id="${r.id}" data-type="${r.type}">
+        <span class="search-result-icon">${r.icon}</span>
+        <div class="search-result-text">
+          <span class="search-result-label">${r.label}</span>
+          <span class="search-result-sub">${r.sub}</span>
+        </div>
+        <span class="search-result-type-badge">${state.lang === 'ar'
+          ? { student: 'طالب', teacher: 'معلم', class: 'صف', parent: 'ولي أمر' }[r.type]
+          : { student: 'Student', teacher: 'Teacher', class: 'Class', parent: 'Parent' }[r.type]
+        }</span>
+      </div>`).join('');
+
+    if (results.length > 8) {
+      dropdown.innerHTML += `<div class="search-more">${state.lang === 'ar' ? `و ${results.length - 8} نتيجة أخرى` : `and ${results.length - 8} more`}</div>`;
+    }
+
+    dropdown.classList.remove('hidden');
+
+    // Attach click handlers on result rows
+    dropdown.querySelectorAll('.search-result-item').forEach(el => {
+      el.addEventListener('click', () => {
+        const page = el.dataset.page;
+        const id   = el.dataset.id;
+        const type = el.dataset.type;
+        searchInput.value = '';
+        clearBtn.classList.add('hidden');
+        dropdown.classList.add('hidden');
+        // Navigate — for profile pages pass id in hash
+        if ((type === 'student' || type === 'parent') && id) {
+          navigate(page + '?id=' + id);
+        } else {
+          navigate(page);
+        }
+      });
+    });
+  }
+
+  searchInput.addEventListener('input', e => {
+    clearTimeout(_searchTimer);
+    _searchTimer = setTimeout(() => doSearch(e.target.value), 200);
+  });
+
+  searchInput.addEventListener('focus', () => {
+    if (searchInput.value.trim()) dropdown.classList.remove('hidden');
+  });
+
+  clearBtn.addEventListener('click', () => {
+    searchInput.value = '';
+    clearBtn.classList.add('hidden');
+    dropdown.classList.add('hidden');
+    searchInput.focus();
+  });
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', e => {
+    if (!document.getElementById('header-search-wrap')?.contains(e.target)) {
+      dropdown.classList.add('hidden');
+    }
+  }, { capture: true });
+
+  // Keyboard: Escape closes, Arrow keys navigate results
+  searchInput.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      dropdown.classList.add('hidden');
+      searchInput.blur();
+      return;
+    }
+    const items = dropdown.querySelectorAll('.search-result-item');
+    if (!items.length) return;
+    const focused = dropdown.querySelector('.search-result-item.focused');
+    let idx = focused ? [...items].indexOf(focused) : -1;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (focused) focused.classList.remove('focused');
+      idx = (idx + 1) % items.length;
+      items[idx].classList.add('focused');
+      items[idx].scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (focused) focused.classList.remove('focused');
+      idx = (idx - 1 + items.length) % items.length;
+      items[idx].classList.add('focused');
+      items[idx].scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'Enter' && focused) {
+      e.preventDefault();
+      focused.click();
+    }
   });
 }

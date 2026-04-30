@@ -1,6 +1,6 @@
 import { state, t } from '../state.js';
 import { db, collection, addDoc, updateDoc, deleteDoc, doc } from '../firebase-config.js';
-import { showModal, closeModal, showConfirm, showToast, formatCurrency } from '../ui.js';
+import { showModal, closeModal, showConfirm, showToast, formatCurrency, checkValid } from '../ui.js';
 import { notificationService } from '../services/notificationService.js';
 
 export function renderFinance() {
@@ -67,12 +67,20 @@ function showFeeForm(fee = null) {
     </form>`);
   document.getElementById('fee-form')?.addEventListener('submit', async e => {
     e.preventDefault();
-    const data = { studentId: document.getElementById('ff-student').value, amount: Number(document.getElementById('ff-amount').value), dueDate: document.getElementById('ff-due').value, notes: document.getElementById('ff-notes').value.trim(), paidAmount: fee?.paidAmount || 0 };
-    try { 
-      if(isEdit) await updateDoc(doc(db,'fees',fee.id),data); 
-      else await addDoc(collection(db,'fees'),data); 
-      
-      // Trigger notification for new/updated unpaid fee
+    const amount = Number(document.getElementById('ff-amount').value);
+    // ✅ Validation
+    if (!checkValid({
+      student: { value: document.getElementById('ff-student').value, required: true, label: state.lang==='ar'?'الطالب':'Student' },
+      amount:  { value: amount, required: true, min: 1, label: state.lang==='ar'?'المبلغ':'Amount' },
+    }, state.lang)) return;
+
+    const data = { studentId: document.getElementById('ff-student').value, amount, dueDate: document.getElementById('ff-due').value, notes: document.getElementById('ff-notes').value.trim(), paidAmount: fee?.paidAmount || 0 };
+    const btn = e.target.querySelector('button[type="submit"]');
+    const oldHtml = btn.innerHTML;
+    btn.disabled = true; btn.innerHTML = '<span class="spinner-sm"></span>';
+    try {
+      if(isEdit) await updateDoc(doc(db,'fees',fee.id),data);
+      else await addDoc(collection(db,'fees'),data);
       const student = state.students.find(s => s.id === data.studentId);
       if (student?.parentId && data.amount > data.paidAmount) {
         notificationService.triggerEventNotification('invoice_overdue', {
@@ -80,10 +88,13 @@ function showFeeForm(fee = null) {
           amount: formatCurrency(data.amount - data.paidAmount)
         });
       }
-
-      closeModal(); 
-      showToast(t('savedSuccess'),'success'); 
-    } catch(e) { showToast(t('errorOccurred'),'error'); }
+      closeModal();
+      showToast(t('savedSuccess'),'success');
+    } catch(err) {
+      console.error('[Finance] Fee save error:', err);
+      showToast(t('errorOccurred'),'error');
+      btn.disabled = false; btn.innerHTML = oldHtml;
+    }
   });
 }
 

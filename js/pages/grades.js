@@ -1,6 +1,6 @@
 import { state, t } from '../state.js';
 import { db, collection, addDoc, updateDoc, deleteDoc, doc } from '../firebase-config.js';
-import { showModal, closeModal, showConfirm, showToast } from '../ui.js';
+import { showModal, closeModal, showConfirm, showToast, checkValid } from '../ui.js';
 import { academicService } from '../services/academicService.js';
 
 export function renderGrades() {
@@ -84,17 +84,31 @@ function showGradeForm(grade = null) {
     </form>`);
   document.getElementById('grade-form')?.addEventListener('submit', async e => {
     e.preventDefault();
-    const data = { studentId: document.getElementById('gf-student').value, subject: document.getElementById('gf-subject').value.trim(), examType: document.getElementById('gf-type').value, score: Number(document.getElementById('gf-score').value), maxScore: Number(document.getElementById('gf-max').value), teacherId: state.profile?.uid, date: new Date().toISOString().split('T')[0] };
-    try { 
-        if(isEdit) await updateDoc(doc(db,'grades',grade.id),data); 
-        else await addDoc(collection(db,'grades'),data); 
-        
-        // Trigger academic alerts check
+    const score   = Number(document.getElementById('gf-score').value);
+    const maxScore = Number(document.getElementById('gf-max').value);
+    // ✅ Validation
+    if (!checkValid({
+      student:  { value: document.getElementById('gf-student').value,  required: true, label: state.lang==='ar'?'الطالب':'Student' },
+      subject:  { value: document.getElementById('gf-subject').value.trim(), required: true, label: state.lang==='ar'?'المادة':'Subject' },
+      score:    { value: score,    required: true, min: 0, max: maxScore, label: state.lang==='ar'?'الدرجة':'Score' },
+      maxScore: { value: maxScore, required: true, min: 1, label: state.lang==='ar'?'الدرجة الكاملة':'Max Score' },
+    }, state.lang)) return;
+
+    const data = { studentId: document.getElementById('gf-student').value, subject: document.getElementById('gf-subject').value.trim(), examType: document.getElementById('gf-type').value, score, maxScore, teacherId: state.profile?.uid, date: new Date().toISOString().split('T')[0] };
+    const btn = e.target.querySelector('button[type="submit"]');
+    const oldHtml = btn.innerHTML;
+    btn.disabled = true; btn.innerHTML = '<span class="spinner-sm"></span>';
+    try {
+        if(isEdit) await updateDoc(doc(db,'grades',grade.id),data);
+        else await addDoc(collection(db,'grades'),data);
         academicService.processAcademicAlerts(data.studentId);
-        
-        closeModal(); 
-        showToast(t('savedSuccess'),'success'); 
-    } catch(e) { showToast(t('errorOccurred'),'error'); }
+        closeModal();
+        showToast(t('savedSuccess'),'success');
+    } catch(err) {
+        console.error('[Grades] Save error:', err);
+        showToast(t('errorOccurred'),'error');
+        btn.disabled = false; btn.innerHTML = oldHtml;
+    }
   });
 }
 

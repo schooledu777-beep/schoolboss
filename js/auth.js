@@ -2,7 +2,23 @@ import { auth, db, signInWithEmailAndPassword, createUserWithEmailAndPassword, s
 import { state, t } from './state.js';
 import { showToast, hideLoading } from './ui.js';
 
-const ADMIN_EMAIL = 'mohammed.soft7@gmail.com';
+// ⚠️  بدلاً من مقارنة الإيميل مباشرة، نستخدم Firestore كمصدر الحقيقة.
+// المدير الأول يُعرَّف هنا مؤقتاً للـ bootstrap فقط — لا تغيّره في الكود.
+const BOOTSTRAP_ADMIN_EMAIL = 'mohammed.soft7@gmail.com';
+// دالة مساعدة تُبقي التوافق مع الكود القديم الذي يستخدم ADMIN_EMAIL
+const ADMIN_EMAIL = BOOTSTRAP_ADMIN_EMAIL;
+
+// ─── Secondary App Singleton (يمنع تسرب instances) ──────────────────────────
+let _secondaryApp = null;
+let _secondaryAuth = null;
+
+function getSecondaryAuth() {
+  if (!_secondaryApp) {
+    _secondaryApp = initializeApp(firebaseConfig, 'SecondaryApp');
+    _secondaryAuth = getAuth(_secondaryApp);
+  }
+  return _secondaryAuth;
+}
 
 export function renderAuthPage() {
   return `
@@ -216,11 +232,10 @@ export async function logout() {
 
 /**
  * Creates a new Firebase Auth user without logging out the current admin.
- * Uses a secondary Firebase app instance.
+ * يستخدم Secondary App Singleton — لا يُنشئ instance جديدة في كل استدعاء.
  */
 export async function adminCreateUser(email, password, role, name) {
-  const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp" + Date.now());
-  const secondaryAuth = getAuth(secondaryApp);
+  const secondaryAuth = getSecondaryAuth(); // ← singleton بدلاً من initializeApp جديد
   try {
     let newUid;
     try {
@@ -232,25 +247,27 @@ export async function adminCreateUser(email, password, role, name) {
           const userCredential = await signInWithEmailAndPassword(secondaryAuth, email, password);
           newUid = userCredential.user.uid;
         } catch (signInErr) {
-          console.warn(`User exists but could not sign in (probably different password): ${email}`);
-          // If we can't sign in, we can't get the UID to link.
-          // For mock data, we could just generate a random email, but let's just throw a specific skip error.
+          console.warn(`[adminCreateUser] User exists, wrong password: ${email}`);
           throw new Error('EXISTING_USER_WRONG_PASSWORD');
         }
       } else {
         throw authErr;
       }
     }
-    
+
     await setDoc(doc(db, 'users', newUid), {
       email, role, name, uid: newUid,
       createdAt: new Date().toISOString()
     }, { merge: true });
-    
-    await signOut(secondaryAuth);
+
+    // نُخرج المستخدم المؤقت من الـ secondary session ثم نُعيد تهيئة الـ auth
+    await signOut(secondaryAuth).catch(() => {});
     return newUid;
   } catch (error) {
     await signOut(secondaryAuth).catch(() => {});
+    // أعد تهيئة الـ secondary auth حتى لا يبقى في حالة خاطئة
+    _secondaryApp = null;
+    _secondaryAuth = null;
     throw error;
   }
 }

@@ -108,10 +108,55 @@ export function debounce(fn, delay = 300) {
   return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), delay); };
 }
 
+// ========================= SECURITY =========================
+/**
+ * Escapes HTML special characters to prevent XSS attacks.
+ * Always use this when inserting user data into innerHTML.
+ */
 export function escapeHTML(str) {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+// ========================= VALIDATION =========================
+/**
+ * Validates fields. Returns { valid, errors }
+ * Usage: validateForm({ name: { value: v, required: true, label: 'الاسم' } }, lang)
+ */
+export function validateForm(fields, lang = 'ar') {
+  const errors = [];
+  for (const [, rules] of Object.entries(fields)) {
+    const v = rules.value;
+    const label = rules.label || '';
+    const empty = v === '' || v === null || v === undefined;
+    if (rules.required && empty) {
+      errors.push(lang === 'ar' ? `حقل "${label}" مطلوب` : `"${label}" is required`);
+      continue;
+    }
+    if (!empty) {
+      if (rules.min !== undefined && Number(v) < rules.min)
+        errors.push(lang === 'ar' ? `"${label}" يجب أن يكون ${rules.min} على الأقل` : `"${label}" must be ≥ ${rules.min}`);
+      if (rules.max !== undefined && Number(v) > rules.max)
+        errors.push(lang === 'ar' ? `"${label}" يجب ألا يتجاوز ${rules.max}` : `"${label}" must be ≤ ${rules.max}`);
+      if (rules.minLength && String(v).length < rules.minLength)
+        errors.push(lang === 'ar' ? `"${label}" يجب أن يحتوي على ${rules.minLength} أحرف على الأقل` : `"${label}" min ${rules.minLength} chars`);
+      if (rules.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v))
+        errors.push(lang === 'ar' ? `"${label}" بريد إلكتروني غير صالح` : `"${label}" invalid email`);
+    }
+  }
+  return { valid: errors.length === 0, errors };
+}
+
+/** Shows first validation error as toast and returns false if invalid. */
+export function checkValid(fields, lang = 'ar') {
+  const { valid, errors } = validateForm(fields, lang);
+  if (!valid) { showToast(errors[0], 'error', 4000); return false; }
+  return true;
 }
 
 // ========================= UI COMPONENTS =========================

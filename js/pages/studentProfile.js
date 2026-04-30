@@ -26,7 +26,10 @@ export function renderStudentProfile() {
   <div class="page-content animate-in">
     <div class="page-header">
       <h2>${state.lang === 'ar' ? 'ملف الطالب' : 'Student Profile'}</h2>
-      <button class="btn btn-outline" onclick="window.history.back()">${state.lang === 'ar' ? 'عودة' : 'Back'}</button>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+        <button class="btn btn-outline" id="print-report-btn" data-id="${studentId}">🖨️ ${state.lang === 'ar' ? 'طباعة البطاقة' : 'Print Report Card'}</button>
+        <button class="btn btn-outline" onclick="window.history.back()">${state.lang === 'ar' ? 'عودة' : 'Back'}</button>
+      </div>
     </div>
     <div class="glass-card" style="padding: 2rem;">
       ${getStudentDashboardHTML(studentId)}
@@ -374,8 +377,175 @@ export function getStudentDashboardHTML(studentId, activeTab = 'overview') {
   `;
 }
 
+// ========================= REPORT CARD PDF =========================
+export function printStudentReportCard(studentId) {
+  const student = state.students.find(s => s.id === studentId);
+  if (!student) return;
+
+  const isAr      = state.lang === 'ar';
+  const cls       = state.classes.find(c => c.id === student.classId || (c.studentIds||[]).includes(studentId));
+  const parent    = state.parents.find(p => p.id === student.parentId);
+  const metrics   = getStudentMetrics(studentId);
+  const grades    = state.grades.filter(g => g.studentId === studentId);
+  const fees      = state.fees.filter(f => f.studentId === studentId);
+  const att       = state.attendance.filter(a => a.studentId === studentId);
+  const attPresent = att.filter(a => a.status === 'present' || a.status === 'late').length;
+  const attAbsent  = att.filter(a => a.status === 'absent').length;
+
+  // Group grades by subject
+  const bySubject = {};
+  grades.forEach(g => {
+    if (!bySubject[g.subject]) bySubject[g.subject] = [];
+    bySubject[g.subject].push(g);
+  });
+
+  const gradeRows = Object.entries(bySubject).map(([subject, gs]) => {
+    const avg = Math.round(gs.reduce((s, g) => s + (g.maxScore > 0 ? (g.score/g.maxScore)*100 : 0), 0) / gs.length);
+    const letter = avg >= 90 ? 'A' : avg >= 80 ? 'B' : avg >= 70 ? 'C' : avg >= 60 ? 'D' : 'F';
+    const color  = avg >= 70 ? '#10b981' : avg >= 60 ? '#f59e0b' : '#ef4444';
+    return `<tr>
+      <td style="padding:.4rem .6rem;border-bottom:1px solid #eee">${subject}</td>
+      <td style="padding:.4rem .6rem;border-bottom:1px solid #eee;text-align:center">${gs.length}</td>
+      <td style="padding:.4rem .6rem;border-bottom:1px solid #eee;text-align:center;font-weight:700;color:${color}">${avg}%</td>
+      <td style="padding:.4rem .6rem;border-bottom:1px solid #eee;text-align:center;font-weight:700;color:${color}">${letter}</td>
+    </tr>`;
+  }).join('');
+
+  const totalFees = fees.reduce((s, f) => s + (f.amount||0), 0);
+  const paidFees  = fees.reduce((s, f) => s + (f.paidAmount||0), 0);
+  const pendFees  = totalFees - paidFees;
+
+  const printDate = new Date().toLocaleDateString(isAr ? 'ar-SA' : 'en-US', { year:'numeric', month:'long', day:'numeric' });
+
+  const html = `
+  <!DOCTYPE html>
+  <html dir="${isAr ? 'rtl' : 'ltr'}" lang="${isAr ? 'ar' : 'en'}">
+  <head>
+    <meta charset="UTF-8">
+    <title>${isAr ? 'بطاقة الطالب' : 'Student Report Card'} — ${student.name}</title>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Inter:wght@400;600;700&display=swap');
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: ${isAr ? "'Cairo'" : "'Inter'"}, sans-serif; color: #1e293b; background: #fff; font-size: 13px; }
+      .page { max-width: 720px; margin: 0 auto; padding: 2rem; }
+      .header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 1rem; border-bottom: 3px solid #6366f1; margin-bottom: 1.5rem; }
+      .school-name { font-size: 1.4rem; font-weight: 700; color: #6366f1; }
+      .report-title { font-size: .9rem; color: #64748b; margin-top: .25rem; }
+      .print-date { font-size: .75rem; color: #94a3b8; }
+      .student-info-box { background: linear-gradient(135deg, #6366f1, #06b6d4); color: #fff; border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; display: flex; gap: 2rem; flex-wrap: wrap; }
+      .info-block { display: flex; flex-direction: column; gap: .2rem; }
+      .info-label { font-size: .72rem; opacity: .8; }
+      .info-value { font-size: .95rem; font-weight: 700; }
+      .metrics-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: .75rem; margin-bottom: 1.5rem; }
+      .metric-card { border: 1px solid #e2e8f0; border-radius: 8px; padding: .75rem; text-align: center; }
+      .metric-icon { font-size: 1.4rem; }
+      .metric-val { font-size: 1.25rem; font-weight: 700; color: #6366f1; margin: .2rem 0; }
+      .metric-lbl { font-size: .72rem; color: #64748b; }
+      .section-title { font-size: .95rem; font-weight: 700; color: #1e293b; margin-bottom: .6rem; padding-bottom: .3rem; border-bottom: 2px solid #e2e8f0; }
+      table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
+      thead th { background: #f1f5f9; padding: .45rem .6rem; font-size: .78rem; font-weight: 700; color: #475569; }
+      .footer { margin-top: 2rem; border-top: 1px solid #e2e8f0; padding-top: .75rem; display: flex; justify-content: space-between; font-size: .72rem; color: #94a3b8; }
+      @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+    </style>
+  </head>
+  <body>
+  <div class="page">
+    <div class="header">
+      <div>
+        <div class="school-name">EduManage Pro</div>
+        <div class="report-title">${isAr ? 'بطاقة أداء الطالب' : 'Student Report Card'}</div>
+      </div>
+      <div class="print-date">${printDate}</div>
+    </div>
+
+    <div class="student-info-box">
+      <div class="info-block">
+        <span class="info-label">${isAr?'اسم الطالب':'Student Name'}</span>
+        <span class="info-value">${student.name}</span>
+      </div>
+      <div class="info-block">
+        <span class="info-label">${isAr?'الصف':'Class'}</span>
+        <span class="info-value">${cls?.name || '—'}</span>
+      </div>
+      <div class="info-block">
+        <span class="info-label">${isAr?'ولي الأمر':'Parent'}</span>
+        <span class="info-value">${parent?.name || '—'}</span>
+      </div>
+      <div class="info-block">
+        <span class="info-label">${isAr?'البريد الإلكتروني':'Email'}</span>
+        <span class="info-value">${student.email || '—'}</span>
+      </div>
+    </div>
+
+    <div class="metrics-row">
+      <div class="metric-card">
+        <div class="metric-icon">🏆</div>
+        <div class="metric-val">${metrics.gpa}%</div>
+        <div class="metric-lbl">${isAr?'المعدل العام':'Overall GPA'}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon">📋</div>
+        <div class="metric-val">${metrics.attRate}%</div>
+        <div class="metric-lbl">${isAr?'نسبة الحضور':'Attendance'}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon">✅</div>
+        <div class="metric-val">${attPresent}</div>
+        <div class="metric-lbl">${isAr?'أيام الحضور':'Present Days'}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon">❌</div>
+        <div class="metric-val">${attAbsent}</div>
+        <div class="metric-lbl">${isAr?'أيام الغياب':'Absent Days'}</div>
+      </div>
+    </div>
+
+    ${gradeRows ? `
+    <div class="section-title">📝 ${isAr?'الدرجات حسب المادة':'Grades by Subject'}</div>
+    <table>
+      <thead><tr>
+        <th style="text-align:${isAr?'right':'left'}">${isAr?'المادة':'Subject'}</th>
+        <th style="text-align:center">${isAr?'الاختبارات':'Tests'}</th>
+        <th style="text-align:center">${isAr?'المتوسط':'Average'}</th>
+        <th style="text-align:center">${isAr?'التقدير':'Grade'}</th>
+      </tr></thead>
+      <tbody>${gradeRows}</tbody>
+    </table>` : ''}
+
+    ${fees.length > 0 ? `
+    <div class="section-title">💰 ${isAr?'الرسوم الدراسية':'Financial Summary'}</div>
+    <table>
+      <thead><tr>
+        <th style="text-align:${isAr?'right':'left'}">${isAr?'البيان':'Item'}</th>
+        <th style="text-align:center">${isAr?'المبلغ':'Amount'}</th>
+      </tr></thead>
+      <tbody>
+        <tr><td style="padding:.4rem .6rem;border-bottom:1px solid #eee">${isAr?'إجمالي الرسوم':'Total Fees'}</td><td style="padding:.4rem .6rem;border-bottom:1px solid #eee;text-align:center;font-weight:600">SAR ${totalFees.toLocaleString()}</td></tr>
+        <tr><td style="padding:.4rem .6rem;border-bottom:1px solid #eee">${isAr?'المدفوع':'Paid'}</td><td style="padding:.4rem .6rem;border-bottom:1px solid #eee;text-align:center;font-weight:600;color:#10b981">SAR ${paidFees.toLocaleString()}</td></tr>
+        <tr><td style="padding:.4rem .6rem">${isAr?'المتبقي':'Remaining'}</td><td style="padding:.4rem .6rem;text-align:center;font-weight:700;color:${pendFees > 0 ? '#ef4444' : '#10b981'}">SAR ${pendFees.toLocaleString()}</td></tr>
+      </tbody>
+    </table>` : ''}
+
+    <div class="footer">
+      <span>EduManage Pro — ${isAr?'نظام إدارة المدارس':'School Management System'}</span>
+      <span>${isAr?'تاريخ الطباعة:':'Printed:'} ${printDate}</span>
+    </div>
+  </div>
+  <script>window.onload=()=>{window.print();}<\/script>
+  </body></html>`;
+
+  const w = window.open('', '_blank');
+  if (w) { w.document.write(html); w.document.close(); }
+  else showToast(isAr ? 'يرجى السماح بالنوافذ المنبثقة' : 'Please allow pop-ups to print', 'warning');
+}
+
 export function attachStudentProfileEvents(modalElement) {
   if (!modalElement) return;
+
+  // Print report card from full page view
+  document.getElementById('print-report-btn')?.addEventListener('click', e => {
+    printStudentReportCard(e.currentTarget.dataset.id);
+  });
 
   modalElement.addEventListener('click', e => {
     const printBtn = e.target.closest('.print-id-card-btn');

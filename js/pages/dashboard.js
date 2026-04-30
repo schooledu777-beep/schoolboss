@@ -9,13 +9,107 @@ export function renderDashboard() {
   return (renderers[role] || renderStudentDash)();
 }
 
+// ── Attendance trend bar chart (last 7 school days, pure SVG) ──────────────
+function renderAttendanceChart(attendance, lang) {
+  const now = new Date();
+  const days = [];
+  for (let daysBack = 6; daysBack >= 0; daysBack--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - daysBack);
+    const dayNum = d.getDay();
+    if (dayNum === 5 || dayNum === 6) continue; // skip Fri/Sat
+    const dateStr = d.toISOString().split('T')[0];
+    const label = d.toLocaleDateString(lang === 'ar' ? 'ar-SA' : 'en-US', { weekday: 'short' });
+    const dayAtt = attendance.filter(a => a.date === dateStr);
+    const present = dayAtt.filter(a => a.status === 'present').length;
+    const total   = dayAtt.length;
+    const pct     = total > 0 ? Math.round((present / total) * 100) : 0;
+    days.push({ label, pct, present, total });
+  }
+
+  if (days.length === 0) return `<p class="text-muted text-center" style="padding:2rem">${t('noData')}</p>`;
+
+  const W = 340, H = 160, PAD = 30, BAR_W = Math.floor((W - PAD * 2) / days.length) - 6;
+  const bars = days.map((d, i) => {
+    const barH = Math.max(4, Math.round((d.pct / 100) * (H - PAD - 20)));
+    const x    = PAD + i * ((W - PAD * 2) / days.length) + 3;
+    const y    = H - PAD - barH;
+    const fill = d.pct >= 90 ? '#10b981' : d.pct >= 70 ? '#f59e0b' : '#ef4444';
+    return `
+      <rect x="${x}" y="${y}" width="${BAR_W}" height="${barH}" rx="4" fill="${fill}" opacity=".85"/>
+      <text x="${x + BAR_W / 2}" y="${y - 4}" text-anchor="middle" font-size="9" fill="var(--text-muted)">${d.pct}%</text>
+      <text x="${x + BAR_W / 2}" y="${H - PAD + 12}" text-anchor="middle" font-size="9" fill="var(--text-muted)">${d.label}</text>`;
+  }).join('');
+
+  return `
+    <svg viewBox="0 0 ${W} ${H}" width="100%" style="overflow:visible">
+      <line x1="${PAD}" y1="${H - PAD}" x2="${W - PAD}" y2="${H - PAD}" stroke="var(--border)" stroke-width="1"/>
+      ${bars}
+    </svg>`;
+}
+
+// ── Fee collection donut chart (pure SVG) ──────────────────────────────────
+function renderFeeDonut(fees, lang) {
+  const total  = fees.reduce((s, f) => s + (f.amount || 0), 0);
+  const paid   = fees.reduce((s, f) => s + (f.paidAmount || 0), 0);
+  const pending = total - paid;
+  if (total === 0) return `<p class="text-muted text-center" style="padding:2rem">${t('noData')}</p>`;
+
+  const pct = Math.round((paid / total) * 100);
+  const r = 54, cx = 80, cy = 80, strokeW = 16;
+  const circ = 2 * Math.PI * r;
+  const dashPaid    = (paid    / total) * circ;
+  const dashPending = (pending / total) * circ;
+  const paidColor   = '#10b981';
+  const pendColor   = '#ef4444';
+
+  return `
+    <div style="display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap">
+      <svg viewBox="0 0 160 160" width="130" style="flex-shrink:0">
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--border)" stroke-width="${strokeW}"/>
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${pendColor}" stroke-width="${strokeW}"
+          stroke-dasharray="${circ}" stroke-dashoffset="0"
+          transform="rotate(-90 ${cx} ${cy})" opacity=".35"/>
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${paidColor}" stroke-width="${strokeW}"
+          stroke-dasharray="${dashPaid} ${circ}"
+          stroke-dashoffset="0"
+          transform="rotate(-90 ${cx} ${cy})"/>
+        <text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="18" font-weight="700" fill="var(--text)">${pct}%</text>
+        <text x="${cx}" y="${cy + 16}" text-anchor="middle" font-size="9" fill="var(--text-muted)">${lang === 'ar' ? 'مُحصَّل' : 'collected'}</text>
+      </svg>
+      <div style="display:flex;flex-direction:column;gap:.6rem;flex:1;min-width:120px">
+        <div class="donut-legend-item">
+          <span class="donut-dot" style="background:${paidColor}"></span>
+          <div>
+            <div style="font-size:.8rem;color:var(--text-muted)">${lang === 'ar' ? 'المدفوع' : 'Paid'}</div>
+            <div style="font-weight:700;font-size:.9rem">${formatCurrency(paid)}</div>
+          </div>
+        </div>
+        <div class="donut-legend-item">
+          <span class="donut-dot" style="background:${pendColor}"></span>
+          <div>
+            <div style="font-size:.8rem;color:var(--text-muted)">${lang === 'ar' ? 'المتبقي' : 'Pending'}</div>
+            <div style="font-weight:700;font-size:.9rem">${formatCurrency(pending)}</div>
+          </div>
+        </div>
+        <div class="donut-legend-item">
+          <span class="donut-dot" style="background:var(--border)"></span>
+          <div>
+            <div style="font-size:.8rem;color:var(--text-muted)">${lang === 'ar' ? 'الإجمالي' : 'Total'}</div>
+            <div style="font-weight:700;font-size:.9rem">${formatCurrency(total)}</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
 function renderAdminDash() {
   const { students, teachers, classes, attendance, fees, schoolType, lang, profile, announcements } = state;
   const todayStr = new Date().toISOString().split('T')[0];
   const todayAtt = attendance.filter(a => a.date === todayStr);
   const presentCount = todayAtt.filter(a => a.status === 'present').length;
   const attRate = todayAtt.length > 0 ? Math.round((presentCount / todayAtt.length) * 100) : 0;
-  
+
   const totalFees = fees.reduce((s, f) => s + (f.amount || 0), 0);
   const paidFees = fees.reduce((s, f) => s + (f.paidAmount || 0), 0);
 
@@ -51,6 +145,16 @@ function renderAdminDash() {
       <div><strong>${a.title}</strong><p class="text-muted text-sm">${a.body?.substring(0, 60) || ''}...</p></div>
     </div>`).join('') || `<p class="text-muted text-center">${t('noData')}</p>`;
 
+  // Charts row (only show if data exists)
+  const chartsRow = attendance.length > 0 || fees.length > 0 ? `
+    <div class="grid-2" style="margin-bottom:1.5rem">
+      ${renderCard(lang === 'ar' ? '📊 نسبة الحضور (آخر أسبوع)' : '📊 Attendance Trend (Last Week)',
+        renderAttendanceChart(attendance, lang))}
+      ${schoolType === 'private' && fees.length > 0
+        ? renderCard(lang === 'ar' ? '💰 تحصيل الرسوم' : '💰 Fee Collection', renderFeeDonut(fees, lang))
+        : ''}
+    </div>` : '';
+
   return `
   <div class="page-content animate-in">
     <div class="page-header">
@@ -59,10 +163,12 @@ function renderAdminDash() {
         <p class="text-muted">${lang === 'ar' ? 'مرحباً بك، ' : 'Welcome, '}${profile?.name}</p>
       </div>
     </div>
-    
+
     <div class="stats-grid">
       ${stats.join('')}
     </div>
+
+    ${chartsRow}
 
     <div class="grid-2">
       ${renderCard(lang === 'ar' ? 'إجراءات سريعة' : 'Quick Actions', `<div class="quick-actions">${actionsHtml}</div>`)}

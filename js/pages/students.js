@@ -8,11 +8,15 @@ import { uploadFile } from '../services/uploadService.js';
 export function renderStudents() {
   const students = state.students;
   const searchId = 'student-search';
+  const isAdmin  = state.profile?.role === 'admin';
   return `
   <div class="page-content animate-in">
     <div class="page-header">
       <h2>${t('students')}</h2>
-      <button class="btn btn-primary" id="add-student-btn">+ ${t('add')}</button>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+        ${isAdmin ? `<button class="btn btn-outline" id="import-students-btn">📥 ${state.lang==='ar'?'استيراد Excel':'Import Excel'}</button>` : ''}
+        <button class="btn btn-primary" id="add-student-btn">+ ${t('add')}</button>
+      </div>
     </div>
     <div class="filter-bar glass-card">
       <input type="text" id="${searchId}" class="form-input" placeholder="🔍 ${t('search')}...">
@@ -64,6 +68,7 @@ export function showStudentCardModal(studentId) {
 
 export function attachStudentEvents() {
   document.getElementById('add-student-btn')?.addEventListener('click', () => showStudentForm());
+  document.getElementById('import-students-btn')?.addEventListener('click', () => showImportModal());
   
   // Click row to show student card
   document.querySelectorAll('.clickable-row').forEach(row => {
@@ -323,11 +328,221 @@ function showStudentForm(student = null) {
       }
       closeModal();
       showToast(t('savedSuccess'), 'success');
-    } catch(err) { 
+    } catch(err) {
       console.error(err);
-      showToast(err.code || t('errorOccurred'), 'error'); 
+      showToast(err.code || t('errorOccurred'), 'error');
       btn.disabled = false;
       btn.innerHTML = oldHtml;
     }
+  });
+}
+
+// ========================= EXCEL / CSV IMPORT =========================
+function showImportModal() {
+  const isAr = state.lang === 'ar';
+
+  // Expected columns (flexible matching)
+  const REQUIRED_COLS = isAr
+    ? ['الاسم']
+    : ['name'];
+  const OPTIONAL_COLS = isAr
+    ? ['البريد الإلكتروني', 'الجنس', 'الصف', 'الهاتف', 'رقم الهوية', 'ملاحظات']
+    : ['email', 'gender', 'grade', 'phone', 'nationalId', 'notes'];
+
+  const templateCols  = isAr
+    ? ['الاسم', 'البريد الإلكتروني', 'الجنس', 'الصف', 'الهاتف']
+    : ['name', 'email', 'gender', 'grade', 'phone'];
+
+  showModal(
+    isAr ? '📥 استيراد طلاب من Excel / CSV' : '📥 Import Students from Excel / CSV',
+    `
+    <div class="import-modal">
+      <p class="text-muted" style="margin-bottom:1rem;font-size:.88rem">
+        ${isAr
+          ? `قم بتحميل ملف Excel أو CSV يحتوي على أعمدة: <strong>${templateCols.join('، ')}</strong>.`
+          : `Upload an Excel or CSV file with columns: <strong>${templateCols.join(', ')}</strong>.`}
+      </p>
+      <div class="import-drop-zone" id="import-drop-zone">
+        <span style="font-size:2rem">📂</span>
+        <p>${isAr ? 'اسحب الملف هنا أو' : 'Drag file here or'}</p>
+        <label class="btn btn-outline" style="cursor:pointer">
+          ${isAr ? 'اختر ملفاً' : 'Choose File'}
+          <input type="file" id="import-file-input" accept=".xlsx,.xls,.csv" style="display:none">
+        </label>
+        <p class="text-muted" style="font-size:.78rem;margin-top:.25rem">.xlsx, .xls, .csv</p>
+      </div>
+      <div id="import-preview" class="hidden"></div>
+      <div class="form-actions" style="margin-top:1rem">
+        <button class="btn btn-outline" onclick="document.getElementById('modal-close-x').click()">
+          ${isAr ? 'إلغاء' : 'Cancel'}
+        </button>
+        <button class="btn btn-primary hidden" id="import-confirm-btn">
+          ${isAr ? '✅ استيراد' : '✅ Import'}
+        </button>
+      </div>
+    </div>`,
+    { wide: true }
+  );
+
+  let parsedRows = [];
+
+  // ── Load SheetJS dynamically ──────────────────────────────────────────────
+  function loadXLSX() {
+    if (window.XLSX) return Promise.resolve(window.XLSX);
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+      s.onload  = () => resolve(window.XLSX);
+      s.onerror = () => reject(new Error('Failed to load SheetJS'));
+      document.head.appendChild(s);
+    });
+  }
+
+  // ── Normalise column names (case-insensitive, trim) ──────────────────────
+  function normalizeKey(k) { return (k || '').toString().trim().toLowerCase(); }
+
+  const COL_MAP_EN = {
+    name: ['name', 'full name', 'student name', 'الاسم'],
+    email: ['email', 'e-mail', 'البريد', 'البريد الإلكتروني'],
+    gender: ['gender', 'sex', 'الجنس'],
+    grade: ['grade', 'class', 'level', 'الصف', 'الفصل'],
+    phone: ['phone', 'mobile', 'tel', 'الهاتف', 'الجوال'],
+    nationalId: ['nationalid', 'national id', 'id', 'رقم الهوية'],
+    notes: ['notes', 'note', 'remarks', 'ملاحظات'],
+  };
+
+  function mapRow(rawRow) {
+    const mapped = {};
+    const keys = Object.keys(rawRow).map(normalizeKey);
+    for (const [field, aliases] of Object.entries(COL_MAP_EN)) {
+      const match = Object.keys(rawRow).find(k => aliases.includes(normalizeKey(k)));
+      if (match !== undefined) mapped[field] = (rawRow[match] || '').toString().trim();
+    }
+    return mapped;
+  }
+
+  // ── Render preview table ──────────────────────────────────────────────────
+  function renderPreview(rows) {
+    const preview = document.getElementById('import-preview');
+    const confirmBtn = document.getElementById('import-confirm-btn');
+    if (!preview) return;
+
+    if (!rows.length) {
+      preview.innerHTML = `<p class="text-muted text-center">${isAr ? 'لم يتم العثور على بيانات في الملف' : 'No data found in file'}</p>`;
+      preview.classList.remove('hidden');
+      return;
+    }
+
+    const validRows   = rows.filter(r => r.name);
+    const invalidRows = rows.length - validRows.length;
+
+    preview.innerHTML = `
+      <div style="margin:.75rem 0;display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+        <span class="badge badge-success">${isAr ? `${validRows.length} سجل صالح` : `${validRows.length} valid records`}</span>
+        ${invalidRows > 0 ? `<span class="badge badge-warning">${isAr ? `${invalidRows} سجل ناقص (بدون اسم)` : `${invalidRows} skipped (no name)`}</span>` : ''}
+      </div>
+      <div class="table-responsive" style="max-height:220px;overflow-y:auto">
+        <table class="data-table">
+          <thead><tr>
+            <th>#</th>
+            <th>${isAr?'الاسم':'Name'}</th>
+            <th>${isAr?'البريد':'Email'}</th>
+            <th>${isAr?'الجنس':'Gender'}</th>
+            <th>${isAr?'الصف':'Grade'}</th>
+            <th>${isAr?'الحالة':'Status'}</th>
+          </tr></thead>
+          <tbody>
+            ${validRows.slice(0, 50).map((r, i) => `
+              <tr>
+                <td>${i+1}</td>
+                <td>${escapeHTML(r.name)}</td>
+                <td>${escapeHTML(r.email || '—')}</td>
+                <td>${r.gender || '—'}</td>
+                <td>${escapeHTML(r.grade || '—')}</td>
+                <td><span class="badge badge-success">✓</span></td>
+              </tr>`).join('')}
+            ${validRows.length > 50 ? `<tr><td colspan="6" class="text-center text-muted">... ${isAr?`و ${validRows.length-50} آخرين`:`and ${validRows.length-50} more`}</td></tr>` : ''}
+          </tbody>
+        </table>
+      </div>`;
+    preview.classList.remove('hidden');
+
+    if (validRows.length > 0) confirmBtn?.classList.remove('hidden');
+    parsedRows = validRows;
+  }
+
+  // ── Parse file with SheetJS ───────────────────────────────────────────────
+  async function parseFile(file) {
+    const dropZone = document.getElementById('import-drop-zone');
+    if (dropZone) dropZone.innerHTML = `<span class="spinner-sm"></span> ${isAr?'جاري القراءة...':'Reading file...'}`;
+    try {
+      const XLSX = await loadXLSX();
+      const buffer = await file.arrayBuffer();
+      const wb = XLSX.read(buffer, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const raw = XLSX.utils.sheet_to_json(ws, { defval: '' });
+      const rows = raw.map(mapRow);
+      renderPreview(rows);
+    } catch(err) {
+      console.error('[Import]', err);
+      showToast(isAr ? 'تعذر قراءة الملف' : 'Could not read file', 'error');
+    }
+  }
+
+  // ── File input ─────────────────────────────────────────────────────────────
+  document.getElementById('import-file-input')?.addEventListener('change', e => {
+    const file = e.target.files?.[0];
+    if (file) parseFile(file);
+  });
+
+  // ── Drag-and-drop ─────────────────────────────────────────────────────────
+  const dropZone = document.getElementById('import-drop-zone');
+  dropZone?.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drop-active'); });
+  dropZone?.addEventListener('dragleave', () => dropZone.classList.remove('drop-active'));
+  dropZone?.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drop-active');
+    const file = e.dataTransfer.files?.[0];
+    if (file) parseFile(file);
+  });
+
+  // ── Confirm import ─────────────────────────────────────────────────────────
+  document.getElementById('import-confirm-btn')?.addEventListener('click', async () => {
+    if (!parsedRows.length) return;
+    const btn = document.getElementById('import-confirm-btn');
+    const oldHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner-sm"></span> ${isAr?'جاري الاستيراد...':'Importing...'}`;
+
+    let successCount = 0, errorCount = 0;
+    for (const row of parsedRows) {
+      try {
+        const data = {
+          name:       row.name,
+          email:      row.email      || '',
+          gender:     (row.gender    || '').toLowerCase().includes('f') || row.gender === 'أنثى' ? 'female' : 'male',
+          grade:      row.grade      || '',
+          phone:      row.phone      || '',
+          nationalId: row.nationalId || '',
+          notes:      row.notes      || '',
+          status:     'active',
+          createdAt:  new Date().toISOString(),
+          importedAt: new Date().toISOString(),
+        };
+        await addDoc(collection(db, 'students'), data);
+        successCount++;
+      } catch(e) {
+        console.error('[Import] row failed:', row, e);
+        errorCount++;
+      }
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = oldHtml;
+    closeModal();
+    if (successCount > 0)
+      showToast(isAr ? `✅ تم استيراد ${successCount} طالب بنجاح` : `✅ ${successCount} students imported`, 'success');
+    if (errorCount > 0)
+      showToast(isAr ? `⚠️ فشل استيراد ${errorCount} سجل` : `⚠️ ${errorCount} records failed`, 'warning');
   });
 }
