@@ -1,8 +1,45 @@
 import { state, t } from '../state.js';
-import { db, doc, updateDoc, arrayUnion, arrayRemove } from '../firebase-config.js';
-import { escapeHTML, getInitials, renderAvatar, showToast } from '../ui.js';
+import { db, doc, updateDoc, arrayUnion } from '../firebase-config.js';
+import { escapeHTML, renderAvatar, showToast } from '../ui.js';
 import { showTeacherForm } from './teachers.js';
 import { uploadFile } from '../services/uploadService.js';
+
+function sanitizeFileName(name = 'document') {
+    return name.replace(/[\\/:*?"<>|]+/g, '-').trim() || 'document';
+}
+
+function getCloudinaryAttachmentUrl(url, fileName) {
+    if (!url?.includes('res.cloudinary.com') || !url.includes('/upload/')) return url;
+    const safeName = sanitizeFileName(fileName).replace(/\.[^.]+$/, '');
+    return url.replace('/upload/', `/upload/fl_attachment:${encodeURIComponent(safeName)}/`);
+}
+
+async function downloadDocument(url, fileName) {
+    const safeName = sanitizeFileName(fileName);
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`Download failed (${response.status})`);
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = objectUrl;
+        link.download = safeName;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+    } catch (err) {
+        console.warn('Blob download failed, falling back to attachment URL:', err);
+        const link = document.createElement('a');
+        link.href = getCloudinaryAttachmentUrl(url, safeName);
+        link.download = safeName;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+    }
+}
 
 export function getTeacherDashboardHTML(teacherId, activeTab = 'overview') {
     const teacher = state.teachers.find(t => t.id === teacherId);
@@ -172,12 +209,12 @@ export function getTeacherDashboardHTML(teacherId, activeTab = 'overview') {
                                 <div class="text-muted text-sm">${new Date(doc.date).toLocaleDateString()}</div>
                             </div>
                             <div style="display: flex; gap: 0.25rem;">
-                                <a href="${doc.url}" target="_blank" rel="noopener noreferrer" class="btn btn-icon" title="${state.lang === 'ar' ? 'معاينة / تحميل' : 'View / Download'}">📥</a>
+                                <button class="btn btn-icon download-doc-btn" data-doc-url="${escapeHTML(doc.url)}" data-doc-name="${escapeHTML(doc.name)}" title="${state.lang === 'ar' ? 'تحميل الملف' : 'Download file'}">📥</button>
                                 ${state.profile?.role === 'admin' ? `
                                     <button class="btn btn-icon text-danger delete-doc-btn" 
                                             data-teacher-id="${teacherId}" 
                                             data-doc-name="${escapeHTML(doc.name)}" 
-                                            data-doc-url="${doc.url}" 
+                                            data-doc-url="${escapeHTML(doc.url)}" 
                                             title="${state.lang === 'ar' ? 'حذف' : 'Delete'}">🗑️</button>
                                 ` : ''}
                             </div>
@@ -400,6 +437,13 @@ export function attachTeacherProfileEvents(modalElement) {
 
     // Global click handler for modal actions
     modalElement.addEventListener('click', async (e) => {
+        const downloadBtn = e.target.closest('.download-doc-btn');
+        if (downloadBtn) {
+            e.preventDefault();
+            await downloadDocument(downloadBtn.dataset.docUrl, downloadBtn.dataset.docName);
+            return;
+        }
+
         // Photo Upload
         const photoWrapper = e.target.closest('.profile-photo-wrapper');
         if (photoWrapper) {
@@ -411,28 +455,26 @@ export function attachTeacherProfileEvents(modalElement) {
         const delBtn = e.target.closest('.delete-doc-btn');
         if (delBtn) {
             const { teacherId, docName, docUrl } = delBtn.dataset;
-            showConfirm(
-                state.lang === 'ar' ? 'حذف الوثيقة' : 'Delete Document',
-                state.lang === 'ar' ? `هل أنت متأكد من حذف الوثيقة: ${docName}؟` : `Are you sure you want to delete: ${docName}?`,
-                async () => {
-                    try {
-                        const teacherRef = doc(db, 'teachers', teacherId);
-                        const teacherData = state.teachers.find(t => t.id === teacherId);
-                        const docToRemove = teacherData.documents.find(d => d.url === docUrl);
-
-                        if (docToRemove) {
-                            await updateDoc(teacherRef, {
-                                documents: arrayRemove(docToRemove)
-                            });
-                            showToast(state.lang === 'ar' ? 'تم حذف الوثيقة' : 'Document deleted', 'success');
-                            window.onTeacherUpdated(teacherId);
-                        }
-                    } catch (err) {
-                        console.error(err);
-                        showToast(t('errorOccurred'), 'error');
-                    }
-                }
+            const confirmed = window.confirm(
+                state.lang === 'ar' ? `هل أنت متأكد من حذف الوثيقة: ${docName}؟` : `Are you sure you want to delete: ${docName}?`
             );
+            if (!confirmed) return;
+
+            try {
+                delBtn.disabled = true;
+                const teacherRef = doc(db, 'teachers', teacherId);
+                const teacherData = state.teachers.find(t => t.id === teacherId);
+                const nextDocuments = (teacherData?.documents || []).filter(d => d.url !== docUrl);
+
+                await updateDoc(teacherRef, { documents: nextDocuments });
+                if (teacherData) teacherData.documents = nextDocuments;
+                showToast(state.lang === 'ar' ? 'تم حذف الوثيقة' : 'Document deleted', 'success');
+                window.onTeacherUpdated(teacherId);
+            } catch (err) {
+                console.error(err);
+                delBtn.disabled = false;
+                showToast(err?.message || t('errorOccurred'), 'error');
+            }
             return;
         }
 
@@ -517,7 +559,8 @@ export function attachTeacherProfileEvents(modalElement) {
                 showToast(state.lang === 'ar' ? 'تم تحديث الصورة' : 'Photo updated', 'success');
                 window.onTeacherUpdated(teacherId);
             } catch (err) {
-                showToast(t('errorOccurred'), 'error');
+                console.error(err);
+                showToast(err?.message || t('errorOccurred'), 'error');
             }
         }
         
@@ -541,7 +584,8 @@ export function attachTeacherProfileEvents(modalElement) {
                 showToast(state.lang === 'ar' ? 'تم رفع الوثيقة بنجاح' : 'Document uploaded successfully', 'success');
                 window.onTeacherUpdated(teacherId);
             } catch (err) {
-                showToast(t('errorOccurred'), 'error');
+                console.error(err);
+                showToast(err?.message || t('errorOccurred'), 'error');
             }
         }
     });
