@@ -1,3 +1,5 @@
+import { storage, ref, uploadBytes, getDownloadURL } from '../firebase-config.js';
+
 const CLOUD_NAME = 'dhlxfwmpm';
 const UPLOAD_PRESET = 'school';
 
@@ -6,21 +8,39 @@ const UPLOAD_PRESET = 'school';
  * @param {File} file - The file to upload
  * @returns {Promise<string>} - The download URL
  */
-function getResourceType(file) {
-  if (file?.type?.startsWith('image/')) return 'image';
-  return 'raw';
+function safePathPart(value = 'file') {
+  return value.replace(/[\\/:*?"<>|#%{}[\]^~`]+/g, '-').trim() || 'file';
 }
 
-export async function uploadFile(file) {
+function isImage(file) {
+  return file?.type?.startsWith('image/');
+}
+
+async function uploadToFirebaseStorage(file, folder = 'documents') {
+  const timestamp = Date.now();
+  const safeName = safePathPart(file.name);
+  const fileRef = ref(storage, `${folder}/${timestamp}-${safeName}`);
+  const snapshot = await uploadBytes(fileRef, file, {
+    contentType: file.type || 'application/octet-stream',
+    customMetadata: { originalName: file.name }
+  });
+  return getDownloadURL(snapshot.ref);
+}
+
+export async function uploadFile(file, folder = 'uploads') {
   if (!file) return null;
+
+  if (!isImage(file)) {
+    return uploadToFirebaseStorage(file, folder);
+  }
   
   const formData = new FormData();
   formData.append('file', file);
   formData.append('upload_preset', UPLOAD_PRESET);
+  formData.append('folder', folder);
 
   try {
-    const resourceType = getResourceType(file);
-    const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${resourceType}/upload`, {
+    const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
       method: 'POST',
       body: formData
     });

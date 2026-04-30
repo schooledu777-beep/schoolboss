@@ -554,7 +554,7 @@ export function attachTeacherProfileEvents(modalElement) {
 
             try {
                 showToast(state.lang === 'ar' ? 'جاري رفع الصورة...' : 'Uploading photo...', 'info');
-                const url = await uploadFile(file);
+                const url = await uploadFile(file, 'teachers/photos');
                 await updateDoc(doc(db, 'teachers', teacherId), { photoURL: url });
                 showToast(state.lang === 'ar' ? 'تم تحديث الصورة' : 'Photo updated', 'success');
                 window.onTeacherUpdated(teacherId);
@@ -576,8 +576,8 @@ export function attachTeacherProfileEvents(modalElement) {
 
             try {
                 showToast(state.lang === 'ar' ? 'جاري رفع الوثيقة...' : 'Uploading document...', 'info');
-                const url = await uploadFile(file);
-                const docData = { name: file.name, url, date: new Date().toISOString() };
+                const url = await uploadFile(file, `teachers/${teacherId}/documents`);
+                const docData = { name: file.name, url, type: file.type || 'application/octet-stream', size: file.size || 0, date: new Date().toISOString() };
                 await updateDoc(doc(db, 'teachers', teacherId), {
                     documents: arrayUnion(docData)
                 });
