@@ -62,9 +62,15 @@ export function renderSchedule() {
 
 function getSlots() {
   if (state.timeslots.length > 0) {
+    const seen = new Set();
     return [...state.timeslots].sort((a, b) => {
       const orderDiff = Number(a.order ?? 0) - Number(b.order ?? 0);
       return orderDiff || String(a.startTime || '').localeCompare(String(b.startTime || ''));
+    }).filter(slot => {
+      const key = `${slot.startTime || ''}-${slot.endTime || ''}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
     });
   }
   return fallbackPeriods.map(p => ({ id: String(p), startTime: `${t('period')} ${p}`, endTime: '' }));
@@ -75,7 +81,11 @@ function getDayNames() {
 }
 
 function sameSlot(entry, slotId) {
-  return String(entry.timeslotId ?? entry.period ?? '') === String(slotId);
+  const entrySlotId = String(entry.timeslotId ?? entry.period ?? '');
+  if (entrySlotId === String(slotId)) return true;
+  const target = state.timeslots.find(slot => String(slot.id) === String(slotId));
+  const entrySlot = state.timeslots.find(slot => String(slot.id) === entrySlotId);
+  return Boolean(target && entrySlot && target.startTime === entrySlot.startTime && target.endTime === entrySlot.endTime);
 }
 
 function renderScheduleGrid(classId, canEdit) {
@@ -230,7 +240,8 @@ function getSmartDayDefaults() {
     lessonMinutes: 45,
     lessonCount: 6,
     breakMinutes: 15,
-    breakCount: 1
+    breakCount: 1,
+    breakAfter: 2
   };
 }
 
@@ -399,6 +410,14 @@ function showSmartScheduleModal() {
         <span>${state.lang === 'ar' ? 'عدد الاستراحات' : 'Breaks'}</span>
         <input class="form-input smart-break-count" type="number" min="0" max="6" value="${defaults.breakCount}" required>
       </label>
+      <label>
+        <span>${state.lang === 'ar' ? 'الاستراحة بعد' : 'Break After'}</span>
+        <select class="form-select smart-break-after">
+          <option value="1">${state.lang === 'ar' ? 'بعد حصة واحدة' : 'After 1 lesson'}</option>
+          <option value="2" selected>${state.lang === 'ar' ? 'بعد حصتين' : 'After 2 lessons'}</option>
+          <option value="3">${state.lang === 'ar' ? 'بعد 3 حصص' : 'After 3 lessons'}</option>
+        </select>
+      </label>
     </div>
   `).join('');
   showModal(state.lang === 'ar' ? 'إنشاء جدول ذكي' : 'Smart Schedule Generator', `
@@ -442,7 +461,7 @@ function showSmartScheduleModal() {
     const rows = [...document.querySelectorAll('.smart-day-row')];
     const first = rows[0];
     if (!first) return;
-    const fields = ['smart-start', 'smart-lesson-min', 'smart-lesson-count', 'smart-break-min', 'smart-break-count'];
+    const fields = ['smart-start', 'smart-lesson-min', 'smart-lesson-count', 'smart-break-min', 'smart-break-count', 'smart-break-after'];
     rows.slice(1).forEach(row => {
       fields.forEach(className => {
         const source = first.querySelector(`.${className}`);
@@ -469,7 +488,8 @@ function collectSmartDayPlans() {
     lessonMinutes: Number(row.querySelector('.smart-lesson-min')?.value || 45),
     lessonCount: Number(row.querySelector('.smart-lesson-count')?.value || 0),
     breakMinutes: Number(row.querySelector('.smart-break-min')?.value || 15),
-    breakCount: Number(row.querySelector('.smart-break-count')?.value || 0)
+    breakCount: Number(row.querySelector('.smart-break-count')?.value || 0),
+    breakAfter: Number(row.querySelector('.smart-break-after')?.value || 2)
   }));
 }
 
@@ -540,24 +560,32 @@ function scoreCandidate(candidate, classId, dayOfWeek, timeslotId, options, draf
 function buildSmartDaySequence(plan, slots) {
   const lessonCount = Math.max(0, Number(plan.lessonCount || 0));
   const breakCount = Math.max(0, Number(plan.breakCount || 0));
-  const totalCount = lessonCount + breakCount;
+  const breakAfter = Math.max(1, Number(plan.breakAfter || 2));
   const sequence = [];
   let lessonNumber = 0;
   let breakNumber = 0;
+  let lessonsSinceBreak = 0;
 
-  for (let index = 0; index < totalCount; index += 1) {
-    const remainingPositions = totalCount - index;
-    const remainingBreaks = breakCount - breakNumber;
-    const shouldBreak = remainingBreaks > 0 && lessonNumber > 0 && (remainingBreaks / remainingPositions) >= 0.5;
-    const type = shouldBreak ? 'break' : 'lesson';
-    if (type === 'break') breakNumber += 1;
-    else lessonNumber += 1;
+  while (lessonNumber < lessonCount && sequence.length < slots.length) {
+    lessonNumber += 1;
+    lessonsSinceBreak += 1;
     sequence.push({
-      type,
-      slot: slots[index],
+      type: 'lesson',
+      slot: slots[sequence.length],
       lessonNumber,
       breakNumber
     });
+
+    if (lessonsSinceBreak >= breakAfter && breakNumber < breakCount && lessonNumber < lessonCount && sequence.length < slots.length) {
+      breakNumber += 1;
+      lessonsSinceBreak = 0;
+      sequence.push({
+        type: 'break',
+        slot: slots[sequence.length],
+        lessonNumber,
+        breakNumber
+      });
+    }
   }
 
   return sequence.filter(item => item.slot);
@@ -571,10 +599,11 @@ function buildPlannedSlots(maxSlotCount, dayPlans) {
   let breakPlaced = 0;
   const totalBreaks = Number(basePlan.breakCount || 0);
   const totalLessons = Number(basePlan.lessonCount || 0);
+  const breakAfter = Math.max(1, Number(basePlan.breakAfter || 2));
+  let lessonsSinceBreak = 0;
 
   for (let index = 0; index < maxSlotCount; index += 1) {
-    const remaining = maxSlotCount - index;
-    const shouldBreak = totalBreaks - breakPlaced > 0 && lessonPlaced > 0 && ((totalBreaks - breakPlaced) / remaining) >= 0.5;
+    const shouldBreak = totalBreaks - breakPlaced > 0 && lessonPlaced > 0 && lessonsSinceBreak >= breakAfter && lessonPlaced < totalLessons;
     const minutes = shouldBreak ? basePlan.breakMinutes : basePlan.lessonMinutes;
     const endTime = addMinutes(current, minutes);
     slots.push({
@@ -584,8 +613,13 @@ function buildPlannedSlots(maxSlotCount, dayPlans) {
       order: index + 1,
       kind: shouldBreak ? 'break' : 'lesson'
     });
-    if (shouldBreak) breakPlaced += 1;
-    else if (lessonPlaced < totalLessons) lessonPlaced += 1;
+    if (shouldBreak) {
+      breakPlaced += 1;
+      lessonsSinceBreak = 0;
+    } else if (lessonPlaced < totalLessons) {
+      lessonPlaced += 1;
+      lessonsSinceBreak += 1;
+    }
     current = endTime;
   }
 
@@ -598,13 +632,14 @@ function validateSmartPlans(dayPlans) {
     Number(plan.lessonMinutes) > 0 &&
     Number(plan.breakMinutes) > 0 &&
     Number(plan.lessonCount) >= 0 &&
-    Number(plan.breakCount) >= 0
+    Number(plan.breakCount) >= 0 &&
+    Number(plan.breakAfter) >= 1
   );
 }
 
 function getSmartSlotPlan(dayPlans) {
   const maxSlotCount = Math.max(...dayPlans.map(plan => Number(plan.lessonCount || 0) + Number(plan.breakCount || 0)), 0);
-  const existingSlots = [...state.timeslots].sort((a, b) => Number(a.order ?? 0) - Number(b.order ?? 0) || String(a.startTime || '').localeCompare(String(b.startTime || '')));
+  const existingSlots = getSlots();
   const plannedSlots = buildPlannedSlots(maxSlotCount, dayPlans);
   return {
     maxSlotCount,

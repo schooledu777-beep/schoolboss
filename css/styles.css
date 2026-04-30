@@ -489,7 +489,7 @@ textarea.form-input{min-height:80px;resize:vertical}
 .smart-day-name::after{content:"";width:34px;height:4px;border-radius:999px;background:linear-gradient(135deg,var(--primary),var(--secondary));opacity:.75}
 .smart-day-row label{display:flex;flex-direction:column;gap:.32rem;min-width:0}
 .smart-day-row label span{font-size:.78rem;font-weight:800;color:var(--text2);white-space:normal;line-height:1.35}
-.smart-day-row .form-input{padding:.62rem .7rem;font-size:.9rem;text-align:center}
+.smart-day-row .form-input,.smart-day-row .form-select{padding:.62rem .7rem;font-size:.9rem;text-align:center}
 .schedule-smart-options{display:flex;flex-direction:column;gap:.65rem;margin-top:.25rem}
 .smart-check{display:flex;align-items:center;gap:.6rem;padding:.75rem .85rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2);cursor:pointer}
 .smart-check input{width:16px;height:16px;accent-color:var(--primary)}
@@ -647,7 +647,7 @@ textarea.form-input{min-height:80px;resize:vertical}
   .sched-empty-actions{grid-template-columns:1fr}
   .smart-day-planner{grid-template-columns:1fr}
   .smart-day-row{grid-template-columns:1fr 1fr;gap:.5rem;padding:.7rem}
-  .smart-day-row .form-input{padding:.52rem .6rem}
+  .smart-day-row .form-input,.smart-day-row .form-select{padding:.52rem .6rem}
   .schedule-slot{grid-template-columns:68px minmax(0,1fr)}
 }
 @media(max-width:480px){
