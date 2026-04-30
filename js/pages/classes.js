@@ -4,6 +4,67 @@ import { showModal, closeModal, showConfirm, showToast, escapeHTML } from '../ui
 
 
 export function renderClasses() {
+  const totalStudents = state.classes.reduce((sum, c) => sum + ((c.studentIds || []).length), 0);
+  const assignedClasses = state.classes.filter(c => c.teacherId).length;
+  return `
+  <div class="page-content animate-in">
+    <div class="page-header">
+      <div>
+        <h2>${t('classes')}</h2>
+        <p class="text-muted">${state.lang === 'ar' ? 'عرض الصفوف والمعلمين والطلاب بطريقة أوضح' : 'Clear view of classes, teachers, and student rosters'}</p>
+      </div>
+      <button class="btn btn-primary" id="add-class-btn">+ ${t('add')}</button>
+    </div>
+
+    <div class="class-summary-grid">
+      <div class="class-summary-card glass-card"><span>${state.lang === 'ar' ? 'إجمالي الصفوف' : 'Total Classes'}</span><strong>${state.classes.length}</strong></div>
+      <div class="class-summary-card glass-card"><span>${t('students')}</span><strong>${totalStudents}</strong></div>
+      <div class="class-summary-card glass-card"><span>${state.lang === 'ar' ? 'صفوف لها معلم' : 'Assigned Teachers'}</span><strong>${assignedClasses}</strong></div>
+    </div>
+
+    <div class="classes-grid classes-grid-redesign">
+      ${state.classes.map((c, index) => {
+        const teacher = state.teachers.find(tc => tc.id === c.teacherId);
+        const studentCount = (c.studentIds || []).length;
+        const students = state.students.filter(s => (c.studentIds || []).includes(s.id));
+        const colorClass = ['class-accent-purple', 'class-accent-cyan', 'class-accent-green', 'class-accent-amber', 'class-accent-red'][index % 5];
+        return `
+        <div class="class-card glass-card ${colorClass}">
+          <div class="class-header">
+            <div>
+              <span class="class-kicker">${escapeHTML(c.grade || (state.lang === 'ar' ? 'صف' : 'Grade'))}</span>
+              <h3>${escapeHTML(c.name)}</h3>
+            </div>
+            <span class="class-count">${studentCount}</span>
+          </div>
+          <div class="class-body">
+            <div class="class-stat">
+              <span>👨‍🏫</span>
+              <div><small>${state.lang === 'ar' ? 'المعلم' : 'Teacher'}</small><strong>${escapeHTML(teacher?.name || (state.lang === 'ar' ? 'غير محدد' : 'Not Assigned'))}</strong></div>
+            </div>
+            <div class="class-stat">
+              <span>🎓</span>
+              <div><small>${t('students')}</small><strong>${studentCount}</strong></div>
+            </div>
+            <div class="class-roster">
+              ${students.slice(0, 5).map(s => `<span title="${escapeHTML(s.name)}">${escapeHTML((s.name || '?').slice(0, 2).toUpperCase())}</span>`).join('')}
+              ${studentCount > 5 ? `<span class="more">+${studentCount - 5}</span>` : ''}
+              ${studentCount === 0 ? `<em>${state.lang === 'ar' ? 'لا يوجد طلاب بعد' : 'No students yet'}</em>` : ''}
+            </div>
+          </div>
+          <div class="class-actions">
+            <button class="btn btn-sm btn-outline edit-class" data-id="${c.id}">${state.lang === 'ar' ? 'تعديل' : 'Edit'}</button>
+            <button class="btn btn-sm btn-danger delete-class" data-id="${c.id}">${state.lang === 'ar' ? 'حذف' : 'Delete'}</button>
+          </div>
+        </div>`;
+      }).join('') || `
+        <div class="full-width text-center py-5">
+          <p class="text-muted">${t('noData')}</p>
+        </div>
+      `}
+    </div>
+  </div>`;
+
   return `
   <div class="page-content animate-in">
     <div class="page-header">

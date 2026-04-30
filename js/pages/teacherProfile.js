@@ -101,7 +101,8 @@ export function getTeacherDashboardHTML(teacherId, activeTab = 'overview') {
                                     <td class="time-cell">${slot.startTime}</td>
                                     ${[0,1,2,3,4,5].map(day => {
                                         const entry = state.schedules.find(s => s.teacherId === teacherId && (s.dayOfWeek === day || s.dayIndex === day) && s.timeslotId === slot.id);
-                                        return `<td>${entry ? `<div class="sch-item"><strong>${entry.subject}</strong><span>${entry.className || ''}</span></div>` : ''}</td>`;
+                                        const cls = entry ? state.classes.find(c => c.id === entry.classId) : null;
+                                        return `<td>${entry ? `<div class="sch-item"><strong>${entry.subject}</strong><span>${entry.className || cls?.name || ''}</span></div>` : ''}</td>`;
                                     }).join('')}
                                 </tr>
                             `).join('')}

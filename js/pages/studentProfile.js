@@ -174,7 +174,8 @@ export function getStudentDashboardHTML(studentId, activeTab = 'overview') {
                   <td class="time-cell">${slot.startTime}</td>
                   ${[0,1,2,3,4,5].map(day => {
                     const entry = state.schedules.find(s => (s.dayOfWeek === day || s.dayIndex === day) && s.timeslotId === slot.id && s.classId === cls?.id);
-                    return `<td>${entry ? `<div class="sch-item"><strong>${entry.subject}</strong><span>${entry.teacherName || ''}</span></div>` : ''}</td>`;
+                    const teacher = entry ? state.teachers.find(t => t.id === entry.teacherId) : null;
+                    return `<td>${entry ? `<div class="sch-item"><strong>${entry.subject}</strong><span>${entry.teacherName || teacher?.name || ''}</span></div>` : ''}</td>`;
                   }).join('')}
                 </tr>
               `).join('')}
