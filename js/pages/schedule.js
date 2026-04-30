@@ -13,7 +13,6 @@ export function renderSchedule() {
   const role = state.profile?.role;
   const canEdit = role === 'admin';
   let availableClasses = state.classes;
-  let classId = '';
 
   if (role === 'teacher') {
     availableClasses = state.classes.filter(c => c.teacherId === state.profile?.uid || (c.teacherIds || []).includes(state.profile?.uid));
@@ -23,14 +22,15 @@ export function renderSchedule() {
     const kidIds = state.profile?.studentIds || state.students.filter(s => s.parentId === state.profile?.uid).map(s => s.id);
     availableClasses = state.classes.filter(c => c.studentIds?.some(id => kidIds.includes(id)));
   }
-  classId = availableClasses[0]?.id || '';
+
+  const classId = availableClasses[0]?.id || '';
 
   return `
   <div class="page-content animate-in">
     <div class="page-header">
       <div>
         <h2>${t('schedule')}</h2>
-        <p class="text-muted">${state.lang === 'ar' ? 'لوحة أسبوعية تفاعلية للحصص والمعلمين' : 'Interactive weekly board for periods and teachers'}</p>
+        <p class="text-muted">${state.lang === 'ar' ? 'جدول أسبوعي واضح مع أوقات ثابتة' : 'Weekly schedule with a fixed time column'}</p>
       </div>
       <div class="header-actions">
         ${canEdit ? `<button class="btn btn-outline" id="manage-master-sched-btn">⚙️ ${state.lang === 'ar' ? 'الأوقات' : 'Timeslots'}</button>` : ''}
@@ -89,23 +89,30 @@ function renderScheduleGrid(classId, canEdit) {
     </div>
   </div>
 
-  <div class="schedule-board" style="--schedule-days:${dayNames.length}">
-    ${dayNames.map((day, dayIndex) => `
-      <section class="schedule-day-column">
-        <div class="schedule-day-header">
+  <div class="schedule-grid-shell">
+    <div class="schedule-grid-board" style="--schedule-days:${dayNames.length}">
+      <div class="schedule-grid-corner">${lang === 'ar' ? 'الوقت' : 'Time'}</div>
+      ${dayNames.map((day, dayIndex) => `
+        <div class="schedule-grid-day">
           <span>${day}</span>
           <small>${schedules.filter(s => s.dayOfWeek === dayIndex).length}</small>
         </div>
-        <div class="schedule-day-slots">
-          ${slots.map((slot, slotIndex) => {
-            const slotId = slot.id;
-            const slotLabel = slot.endTime ? `${slot.startTime} - ${slot.endTime}` : slot.startTime;
+      `).join('')}
+
+      ${slots.map((slot, slotIndex) => {
+        const slotId = slot.id;
+        const slotLabel = slot.endTime ? `${slot.startTime} - ${slot.endTime}` : slot.startTime;
+        return `
+          <div class="schedule-grid-time">
+            <strong>${slotIndex + 1}</strong>
+            <span>${slotLabel}</span>
+          </div>
+          ${dayNames.map((day, dayIndex) => {
             const entry = schedules.find(s => (s.timeslotId === slotId || s.period === slotId) && s.dayOfWeek === dayIndex);
             const teacher = entry ? state.teachers.find(tc => tc.id === entry.teacherId) : null;
             const accent = subjectAccents[Math.abs((entry?.subject || '').length + dayIndex + slotIndex) % subjectAccents.length];
             return `
-            <div class="schedule-slot ${entry ? 'has-entry' : 'is-empty'}" data-day="${dayIndex}" data-slot="${slotId}">
-              <div class="schedule-slot-time">${slotLabel}</div>
+            <div class="schedule-grid-cell ${entry ? 'has-entry' : 'is-empty'}" data-day="${dayIndex}" data-slot="${slotId}">
               ${entry ? `
                 <article class="schedule-lesson accent-${accent}">
                   <div class="schedule-lesson-top">
@@ -122,9 +129,9 @@ function renderScheduleGrid(classId, canEdit) {
               ` : `<div class="schedule-empty-readonly">${lang === 'ar' ? 'فارغ' : 'Free'}</div>`}
             </div>`;
           }).join('')}
-        </div>
-      </section>
-    `).join('')}
+        `;
+      }).join('')}
+    </div>
   </div>`;
 }
 
@@ -145,7 +152,7 @@ export function attachScheduleEvents() {
 function attachScheduleCellEvents() {
   document.querySelectorAll('.sched-add-placeholder').forEach(btn => {
     btn.addEventListener('click', (e) => {
-      const cell = e.target.closest('.schedule-slot');
+      const cell = e.target.closest('.schedule-grid-cell');
       showScheduleForm(null, Number(cell.dataset.day), cell.dataset.slot);
     });
   });
@@ -256,11 +263,10 @@ function showMasterDataModal() {
   document.getElementById('ts-form')?.addEventListener('submit', async e => {
     e.preventDefault();
     try {
-      const ref = await addDoc(collection(db, 'timeslots'), {
-        startTime: document.getElementById('ts-start').value,
-        endTime: document.getElementById('ts-end').value
-      });
-      state.timeslots.push({ id: ref.id, startTime: document.getElementById('ts-start').value, endTime: document.getElementById('ts-end').value });
+      const startTime = document.getElementById('ts-start').value;
+      const endTime = document.getElementById('ts-end').value;
+      const ref = await addDoc(collection(db, 'timeslots'), { startTime, endTime });
+      state.timeslots.push({ id: ref.id, startTime, endTime });
       closeModal();
       refreshCurrentSchedule();
       showToast(t('savedSuccess'), 'success');
