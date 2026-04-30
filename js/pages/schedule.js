@@ -23,6 +23,9 @@ export function renderSchedule() {
     availableClasses = state.classes.filter(c => c.studentIds?.some(id => kidIds.includes(id)));
     classId = availableClasses[0]?.id || '';
   }
+  if (!classId && availableClasses.length > 0) {
+    classId = availableClasses[0].id;
+  }
 
   return `
   <div class="page-content animate-in">
@@ -90,13 +93,16 @@ function renderScheduleGrid(classId, canEdit) {
 }
 
 export function attachScheduleEvents() {
-  document.getElementById('sched-class')?.addEventListener('change', e => {
+  const classSelect = document.getElementById('sched-class');
+  const renderSelectedSchedule = () => {
     const grid = document.getElementById('schedule-grid');
-    if (grid) grid.innerHTML = renderScheduleGrid(e.target.value, state.profile?.role === 'admin');
+    if (grid) grid.innerHTML = renderScheduleGrid(classSelect?.value || '', state.profile?.role === 'admin');
     attachScheduleCellEvents();
-  });
+  };
+  classSelect?.addEventListener('change', renderSelectedSchedule);
   document.getElementById('add-schedule-btn')?.addEventListener('click', () => showScheduleForm());
   document.getElementById('manage-master-sched-btn')?.addEventListener('click', () => showMasterDataModal());
+  renderSelectedSchedule();
   attachScheduleCellEvents();
 }
 
@@ -214,4 +220,3 @@ function showMasterDataModal() {
         } catch(e) { showToast(t('errorOccurred'), 'error'); }
     }));
 }
-

@@ -214,7 +214,7 @@ function showStudentForm(student = null) {
     <form id="student-form" class="form-grid">
       <div class="form-group"><label>${t('fullName')}</label><input type="text" id="sf-name" class="form-input" value="${student?.name || ''}" required></div>
       <div class="form-group"><label>${t('email')}</label><input type="email" id="sf-email" class="form-input" value="${student?.email || ''}"></div>
-      ${!isEdit ? `<div class="form-group"><label>${state.lang === 'ar' ? 'ظƒظ„ظ…ط© ط§ظ„ظ…ط±ظˆط±' : 'Password'}</label><input type="text" id="sf-password" class="form-input" value="123456"></div>` : ''}
+      ${!isEdit ? `<div class="form-group"><label>${state.lang === 'ar' ? 'كلمة المرور' : 'Password'}</label><input type="text" id="sf-password" class="form-input" value="123456"></div>` : ''}
       <div class="form-group"><label>${state.lang === 'ar' ? 'الجنس' : 'Gender'}</label>
         <select id="sf-gender" class="form-select"><option value="male" ${student?.gender === 'male' ? 'selected' : ''}>${state.lang === 'ar' ? 'ذكر' : 'Male'}</option><option value="female" ${student?.gender === 'female' ? 'selected' : ''}>${state.lang === 'ar' ? 'أنثى' : 'Female'}</option></select>
       </div>
