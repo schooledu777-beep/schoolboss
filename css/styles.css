@@ -430,16 +430,16 @@ textarea.form-input{min-height:80px;resize:vertical}
 .schedule-metrics span{display:flex;align-items:center;gap:.35rem;padding:.45rem .7rem;border-radius:999px;background:var(--surface2);color:var(--text2);font-size:.8rem;font-weight:700}
 .schedule-metrics strong{color:var(--primary-light);font-size:.95rem}
 .schedule-grid-shell{overflow:auto;border:1px solid var(--border);border-radius:var(--radius);background:rgba(255,255,255,.02);-webkit-overflow-scrolling:touch}
-.schedule-grid-board{display:grid;grid-template-columns:140px repeat(var(--schedule-days),minmax(170px,1fr));min-width:1000px;gap:1px;background:var(--border);position:relative}
-[dir="rtl"] .schedule-grid-board{grid-template-columns:repeat(var(--schedule-days),minmax(170px,1fr)) 140px}
+.schedule-grid-board{display:grid;grid-template-columns:140px repeat(var(--schedule-days),minmax(170px,1fr));min-width:1000px;gap:1px;background:var(--border);position:relative;direction:ltr}
+[dir="rtl"] .schedule-grid-board{direction:rtl}
 .schedule-grid-corner,.schedule-grid-day,.schedule-grid-time,.schedule-grid-cell{background:var(--bg2)}
 .schedule-grid-corner{position:sticky;inset-inline-start:0;top:0;z-index:4;display:flex;align-items:center;justify-content:center;padding:.9rem;font-weight:900;color:var(--primary-light);background:linear-gradient(135deg,rgba(99,102,241,.16),rgba(6,182,212,.09))}
-[dir="rtl"] .schedule-grid-corner{grid-column:calc(var(--schedule-days) + 1);inset-inline-start:auto;inset-inline-end:0}
+[dir="rtl"] .schedule-grid-corner{grid-column:auto;inset-inline-start:0;inset-inline-end:auto}
 .schedule-grid-day{position:sticky;top:0;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:.6rem;padding:.85rem 1rem;background:var(--surface2)}
 .schedule-grid-day span{font-weight:900}
 .schedule-grid-day small{min-width:26px;height:26px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:rgba(99,102,241,.14);color:var(--primary-light);font-weight:900}
 .schedule-grid-time{position:sticky;inset-inline-start:0;z-index:2;display:flex;align-items:center;gap:.65rem;padding:.75rem;background:linear-gradient(135deg,rgba(99,102,241,.1),rgba(6,182,212,.05))}
-[dir="rtl"] .schedule-grid-time{grid-column:calc(var(--schedule-days) + 1);inset-inline-start:auto;inset-inline-end:0}
+[dir="rtl"] .schedule-grid-time{grid-column:auto;inset-inline-start:0;inset-inline-end:auto}
 .schedule-grid-time strong{width:32px;height:32px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:var(--surface2);color:var(--primary-light);font-size:.86rem;flex-shrink:0}
 .schedule-grid-time span{font-size:.78rem;font-weight:800;color:var(--text2);line-height:1.35}
 .schedule-grid-cell{min-height:96px;padding:.55rem}
@@ -616,7 +616,7 @@ textarea.form-input{min-height:80px;resize:vertical}
   .schedule-class-select{max-width:none;width:100%}
   .schedule-container{padding:.8rem}
   .schedule-grid-board{grid-template-columns:110px repeat(var(--schedule-days),minmax(160px,76vw));min-width:900px}
-  [dir="rtl"] .schedule-grid-board{grid-template-columns:repeat(var(--schedule-days),minmax(160px,76vw)) 110px}
+  [dir="rtl"] .schedule-grid-board{grid-template-columns:110px repeat(var(--schedule-days),minmax(160px,76vw))}
   .schedule-slot{grid-template-columns:68px minmax(0,1fr)}
 }
 @media(max-width:480px){
