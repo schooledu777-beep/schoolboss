@@ -6,71 +6,56 @@ import { showConfirm, getInitials } from './ui.js';
 // ========================= SIDEBAR NAV CONFIG =========================
 function getNavItems() {
   const role = state.profile?.role || 'student';
-  const isPrivate = state.schoolType === 'private';
-  
-  let adminNav = [
-    { icon: '📊', key: 'dashboard', page: 'dashboard' },
-    { icon: '👨‍🎓', key: 'students', page: 'students' },
-    { icon: '👨‍🏫', key: 'teachers', page: 'teachers' },
-    { icon: '👨‍👩‍👧', key: 'parents', page: 'parents' },
-    { icon: '🏫', key: 'classes', page: 'classes' },
-    { icon: '📘', key: 'subjects', page: 'subjects' },
-    { icon: '📋', key: 'attendance', page: 'attendance' },
-    { icon: '📝', key: 'grades', page: 'grades' },
-    { icon: '📅', key: 'schedule', page: 'schedule' },
-    { icon: '📑', key: 'exams', page: 'exams' },
-    { icon: '📚', key: 'homework', page: 'homework' },
-    { icon: '⭐', key: 'rewards', page: 'rewards' },
-    { icon: '⚠️', key: 'academicAlerts', page: 'academic-alerts' },
-  ];
-  
-  if (state.modules?.hr?.enabled) adminNav.push({ icon: '👥', key: 'hr', page: 'hr' });
-  if (state.modules?.library?.enabled) adminNav.push({ icon: '📖', key: 'library', page: 'library' });
-  if (state.modules?.hostel?.enabled) adminNav.push({ icon: '🏠', key: 'hostel', page: 'hostel' });
 
-  if (state.modules?.admissions?.enabled) adminNav.push({ icon: '📝', key: 'admissions', page: 'admissions' });
-  if (state.modules?.finance?.enabled) adminNav.push({ icon: '💰', key: 'finance', page: 'finance' });
+  const adminNav = [
+    { icon: 'D', key: 'dashboard', page: 'dashboard' },
+    { icon: 'S', key: 'students', page: 'students' },
+    { icon: 'T', key: 'teachers', page: 'teachers' },
+    { icon: 'P', key: 'parents', page: 'parents' },
+    { icon: 'C', key: 'classes', page: 'classes' },
+    { icon: 'B', key: 'subjects', page: 'subjects' },
+    { icon: 'A', key: 'attendance', page: 'attendance' },
+    { icon: 'G', key: 'grades', page: 'grades' },
+    { icon: 'L', key: 'schedule', page: 'schedule' },
+    { icon: '!', key: 'academicAlerts', page: 'academic-alerts' },
+  ];
+
+  if (state.modules?.hr?.enabled) adminNav.push({ icon: 'H', key: 'hr', page: 'hr' });
+  if (state.modules?.library?.enabled) adminNav.push({ icon: 'R', key: 'library', page: 'library' });
+  if (state.modules?.hostel?.enabled) adminNav.push({ icon: 'M', key: 'hostel', page: 'hostel' });
+  if (state.modules?.admissions?.enabled) adminNav.push({ icon: '+', key: 'admissions', page: 'admissions' });
+  if (state.modules?.finance?.enabled) adminNav.push({ icon: 'F', key: 'finance', page: 'finance' });
   if (state.modules?.communications?.enabled) {
-    adminNav.push({ icon: '📢', key: 'announcements', page: 'announcements' });
-    adminNav.push({ icon: '✉️', key: 'messages', page: 'messages' });
+    adminNav.push({ icon: 'N', key: 'announcements', page: 'announcements' });
+    adminNav.push({ icon: '@', key: 'messages', page: 'messages' });
   }
-  if (state.modules?.clinic?.enabled) adminNav.push({ icon: '🏥', key: 'clinic', page: 'clinic' });
-  if (state.modules?.logistics?.enabled) adminNav.push({ icon: '🚌', key: 'busTracking', page: 'bus-tracking' });
-  
-  adminNav.push({ icon: '⚙️', key: 'settings', page: 'settings' });
+  adminNav.push({ icon: '*', key: 'settings', page: 'settings' });
 
-  let teacherNav = [
-    { icon: '📊', key: 'dashboard', page: 'dashboard' },
-    { icon: '🏫', key: 'myClasses', page: 'classes' },
-    { icon: '📋', key: 'attendance', page: 'attendance' },
-    { icon: '📝', key: 'grades', page: 'grades' },
-    { icon: '📚', key: 'homework', page: 'homework' },
-    { icon: '⭐', key: 'rewards', page: 'rewards' },
-    { icon: '📅', key: 'mySchedule', page: 'schedule' },
-    { icon: '⚠️', key: 'academicAlerts', page: 'academic-alerts' },
+  const teacherNav = [
+    { icon: 'D', key: 'dashboard', page: 'dashboard' },
+    { icon: 'C', key: 'myClasses', page: 'classes' },
+    { icon: 'A', key: 'attendance', page: 'attendance' },
+    { icon: 'G', key: 'grades', page: 'grades' },
+    { icon: 'L', key: 'mySchedule', page: 'schedule' },
+    { icon: '!', key: 'academicAlerts', page: 'academic-alerts' },
   ];
-  if (state.modules?.communications?.enabled) teacherNav.push({ icon: '✉️', key: 'messages', page: 'messages' });
+  if (state.modules?.communications?.enabled) teacherNav.push({ icon: '@', key: 'messages', page: 'messages' });
 
-  let parentNav = [
-    { icon: '📊', key: 'dashboard', page: 'dashboard' },
-    { icon: '👨‍👩‍👧', key: 'myChildren', page: 'my-children' },
-    { icon: '📝', key: 'grades', page: 'grades' },
-    { icon: '📋', key: 'attendance', page: 'attendance' },
-    { icon: '📚', key: 'homework', page: 'homework' },
-    { icon: '📅', key: 'schedule', page: 'schedule' },
+  const parentNav = [
+    { icon: 'D', key: 'dashboard', page: 'dashboard' },
+    { icon: 'S', key: 'myChildren', page: 'my-children' },
+    { icon: 'G', key: 'grades', page: 'grades' },
+    { icon: 'A', key: 'attendance', page: 'attendance' },
+    { icon: 'L', key: 'schedule', page: 'schedule' },
   ];
-  if (state.modules?.finance?.enabled) parentNav.push({ icon: '💰', key: 'finance', page: 'finance' });
-  if (state.modules?.communications?.enabled) parentNav.push({ icon: '✉️', key: 'messages', page: 'messages' });
-  if (state.modules?.logistics?.enabled) parentNav.push({ icon: '🚌', key: 'busTracking', page: 'bus-tracking' });
+  if (state.modules?.finance?.enabled) parentNav.push({ icon: 'F', key: 'finance', page: 'finance' });
+  if (state.modules?.communications?.enabled) parentNav.push({ icon: '@', key: 'messages', page: 'messages' });
 
-  let studentNav = [
-    { icon: '📊', key: 'dashboard', page: 'dashboard' },
-    { icon: '📅', key: 'mySchedule', page: 'schedule' },
-    { icon: '📝', key: 'myGrades', page: 'grades' },
-    { icon: '📚', key: 'myHomework', page: 'homework' },
-    { icon: '📖', key: 'materials', page: 'materials' },
-    { icon: '⭐', key: 'myRewards', page: 'rewards' },
-    { icon: '📖', key: 'library', page: 'library' },
+  const studentNav = [
+    { icon: 'D', key: 'dashboard', page: 'dashboard' },
+    { icon: 'L', key: 'mySchedule', page: 'schedule' },
+    { icon: 'G', key: 'myGrades', page: 'grades' },
+    { icon: 'R', key: 'library', page: 'library' },
   ];
 
   return { admin: adminNav, teacher: teacherNav, parent: parentNav, student: studentNav }[role] || studentNav;

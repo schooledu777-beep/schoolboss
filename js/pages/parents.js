@@ -176,7 +176,7 @@ function showParentForm(parent = null) {
         data.createdAt=new Date().toISOString(); 
         const password = document.getElementById('pf-password').value;
         const newUid = await adminCreateUser(data.email, password, 'parent', data.name);
-        await setDoc(doc(db, 'parents', newUid), data);
+        await setDoc(doc(db, 'parents', newUid), { ...data, uid: newUid, id: newUid, studentIds: [] });
       } 
       closeModal(); 
       showToast(t('savedSuccess'),'success'); 

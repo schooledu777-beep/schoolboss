@@ -57,14 +57,6 @@ const pages = {
   settings:        { render: renderSettings, events: (renderApp) => attachSettingsEvents(renderApp) },
 };
 
-function placeholderPage(icon, key) {
-  return `<div class="page-content animate-in"><div class="empty-state glass-card"><span class="empty-icon">${icon}</span><h3>${state.lang === 'ar' ? 'قريباً' : 'Coming Soon'}</h3><p class="text-muted">${state.lang === 'ar' ? 'هذه الميزة قيد التطوير' : 'This feature is under development'}</p></div></div>`;
-}
-
-// Additional pages
-['exams', 'homework', 'rewards', 'clinic', 'bus-tracking', 'materials'].forEach(key => {
-  if (!pages[key]) pages[key] = { render: () => placeholderPage('🚀', key), events: () => {} };
-});
 pages['my-children'] = pages.dashboard;
 
 // ========================= RENDER APP =========================
@@ -189,4 +181,3 @@ initAuth(
     renderApp();
   }
 );
-

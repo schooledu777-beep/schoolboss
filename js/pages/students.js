@@ -1,5 +1,5 @@
 import { state, t } from '../state.js';
-import { db, collection, addDoc, updateDoc, deleteDoc, doc, setDoc, serverTimestamp } from '../firebase-config.js';
+import { db, collection, addDoc, updateDoc, deleteDoc, doc, setDoc, serverTimestamp, arrayUnion } from '../firebase-config.js';
 import { adminCreateUser } from '../auth.js';
 import { showModal, closeModal, showConfirm, showToast, escapeHTML, renderAvatar } from '../ui.js';
 import { getStudentDashboardHTML, attachStudentProfileEvents } from './studentProfile.js';
@@ -214,6 +214,7 @@ function showStudentForm(student = null) {
     <form id="student-form" class="form-grid">
       <div class="form-group"><label>${t('fullName')}</label><input type="text" id="sf-name" class="form-input" value="${student?.name || ''}" required></div>
       <div class="form-group"><label>${t('email')}</label><input type="email" id="sf-email" class="form-input" value="${student?.email || ''}"></div>
+      ${!isEdit ? `<div class="form-group"><label>${state.lang === 'ar' ? 'ظƒظ„ظ…ط© ط§ظ„ظ…ط±ظˆط±' : 'Password'}</label><input type="text" id="sf-password" class="form-input" value="123456"></div>` : ''}
       <div class="form-group"><label>${state.lang === 'ar' ? 'الجنس' : 'Gender'}</label>
         <select id="sf-gender" class="form-select"><option value="male" ${student?.gender === 'male' ? 'selected' : ''}>${state.lang === 'ar' ? 'ذكر' : 'Male'}</option><option value="female" ${student?.gender === 'female' ? 'selected' : ''}>${state.lang === 'ar' ? 'أنثى' : 'Female'}</option></select>
       </div>
@@ -276,7 +277,7 @@ function showStudentForm(student = null) {
           
           finalParentId = await adminCreateUser(pEmail, pPwd, 'parent', pName);
           await setDoc(doc(db, 'parents', finalParentId), {
-            name: pName, email: pEmail, phone: pPhone, role: 'parent', createdAt: new Date().toISOString()
+            uid: finalParentId, id: finalParentId, name: pName, email: pEmail, phone: pPhone, role: 'parent', studentIds: [], createdAt: new Date().toISOString()
           });
         } else {
           finalParentId = parentSelect;
@@ -304,7 +305,21 @@ function showStudentForm(student = null) {
         await updateDoc(doc(db, 'students', student.id), data);
       } else {
         data.createdAt = new Date().toISOString();
-        await addDoc(collection(db, 'students'), data);
+        let studentId = null;
+        if (data.email) {
+          const password = document.getElementById('sf-password').value || '123456';
+          studentId = await adminCreateUser(data.email, password, 'student', data.name);
+          await setDoc(doc(db, 'students', studentId), { ...data, uid: studentId, id: studentId });
+        } else {
+          const studentRef = await addDoc(collection(db, 'students'), data);
+          studentId = studentRef.id;
+        }
+        if (finalParentId && studentId) {
+          await updateDoc(doc(db, 'parents', finalParentId), {
+            studentIds: arrayUnion(studentId),
+            updatedAt: new Date().toISOString()
+          }).catch(() => {});
+        }
       }
       closeModal();
       showToast(t('savedSuccess'), 'success');

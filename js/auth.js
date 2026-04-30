@@ -145,7 +145,6 @@ export function initAuth(onLogin, onLogout) {
               existingDocId = snap.docs[0].id;
             }
           }
-          const isAdmin = user.email === ADMIN_EMAIL || user.email?.toLowerCase().includes('admin');
           const profile = existingProfile ? {
             ...existingProfile, uid: user.uid,
             name: existingProfile.name || user.displayName || user.email?.split('@')[0],
@@ -154,7 +153,7 @@ export function initAuth(onLogin, onLogout) {
             uid: user.uid,
             name: state._pendingName || user.displayName || user.email?.split('@')[0] || 'User',
             email: user.email || '',
-            role: isAdmin ? 'admin' : 'student',
+            role: user.email === ADMIN_EMAIL ? 'admin' : 'student',
             avatar: user.photoURL || '',
             phone: '', createdAt: new Date().toISOString()
           };

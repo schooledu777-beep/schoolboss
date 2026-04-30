@@ -182,7 +182,7 @@ export function showTeacherForm(teacher = null) {
         data.createdAt=new Date().toISOString(); 
         const password = document.getElementById('tf-password').value;
         const newUid = await adminCreateUser(data.email, password, 'teacher', data.name);
-        await setDoc(doc(db, 'teachers', newUid), data);
+        await setDoc(doc(db, 'teachers', newUid), { ...data, uid: newUid, id: newUid });
         teacherId = newUid;
       } 
 

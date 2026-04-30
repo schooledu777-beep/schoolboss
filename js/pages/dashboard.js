@@ -204,9 +204,7 @@ function renderStudentDash() {
 
   const actions = [
     { href: '#schedule', icon: '📅', label: t('mySchedule') },
-    { href: '#grades', icon: '📝', label: t('myGrades') },
-    { href: '#homework', icon: '📚', label: t('myHomework') },
-    { href: '#rewards', icon: '⭐', label: t('myRewards') }
+    { href: '#grades', icon: '📝', label: t('myGrades') }
   ];
 
   const actionsHtml = actions.map(a => `
