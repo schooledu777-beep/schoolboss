@@ -34,6 +34,8 @@ export function renderSchedule() {
         <p class="text-muted">${state.lang === 'ar' ? 'جدولة ذكية تراعي أوقات الحصص والاستراحات وتفضيلات المعلمين' : 'Smart scheduling with lessons, breaks, and teacher preferences'}</p>
       </div>
       <div class="header-actions">
+        ${canEdit ? `<button class="btn btn-danger" id="clear-class-schedule-btn">🧹 ${state.lang === 'ar' ? 'تفريغ جدول الصف' : 'Clear Class'}</button>` : ''}
+        <button class="btn btn-outline" id="export-schedule-pdf-btn">📄 ${state.lang === 'ar' ? 'تصدير PDF' : 'Export PDF'}</button>
         ${canEdit ? `<button class="btn btn-outline" id="manage-master-sched-btn">⚙ ${state.lang === 'ar' ? 'الأوقات' : 'Timeslots'}</button>` : ''}
         ${canEdit ? `<button class="btn btn-outline" id="add-break-btn">☕ ${state.lang === 'ar' ? 'إضافة استراحة' : 'Add Break'}</button>` : ''}
         ${canEdit ? `<button class="btn btn-success" id="smart-schedule-btn">✨ ${state.lang === 'ar' ? 'إنشاء ذكي' : 'Smart Generate'}</button>` : ''}
@@ -131,7 +133,7 @@ function renderScheduleGrid(classId, canEdit) {
         return `
           <div class="schedule-grid-time">
             <strong>${slotIndex + 1}</strong>
-            <span>${slotLabel}</span>
+            <span class="schedule-time-label">${slotLabel}</span>
           </div>
           ${dayNames.map((day, dayIndex) => {
             const entry = schedules.find(s => sameSlot(s, slotId) && s.dayOfWeek === dayIndex);
@@ -146,7 +148,7 @@ function renderScheduleGrid(classId, canEdit) {
                     <strong>${isBreak ? `☕ ${entry.subject || (lang === 'ar' ? 'استراحة' : 'Break')}` : (entry.subject || '')}</strong>
                     ${canEdit ? `<button class="sched-del-btn" data-id="${entry.id}" title="${t('delete')}">×</button>` : ''}
                   </div>
-                  <span>${isBreak ? (entry.note || (lang === 'ar' ? 'وقت راحة بين الحصص' : 'Break time')) : (teacher?.name || (lang === 'ar' ? 'معلم غير محدد' : 'No teacher'))}</span>
+                  <span class="${isBreak ? 'schedule-time-label' : ''}">${isBreak ? (entry.note || (lang === 'ar' ? 'وقت راحة بين الحصص' : 'Break time')) : (teacher?.name || (lang === 'ar' ? 'معلم غير محدد' : 'No teacher'))}</span>
                 </article>
               ` : canEdit ? `
                 <div class="sched-empty-actions">
@@ -181,6 +183,8 @@ export function attachScheduleEvents() {
   document.getElementById('add-break-btn')?.addEventListener('click', () => showBreakForm());
   document.getElementById('smart-schedule-btn')?.addEventListener('click', () => showSmartScheduleModal());
   document.getElementById('manage-master-sched-btn')?.addEventListener('click', () => showMasterDataModal());
+  document.getElementById('clear-class-schedule-btn')?.addEventListener('click', clearCurrentClassSchedule);
+  document.getElementById('export-schedule-pdf-btn')?.addEventListener('click', exportCurrentSchedulePdf);
   refreshCurrentSchedule();
 }
 
@@ -213,6 +217,77 @@ function attachScheduleCellEvents() {
       });
     });
   });
+}
+
+function clearCurrentClassSchedule() {
+  const classId = document.getElementById('sched-class')?.value || '';
+  const selectedClass = state.classes.find(c => c.id === classId);
+  const classSchedules = state.schedules.filter(s => s.classId === classId);
+
+  if (!classId || classSchedules.length === 0) {
+    showToast(state.lang === 'ar' ? 'لا توجد حصص لتفريغها لهذا الصف' : 'No schedule entries to clear for this class', 'info');
+    return;
+  }
+
+  showConfirm(
+    state.lang === 'ar' ? 'تفريغ جدول الصف' : 'Clear Class Schedule',
+    state.lang === 'ar'
+      ? `سيتم حذف ${classSchedules.length} خانة من جدول ${selectedClass?.name || ''}. هل تريد المتابعة؟`
+      : `This will delete ${classSchedules.length} entries from ${selectedClass?.name || 'this class'}. Continue?`,
+    async () => {
+      try {
+        const batch = writeBatch(db);
+        classSchedules.forEach(entry => batch.delete(doc(db, 'schedules', entry.id)));
+        await batch.commit();
+        state.schedules = state.schedules.filter(s => s.classId !== classId);
+        refreshCurrentSchedule();
+        showToast(state.lang === 'ar' ? 'تم تفريغ جدول الصف' : 'Class schedule cleared', 'success');
+      } catch (err) {
+        console.error(err);
+        showToast(t('errorOccurred'), 'error');
+      }
+    }
+  );
+}
+
+function exportCurrentSchedulePdf() {
+  const classId = document.getElementById('sched-class')?.value || '';
+  const selectedClass = state.classes.find(c => c.id === classId);
+  const source = document.getElementById('schedule-grid');
+
+  if (!source || !window.html2pdf) {
+    showToast(state.lang === 'ar' ? 'أداة تصدير PDF غير جاهزة' : 'PDF export tool is not ready', 'error');
+    return;
+  }
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'schedule-pdf-export';
+  wrapper.dir = document.documentElement.dir || 'rtl';
+  wrapper.innerHTML = `
+    <div class="schedule-pdf-title">
+      <h2>${state.lang === 'ar' ? 'الجدول الدراسي' : 'Class Schedule'}</h2>
+      <p>${selectedClass?.name || ''}</p>
+    </div>
+  `;
+  const clone = source.cloneNode(true);
+  clone.querySelectorAll('button').forEach(btn => btn.remove());
+  wrapper.appendChild(clone);
+
+  const fileName = `${selectedClass?.name || 'schedule'}-${new Date().toISOString().slice(0, 10)}.pdf`.replace(/[\\/:*?"<>|]+/g, '-');
+  window.html2pdf()
+    .set({
+      margin: 8,
+      filename: fileName,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+    })
+    .from(wrapper)
+    .save()
+    .catch(err => {
+      console.error(err);
+      showToast(t('errorOccurred'), 'error');
+    });
 }
 
 function renderDayOptions(selectedDay = 0) {
@@ -639,12 +714,20 @@ function validateSmartPlans(dayPlans) {
 
 function getSmartSlotPlan(dayPlans) {
   const maxSlotCount = Math.max(...dayPlans.map(plan => Number(plan.lessonCount || 0) + Number(plan.breakCount || 0)), 0);
-  const existingSlots = getSlots();
   const plannedSlots = buildPlannedSlots(maxSlotCount, dayPlans);
+  const existingSlots = getSlots();
+  const missingSlots = [];
+  const slots = plannedSlots.map((planned, index) => {
+    const existing = existingSlots.find(slot => slot.startTime === planned.startTime && slot.endTime === planned.endTime);
+    if (existing) return existing;
+    const missing = { ...planned, id: `smart-slot-${index + 1}` };
+    missingSlots.push(missing);
+    return missing;
+  });
   return {
     maxSlotCount,
-    existingSlots,
-    missingSlots: plannedSlots.slice(existingSlots.length)
+    slots,
+    missingSlots
   };
 }
 
@@ -652,7 +735,7 @@ async function generateSmartSchedule(classId, options) {
   const dayNames = getDayNames();
   const dayPlans = options.dayPlans || dayNames.map((_, dayOfWeek) => ({ dayOfWeek, ...getSmartDayDefaults() }));
   const slotPlan = getSmartSlotPlan(dayPlans);
-  const slots = [...slotPlan.existingSlots, ...slotPlan.missingSlots];
+  const slots = slotPlan.slots;
   const candidates = buildCandidates();
 
   if (!classId) {
