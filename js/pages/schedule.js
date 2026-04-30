@@ -275,34 +275,70 @@ function clearCurrentClassSchedule() {
 function exportCurrentSchedulePdf() {
   const classId = document.getElementById('sched-class')?.value || '';
   const selectedClass = state.classes.find(c => c.id === classId);
-  const source = document.getElementById('schedule-grid');
+  const schedules = state.schedules.filter(s => s.classId === classId);
+  const slots = getDisplaySlots(schedules);
+  const dayNames = getDayNames();
 
-  if (!source || !window.html2pdf) {
+  if (!window.html2pdf) {
     showToast(state.lang === 'ar' ? 'أداة تصدير PDF غير جاهزة' : 'PDF export tool is not ready', 'error');
+    return;
+  }
+
+  if (!classId || schedules.length === 0) {
+    showToast(state.lang === 'ar' ? 'لا يوجد جدول لتصديره لهذا الصف' : 'No schedule to export for this class', 'info');
     return;
   }
 
   const wrapper = document.createElement('div');
   wrapper.className = 'schedule-pdf-export';
   wrapper.dir = document.documentElement.dir || 'rtl';
+  const rows = slots.map((slot, slotIndex) => {
+    const slotLabel = slot.endTime ? `${slot.startTime} - ${slot.endTime}` : slot.startTime;
+    const cells = dayNames.map((day, dayIndex) => {
+      const entry = schedules.find(s => sameSlot(s, slot.id) && s.dayOfWeek === dayIndex);
+      if (!entry) return '<td class="pdf-empty"></td>';
+      const teacher = entry.teacherId ? state.teachers.find(tc => tc.id === entry.teacherId) : null;
+      const isBreak = entry.type === 'break';
+      return `
+        <td class="${isBreak ? 'pdf-break' : 'pdf-lesson'}">
+          <strong>${entry.subject || (isBreak ? (state.lang === 'ar' ? 'استراحة' : 'Break') : '')}</strong>
+          <span>${isBreak ? (entry.note || slotLabel) : (teacher?.name || '')}</span>
+        </td>
+      `;
+    }).join('');
+    return `
+      <tr>
+        <th class="pdf-time"><b>${slotIndex + 1}</b><span>${slotLabel}</span></th>
+        ${cells}
+      </tr>
+    `;
+  }).join('');
+
   wrapper.innerHTML = `
     <div class="schedule-pdf-title">
       <h2>${state.lang === 'ar' ? 'الجدول الدراسي' : 'Class Schedule'}</h2>
-      <p>${selectedClass?.name || ''}</p>
+      <p>${selectedClass?.name || ''} · ${new Date().toISOString().slice(0, 10)}</p>
     </div>
+    <table class="schedule-pdf-table">
+      <thead>
+        <tr>
+          <th>${state.lang === 'ar' ? 'الوقت' : 'Time'}</th>
+          ${dayNames.map(day => `<th>${day}</th>`).join('')}
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
   `;
-  const clone = source.cloneNode(true);
-  clone.querySelectorAll('button').forEach(btn => btn.remove());
-  wrapper.appendChild(clone);
 
   const fileName = `${selectedClass?.name || 'schedule'}-${new Date().toISOString().slice(0, 10)}.pdf`.replace(/[\\/:*?"<>|]+/g, '-');
   window.html2pdf()
     .set({
-      margin: 8,
+      margin: 5,
       filename: fileName,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+      html2canvas: { scale: 1.6, useCORS: true, backgroundColor: '#ffffff' },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
+      pagebreak: { mode: ['avoid-all'] }
     })
     .from(wrapper)
     .save()
