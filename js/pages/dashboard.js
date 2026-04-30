@@ -345,32 +345,31 @@ export function attachDashboardEvents() {
         grade: `Grade ${Math.floor((index % classIds.length) / 2) + 1}`
       }));
 
-      const ensureUser = async (profile, role, existingList) => {
+      const ensureUser = async (profile, role, existingList, fallbackId) => {
         try {
           return await adminCreateUser(profile.email, password, role, profile.name);
         } catch (err) {
           const existing = existingList?.find((user) => user.email === profile.email);
           if (existing?.id || existing?.uid) return existing.id || existing.uid;
-          const userSnap = await getDocs(query(collection(db, 'users'), where('email', '==', profile.email)));
-          if (!userSnap.empty) return userSnap.docs[0].id;
-          throw err;
+          console.warn(`Using local mock id for ${profile.email}:`, err);
+          return fallbackId;
         }
       };
 
       setProgress(isAr ? 'إنشاء الحسابات...' : 'Creating accounts...');
       const teacherIds = [];
-      for (const teacher of teacherProfiles) {
-        teacherIds.push(await ensureUser(teacher, 'teacher', state.teachers));
+      for (const [index, teacher] of teacherProfiles.entries()) {
+        teacherIds.push(await ensureUser(teacher, 'teacher', state.teachers, `mock-teacher-${String(index + 1).padStart(2, '0')}`));
       }
 
       const parentIds = [];
-      for (const parent of parentProfiles) {
-        parentIds.push(await ensureUser(parent, 'parent', state.parents));
+      for (const [index, parent] of parentProfiles.entries()) {
+        parentIds.push(await ensureUser(parent, 'parent', state.parents, `mock-parent-${String(index + 1).padStart(2, '0')}`));
       }
 
       const studentIds = [];
-      for (const student of studentProfiles) {
-        studentIds.push(await ensureUser(student, 'student', state.students));
+      for (const [index, student] of studentProfiles.entries()) {
+        studentIds.push(await ensureUser(student, 'student', state.students, `mock-student-${String(index + 1).padStart(2, '0')}`));
       }
 
       const subjects = [
@@ -404,17 +403,20 @@ export function attachDashboardEvents() {
 
       teacherProfiles.forEach((teacher, index) => {
         const id = teacherIds[index];
+        queueSet('users', id, { email: teacher.email, role: 'teacher', name: teacher.name, uid: id, createdAt: nowIso });
         queueSet('teachers', id, { ...teacher, uid: id, createdAt: nowIso });
       });
 
       parentProfiles.forEach((parent, index) => {
         const id = parentIds[index];
         const studentIdsForParent = studentIds.filter((_, studentIndex) => studentProfiles[studentIndex].parentIndex === index);
+        queueSet('users', id, { email: parent.email, role: 'parent', name: parent.name, uid: id, studentIds: studentIdsForParent, createdAt: nowIso });
         queueSet('parents', id, { ...parent, uid: id, studentIds: studentIdsForParent, createdAt: nowIso });
       });
 
       studentProfiles.forEach((student, index) => {
         const id = studentIds[index];
+        queueSet('users', id, { email: student.email, role: 'student', name: student.name, uid: id, parentId: parentIds[student.parentIndex], createdAt: nowIso });
         queueSet('students', id, {
           name: student.name,
           email: student.email,
@@ -538,7 +540,8 @@ export function attachDashboardEvents() {
       setTimeout(() => window.location.reload(), 1500);
     } catch (err) {
       console.error('Mock data fatal error:', err);
-      showToast(isAr ? 'حدث خطأ أثناء إضافة البيانات التجريبية' : 'Error adding mock data', 'error');
+      const details = err?.code || err?.message || '';
+      showToast(isAr ? `تعذر حفظ البيانات التجريبية: ${details}` : `Error adding mock data: ${details}`, 'error');
       btn.innerHTML = oldHtml;
       btn.style.pointerEvents = 'auto';
     }
