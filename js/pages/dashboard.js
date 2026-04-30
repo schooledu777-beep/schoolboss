@@ -283,6 +283,269 @@ export function attachDashboardEvents() {
 
   document.getElementById('btn-mock-data')?.addEventListener('click', async (e) => {
     e.preventDefault();
+    e.stopImmediatePropagation();
+    const isAr = state.lang === 'ar';
+    const msg = isAr
+      ? 'سيتم إنشاء بيانات تجريبية موسعة: معلمين، أولياء أمور، طلاب، صفوف، جداول، حضور وغياب، درجات ورسوم. هل تريد المتابعة؟'
+      : 'Create expanded sample data: teachers, parents, students, classes, schedules, attendance, grades, and fees?';
+    if (!confirm(msg)) return;
+
+    const btn = e.currentTarget;
+    const oldHtml = btn.innerHTML;
+    const setProgress = (text) => {
+      btn.innerHTML = `<span>...</span><span>${text}</span>`;
+    };
+    btn.style.pointerEvents = 'none';
+
+    try {
+      const now = new Date();
+      const nowIso = now.toISOString();
+      const seed = 'expanded-mock-v2';
+      const password = '123456';
+      const classIds = Array.from({ length: 6 }, (_, i) => `mock-class-${String(i + 1).padStart(2, '0')}`);
+      const phone = (i) => `050${String(7000000 + i).padStart(7, '0')}`;
+      const dateOffset = (daysBack) => {
+        const d = new Date(now);
+        d.setDate(d.getDate() - daysBack);
+        return d.toISOString().split('T')[0];
+      };
+      const weightedStatus = (studentIndex, dayIndex) => {
+        const value = (studentIndex * 11 + dayIndex * 7) % 100;
+        if (value < 78) return 'present';
+        if (value < 88) return 'late';
+        if (value < 95) return 'absent';
+        return 'excused';
+      };
+
+      const teacherProfiles = [
+        { name: 'Teacher 01 - Mathematics', email: 'teacher01@school.test', subjects: ['Mathematics', 'Physics'], baseSalary: 5200 },
+        { name: 'Teacher 02 - Arabic', email: 'teacher02@school.test', subjects: ['Arabic', 'Islamic Studies'], baseSalary: 5000 },
+        { name: 'Teacher 03 - English', email: 'teacher03@school.test', subjects: ['English'], baseSalary: 5100 },
+        { name: 'Teacher 04 - Science', email: 'teacher04@school.test', subjects: ['Science', 'Biology'], baseSalary: 5300 },
+        { name: 'Teacher 05 - Social Studies', email: 'teacher05@school.test', subjects: ['History', 'Geography'], baseSalary: 4900 },
+        { name: 'Teacher 06 - Computer', email: 'teacher06@school.test', subjects: ['Computer Science'], baseSalary: 5400 },
+        { name: 'Teacher 07 - Art', email: 'teacher07@school.test', subjects: ['Art', 'Activities'], baseSalary: 4700 },
+        { name: 'Teacher 08 - PE', email: 'teacher08@school.test', subjects: ['Physical Education'], baseSalary: 4700 }
+      ].map((teacher, index) => ({ ...teacher, phone: phone(index + 1), role: 'teacher' }));
+
+      const parentProfiles = Array.from({ length: 12 }, (_, index) => ({
+        name: `Parent ${String(index + 1).padStart(2, '0')}`,
+        email: `parent${String(index + 1).padStart(2, '0')}@school.test`,
+        phone: phone(index + 31),
+        role: 'parent'
+      }));
+
+      const studentProfiles = Array.from({ length: 36 }, (_, index) => ({
+        name: `Student ${String(index + 1).padStart(2, '0')}`,
+        email: `student${String(index + 1).padStart(2, '0')}@school.test`,
+        phone: phone(index + 61),
+        role: 'student',
+        parentIndex: Math.floor(index / 3),
+        classId: classIds[index % classIds.length],
+        grade: `Grade ${Math.floor((index % classIds.length) / 2) + 1}`
+      }));
+
+      const ensureUser = async (profile, role, existingList) => {
+        try {
+          return await adminCreateUser(profile.email, password, role, profile.name);
+        } catch (err) {
+          const existing = existingList?.find((user) => user.email === profile.email);
+          if (existing?.id || existing?.uid) return existing.id || existing.uid;
+          const userSnap = await getDocs(query(collection(db, 'users'), where('email', '==', profile.email)));
+          if (!userSnap.empty) return userSnap.docs[0].id;
+          throw err;
+        }
+      };
+
+      setProgress(isAr ? 'إنشاء الحسابات...' : 'Creating accounts...');
+      const teacherIds = [];
+      for (const teacher of teacherProfiles) {
+        teacherIds.push(await ensureUser(teacher, 'teacher', state.teachers));
+      }
+
+      const parentIds = [];
+      for (const parent of parentProfiles) {
+        parentIds.push(await ensureUser(parent, 'parent', state.parents));
+      }
+
+      const studentIds = [];
+      for (const student of studentProfiles) {
+        studentIds.push(await ensureUser(student, 'student', state.students));
+      }
+
+      const subjects = [
+        { id: 'mock-subject-math', name: 'Mathematics', code: 'MATH' },
+        { id: 'mock-subject-arabic', name: 'Arabic', code: 'ARB' },
+        { id: 'mock-subject-english', name: 'English', code: 'ENG' },
+        { id: 'mock-subject-science', name: 'Science', code: 'SCI' },
+        { id: 'mock-subject-history', name: 'History', code: 'HIS' },
+        { id: 'mock-subject-geography', name: 'Geography', code: 'GEO' },
+        { id: 'mock-subject-computer', name: 'Computer Science', code: 'ICT' },
+        { id: 'mock-subject-art', name: 'Art', code: 'ART' },
+        { id: 'mock-subject-pe', name: 'Physical Education', code: 'PE' }
+      ];
+
+      const timeslots = [
+        { id: 'mock-slot-1', startTime: '08:00', endTime: '08:45' },
+        { id: 'mock-slot-2', startTime: '08:50', endTime: '09:35' },
+        { id: 'mock-slot-3', startTime: '09:45', endTime: '10:30' },
+        { id: 'mock-slot-4', startTime: '10:35', endTime: '11:20' },
+        { id: 'mock-slot-5', startTime: '11:35', endTime: '12:20' },
+        { id: 'mock-slot-6', startTime: '12:25', endTime: '13:10' }
+      ];
+
+      const writeOps = [];
+      const queueSet = (collectionName, id, data) => {
+        writeOps.push({
+          ref: doc(db, collectionName, id),
+          data: { ...data, id, mockSeed: seed, updatedAt: nowIso }
+        });
+      };
+
+      teacherProfiles.forEach((teacher, index) => {
+        const id = teacherIds[index];
+        queueSet('teachers', id, { ...teacher, uid: id, createdAt: nowIso });
+      });
+
+      parentProfiles.forEach((parent, index) => {
+        const id = parentIds[index];
+        const studentIdsForParent = studentIds.filter((_, studentIndex) => studentProfiles[studentIndex].parentIndex === index);
+        queueSet('parents', id, { ...parent, uid: id, studentIds: studentIdsForParent, createdAt: nowIso });
+      });
+
+      studentProfiles.forEach((student, index) => {
+        const id = studentIds[index];
+        queueSet('students', id, {
+          name: student.name,
+          email: student.email,
+          phone: student.phone,
+          role: 'student',
+          uid: id,
+          parentId: parentIds[student.parentIndex],
+          classId: student.classId,
+          grade: student.grade,
+          status: 'active',
+          createdAt: nowIso
+        });
+      });
+
+      subjects.forEach((subject) => queueSet('subjects', subject.id, subject));
+      timeslots.forEach((slot, index) => queueSet('timeslots', slot.id, { ...slot, order: index + 1 }));
+
+      const classes = classIds.map((id, index) => {
+        const gradeNumber = Math.floor(index / 2) + 1;
+        const section = index % 2 === 0 ? 'A' : 'B';
+        return {
+          id,
+          name: `Grade ${gradeNumber} - ${section}`,
+          grade: `Grade ${gradeNumber}`,
+          teacherId: teacherIds[index % teacherIds.length],
+          studentIds: studentIds.filter((_, studentIndex) => studentProfiles[studentIndex].classId === id),
+          createdAt: nowIso
+        };
+      });
+      classes.forEach((cls) => queueSet('classes', cls.id, cls));
+
+      setProgress(isAr ? 'إنشاء الجداول والحضور...' : 'Building schedules and attendance...');
+      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'];
+      classes.forEach((cls, classIndex) => {
+        for (let dayOfWeek = 0; dayOfWeek < 5; dayOfWeek += 1) {
+          timeslots.forEach((slot, slotIndex) => {
+            const subject = subjects[(classIndex + dayOfWeek + slotIndex) % subjects.length];
+            const teacherId = teacherIds[(classIndex + dayOfWeek + slotIndex) % teacherIds.length];
+            queueSet('schedules', `mock-schedule-${cls.id}-${dayOfWeek}-${slot.id}`, {
+              classId: cls.id,
+              dayOfWeek,
+              day: dayNames[dayOfWeek],
+              timeslotId: slot.id,
+              subject: subject.name,
+              teacherId,
+              startTime: slot.startTime,
+              endTime: slot.endTime,
+              room: `${100 + classIndex}${slotIndex + 1}`
+            });
+          });
+        }
+      });
+
+      const schoolDates = [];
+      for (let daysBack = 0; schoolDates.length < 14 && daysBack < 24; daysBack += 1) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - daysBack);
+        if (![5, 6].includes(d.getDay())) schoolDates.push(dateOffset(daysBack));
+      }
+
+      studentIds.forEach((studentId, studentIndex) => {
+        const student = studentProfiles[studentIndex];
+        schoolDates.forEach((date, dayIndex) => {
+          queueSet('attendance', `mock-attendance-${studentId}-${date}`, {
+            studentId,
+            classId: student.classId,
+            date,
+            status: weightedStatus(studentIndex, dayIndex),
+            teacherId: teacherIds[(studentIndex + dayIndex) % teacherIds.length]
+          });
+        });
+      });
+
+      studentIds.forEach((studentId, studentIndex) => {
+        subjects.slice(0, 5).forEach((subject, subjectIndex) => {
+          ['quiz', 'midterm', 'homework', 'final'].forEach((examType, examIndex) => {
+            const score = 58 + ((studentIndex * 9 + subjectIndex * 7 + examIndex * 5) % 43);
+            queueSet('grades', `mock-grade-${studentId}-${subject.code}-${examType}`, {
+              studentId,
+              subject: subject.name,
+              examType,
+              score,
+              maxScore: 100,
+              teacherId: teacherIds[(studentIndex + subjectIndex) % teacherIds.length],
+              date: schoolDates[(subjectIndex + examIndex) % schoolDates.length]
+            });
+          });
+        });
+      });
+
+      studentIds.forEach((studentId, studentIndex) => {
+        const amount = 5000 + ((studentIndex % 3) * 500);
+        const paidAmount = studentIndex % 4 === 0 ? amount : studentIndex % 4 === 1 ? Math.round(amount * 0.55) : 0;
+        queueSet('fees', `mock-fee-${studentId}-term-1`, {
+          studentId,
+          amount,
+          paidAmount,
+          status: paidAmount >= amount ? 'paid' : paidAmount > 0 ? 'partial' : 'unpaid',
+          dueDate: '2026-05-15'
+        });
+      });
+
+      [
+        { id: 'mock-announcement-exams', title: 'Midterm exam schedule', body: 'Midterm exams are available in the sample schedule for testing.' },
+        { id: 'mock-announcement-attendance', title: 'Attendance review', body: 'Sample attendance includes present, late, absent, and excused records.' },
+        { id: 'mock-announcement-fees', title: 'Fee reminders', body: 'Sample fee records include paid, partial, and unpaid students.' }
+      ].forEach((announcement) => {
+        queueSet('announcements', announcement.id, { ...announcement, createdAt: nowIso, authorId: state.profile?.uid || null });
+      });
+
+      setProgress(isAr ? 'حفظ البيانات...' : 'Saving data...');
+      for (let i = 0; i < writeOps.length; i += 400) {
+        const batch = writeBatch(db);
+        writeOps.slice(i, i + 400).forEach((op) => batch.set(op.ref, op.data, { merge: true }));
+        await batch.commit();
+      }
+
+      showToast(isAr ? 'تم إنشاء البيانات التجريبية الموسعة بنجاح' : 'Expanded sample data created successfully', 'success');
+      btn.innerHTML = oldHtml;
+      btn.style.pointerEvents = 'auto';
+      setTimeout(() => window.location.reload(), 1500);
+    } catch (err) {
+      console.error('Mock data fatal error:', err);
+      showToast(isAr ? 'حدث خطأ أثناء إضافة البيانات التجريبية' : 'Error adding mock data', 'error');
+      btn.innerHTML = oldHtml;
+      btn.style.pointerEvents = 'auto';
+    }
+  });
+
+  document.getElementById('btn-mock-data-legacy-disabled')?.addEventListener('click', async (e) => {
+    e.preventDefault();
     const isAr = state.lang === 'ar';
     const msg = isAr ? 'هل أنت متأكد من إضافة بيانات تجريبية شاملة لجميع الأقسام؟' : 'Add comprehensive mock data for all modules?';
     if (!confirm(msg)) return;
