@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 96" role="img" aria-label="EduManage Pro logo">
+  <defs>
+    <linearGradient id="word" x1="112" y1="24" x2="336" y2="76" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6366F1"/>
+      <stop offset=".62" stop-color="#06B6D4"/>
+      <stop offset="1" stop-color="#10B981"/>
+    </linearGradient>
+  </defs>
+  <image href="edumanage-mark.svg" x="0" y="0" width="96" height="96"/>
+  <text x="116" y="47" font-family="Inter, Tajawal, Arial, sans-serif" font-size="28" font-weight="800" fill="url(#word)">EduManage</text>
+  <text x="118" y="72" font-family="Inter, Tajawal, Arial, sans-serif" font-size="16" font-weight="700" fill="#64748B">Pro School ERP</text>
+</svg>

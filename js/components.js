@@ -72,13 +72,7 @@ export function renderSidebar() {
     <div class="sidebar-inner">
       <div class="sidebar-header">
         <div class="sidebar-brand">
-          <div class="brand-icon">
-            <svg width="36" height="36" viewBox="0 0 48 48" fill="none">
-              <rect width="48" height="48" rx="12" fill="url(#sg)"/>
-              <path d="M14 34V20l10-8 10 8v14H28v-8h-8v8H14z" fill="white"/>
-              <defs><linearGradient id="sg" x1="0" y1="0" x2="48" y2="48"><stop stop-color="#6366f1"/><stop offset="1" stop-color="#06b6d4"/></linearGradient></defs>
-            </svg>
-          </div>
+          <div class="brand-icon"><img src="assets/edumanage-mark.svg" alt="EduManage"></div>
           <div class="brand-text">
             <h2>EduManage</h2>
             <span class="brand-badge">${roleBadge[role]} ${t(role)}</span>

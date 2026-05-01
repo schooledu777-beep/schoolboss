@@ -2,8 +2,8 @@
 import { state, applyTheme, applyLang } from './state.js';
 import { hideLoading } from './ui.js';
 import { registerRoute, initRouter } from './router.js';
-import { renderAuthPage, attachAuthEvents, initAuth } from './auth.js';
-import { renderSidebar, renderHeader, attachLayoutEvents } from './components.js';
+import { renderAuthPage, attachAuthEvents, initAuth } from './auth.js?v=20260501-brand-assets';
+import { renderSidebar, renderHeader, attachLayoutEvents } from './components.js?v=20260501-brand-assets';
 import { syncService } from './services/syncService.js';
 import { academicService } from './services/academicService.js';
 import { libraryService } from './services/libraryService.js';

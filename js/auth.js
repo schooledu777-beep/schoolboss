@@ -25,16 +25,11 @@ export function renderAuthPage() {
   <div class="auth-page">
     <div class="auth-bg-shapes">
       <div class="shape shape-1"></div><div class="shape shape-2"></div><div class="shape shape-3"></div>
+      <img class="auth-doodles" src="assets/education-doodles.svg" alt="">
     </div>
     <div class="auth-card glass-card">
       <div class="auth-logo">
-        <div class="logo-icon">
-          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-            <rect width="48" height="48" rx="12" fill="url(#grad)"/>
-            <path d="M14 34V20l10-8 10 8v14H28v-8h-8v8H14z" fill="white"/>
-            <defs><linearGradient id="grad" x1="0" y1="0" x2="48" y2="48"><stop stop-color="#6366f1"/><stop offset="1" stop-color="#06b6d4"/></linearGradient></defs>
-          </svg>
-        </div>
+        <div class="logo-icon"><img src="assets/edumanage-mark.svg" alt="EduManage Pro"></div>
         <h1 class="auth-title">EduManage Pro</h1>
         <p class="auth-subtitle">${t('appSubtitle')}</p>
       </div>
