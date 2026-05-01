@@ -137,6 +137,29 @@ function flattenGroups(groups) {
   return groups.flatMap(g => g.items);
 }
 
+// ========================= NAV GROUP COLLAPSE (persisted) =========================
+const NAV_COLLAPSE_KEY = () => `sms-nav-collapsed-${state.profile?.role || 'student'}`;
+
+function getCollapsedGroups() {
+  try { return JSON.parse(localStorage.getItem(NAV_COLLAPSE_KEY()) || '[]'); }
+  catch { return []; }
+}
+
+// Called from inline onclick — toggles one group by index
+window.toggleNavGroup = function(idx) {
+  let collapsed = getCollapsedGroups();
+  const isNowCollapsed = collapsed.includes(idx);
+  if (isNowCollapsed) {
+    collapsed = collapsed.filter(i => i !== idx);
+  } else {
+    collapsed.push(idx);
+  }
+  localStorage.setItem(NAV_COLLAPSE_KEY(), JSON.stringify(collapsed));
+  // Toggle class directly on DOM (no full re-render needed)
+  const group = document.querySelectorAll('.sidebar-nav .nav-group')[idx];
+  if (group) group.classList.toggle('collapsed', !isNowCollapsed);
+};
+
 // ========================= RENDER SIDEBAR =========================
 export function renderSidebar() {
   const role = state.profile?.role || 'student';
@@ -144,18 +167,25 @@ export function renderSidebar() {
   const allItems = flattenGroups(groups);
   const roleBadge = { admin: '🔴', teacher: '🟢', parent: '🔵', student: '🟡' };
   const isAr = state.lang === 'ar';
+  const collapsed = getCollapsedGroups();
 
-  const navGroupsHtml = groups.map((group, idx) => `
-    <div class="nav-group ${idx > 0 ? 'nav-group-divided' : ''}">
-      <span class="nav-group-label">${isAr ? group.labelAr : group.labelEn}</span>
-      ${group.items.map(item => `
-        <a class="nav-item ${state.currentPage === item.page ? 'active' : ''}" data-page="${item.page}" href="#${item.page}">
-          <span class="nav-icon">${item.icon}</span>
-          <span class="nav-label">${t(item.key)}</span>
-        </a>
-      `).join('')}
-    </div>
-  `).join('');
+  const navGroupsHtml = groups.map((group, idx) => {
+    const isCollapsed = collapsed.includes(idx);
+    return `
+    <div class="nav-group ${idx > 0 ? 'nav-group-divided' : ''} ${isCollapsed ? 'collapsed' : ''}">
+      <span class="nav-group-label" onclick="window.toggleNavGroup(${idx})">${isAr ? group.labelAr : group.labelEn}</span>
+      <div class="nav-group-items">
+        <div class="nav-group-items-inner">
+          ${group.items.map(item => `
+            <a class="nav-item ${state.currentPage === item.page ? 'active' : ''}" data-page="${item.page}" href="#${item.page}">
+              <span class="nav-icon">${item.icon}</span>
+              <span class="nav-label">${t(item.key)}</span>
+            </a>
+          `).join('')}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
 
   // Bottom nav: dashboard + next 4 most important items (skipping Settings)
   const bottomItems = allItems.filter(i => i.page !== 'settings').slice(0, 5);

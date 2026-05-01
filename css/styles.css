@@ -77,9 +77,40 @@ img{max-width:100%;display:block}
 .nav-icon{font-size:.82rem;width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;text-align:center;border-radius:8px;background:var(--surface2);color:var(--text)}
 
 /* ========================= NAV GROUPS ========================= */
-.nav-group{display:flex;flex-direction:column;gap:.15rem}
+.nav-group{display:flex;flex-direction:column;gap:0}
 .nav-group-divided{margin-top:.35rem;padding-top:.35rem;border-top:1px solid var(--border)}
-.nav-group-label{font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);padding:.35rem .85rem .2rem;user-select:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Label row — clickable toggle */
+.nav-group-label{
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--text3);padding:.35rem .85rem .2rem;
+  user-select:none;cursor:pointer;
+  transition:color .18s;
+}
+.nav-group-label:hover{color:var(--text2)}
+
+/* Chevron arrow */
+.nav-group-label::after{
+  content:'›';font-size:.85rem;font-weight:400;letter-spacing:0;text-transform:none;
+  display:inline-block;transition:transform .25s ease;transform:rotate(90deg);
+  flex-shrink:0;margin-inline-start:.25rem;opacity:.6;
+}
+.nav-group.collapsed .nav-group-label::after{transform:rotate(0deg)}
+
+/* Animated items wrapper — grid-template-rows trick */
+.nav-group-items{
+  display:grid;grid-template-rows:1fr;
+  overflow:hidden;
+  transition:grid-template-rows .28s ease;
+}
+.nav-group.collapsed .nav-group-items{grid-template-rows:0fr}
+
+/* Inner wrapper must have min-height:0 for the grid trick */
+.nav-group-items-inner{
+  min-height:0;display:flex;flex-direction:column;gap:.15rem;padding-bottom:.1rem;
+}
+
 .sidebar-nav{gap:.05rem}
 
 .sidebar-footer{padding-top:1rem;border-top:1px solid var(--border);margin-top:auto}
