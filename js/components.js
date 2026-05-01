@@ -8,54 +8,54 @@ function getNavItems() {
   const role = state.profile?.role || 'student';
 
   const adminNav = [
-    { icon: 'D', key: 'dashboard', page: 'dashboard' },
-    { icon: 'S', key: 'students', page: 'students' },
-    { icon: 'T', key: 'teachers', page: 'teachers' },
-    { icon: 'P', key: 'parents', page: 'parents' },
-    { icon: 'C', key: 'classes', page: 'classes' },
-    { icon: 'B', key: 'subjects', page: 'subjects' },
-    { icon: 'A', key: 'attendance', page: 'attendance' },
-    { icon: 'G', key: 'grades', page: 'grades' },
-    { icon: 'L', key: 'schedule', page: 'schedule' },
-    { icon: '!', key: 'academicAlerts', page: 'academic-alerts' },
+    { icon: '📊', key: 'dashboard', page: 'dashboard' },
+    { icon: '🎓', key: 'students', page: 'students' },
+    { icon: '👨‍🏫', key: 'teachers', page: 'teachers' },
+    { icon: '👨‍👩‍👧', key: 'parents', page: 'parents' },
+    { icon: '🏫', key: 'classes', page: 'classes' },
+    { icon: '📚', key: 'subjects', page: 'subjects' },
+    { icon: '✅', key: 'attendance', page: 'attendance' },
+    { icon: '📝', key: 'grades', page: 'grades' },
+    { icon: '📅', key: 'schedule', page: 'schedule' },
+    { icon: '⚠️', key: 'academicAlerts', page: 'academic-alerts' },
   ];
 
-  if (state.modules?.hr?.enabled) adminNav.push({ icon: 'H', key: 'hr', page: 'hr' });
-  if (state.modules?.library?.enabled) adminNav.push({ icon: 'R', key: 'library', page: 'library' });
-  if (state.modules?.hostel?.enabled) adminNav.push({ icon: 'M', key: 'hostel', page: 'hostel' });
-  if (state.modules?.admissions?.enabled) adminNav.push({ icon: '+', key: 'admissions', page: 'admissions' });
-  if (state.modules?.finance?.enabled) adminNav.push({ icon: 'F', key: 'finance', page: 'finance' });
+  if (state.modules?.hr?.enabled) adminNav.push({ icon: '👥', key: 'hr', page: 'hr' });
+  if (state.modules?.library?.enabled) adminNav.push({ icon: '📖', key: 'library', page: 'library' });
+  if (state.modules?.hostel?.enabled) adminNav.push({ icon: '🏠', key: 'hostel', page: 'hostel' });
+  if (state.modules?.admissions?.enabled) adminNav.push({ icon: '📋', key: 'admissions', page: 'admissions' });
+  if (state.modules?.finance?.enabled) adminNav.push({ icon: '💰', key: 'finance', page: 'finance' });
   if (state.modules?.communications?.enabled) {
-    adminNav.push({ icon: 'N', key: 'announcements', page: 'announcements' });
-    adminNav.push({ icon: '@', key: 'messages', page: 'messages' });
+    adminNav.push({ icon: '📢', key: 'announcements', page: 'announcements' });
+    adminNav.push({ icon: '✉️', key: 'messages', page: 'messages' });
   }
-  adminNav.push({ icon: '*', key: 'settings', page: 'settings' });
+  adminNav.push({ icon: '⚙️', key: 'settings', page: 'settings' });
 
   const teacherNav = [
-    { icon: 'D', key: 'dashboard', page: 'dashboard' },
-    { icon: 'C', key: 'myClasses', page: 'classes' },
-    { icon: 'A', key: 'attendance', page: 'attendance' },
-    { icon: 'G', key: 'grades', page: 'grades' },
-    { icon: 'L', key: 'mySchedule', page: 'schedule' },
-    { icon: '!', key: 'academicAlerts', page: 'academic-alerts' },
+    { icon: '📊', key: 'dashboard', page: 'dashboard' },
+    { icon: '🏫', key: 'myClasses', page: 'classes' },
+    { icon: '✅', key: 'attendance', page: 'attendance' },
+    { icon: '📝', key: 'grades', page: 'grades' },
+    { icon: '📅', key: 'mySchedule', page: 'schedule' },
+    { icon: '⚠️', key: 'academicAlerts', page: 'academic-alerts' },
   ];
-  if (state.modules?.communications?.enabled) teacherNav.push({ icon: '@', key: 'messages', page: 'messages' });
+  if (state.modules?.communications?.enabled) teacherNav.push({ icon: '✉️', key: 'messages', page: 'messages' });
 
   const parentNav = [
-    { icon: 'D', key: 'dashboard', page: 'dashboard' },
-    { icon: 'S', key: 'myChildren', page: 'my-children' },
-    { icon: 'G', key: 'grades', page: 'grades' },
-    { icon: 'A', key: 'attendance', page: 'attendance' },
-    { icon: 'L', key: 'schedule', page: 'schedule' },
+    { icon: '📊', key: 'dashboard', page: 'dashboard' },
+    { icon: '👨‍👩‍👧', key: 'myChildren', page: 'my-children' },
+    { icon: '📝', key: 'grades', page: 'grades' },
+    { icon: '✅', key: 'attendance', page: 'attendance' },
+    { icon: '📅', key: 'schedule', page: 'schedule' },
   ];
-  if (state.modules?.finance?.enabled) parentNav.push({ icon: 'F', key: 'finance', page: 'finance' });
-  if (state.modules?.communications?.enabled) parentNav.push({ icon: '@', key: 'messages', page: 'messages' });
+  if (state.modules?.finance?.enabled) parentNav.push({ icon: '💰', key: 'finance', page: 'finance' });
+  if (state.modules?.communications?.enabled) parentNav.push({ icon: '✉️', key: 'messages', page: 'messages' });
 
   const studentNav = [
-    { icon: 'D', key: 'dashboard', page: 'dashboard' },
-    { icon: 'L', key: 'mySchedule', page: 'schedule' },
-    { icon: 'G', key: 'myGrades', page: 'grades' },
-    { icon: 'R', key: 'library', page: 'library' },
+    { icon: '📊', key: 'dashboard', page: 'dashboard' },
+    { icon: '📅', key: 'mySchedule', page: 'schedule' },
+    { icon: '📝', key: 'myGrades', page: 'grades' },
+    { icon: '📖', key: 'library', page: 'library' },
   ];
 
   return { admin: adminNav, teacher: teacherNav, parent: parentNav, student: studentNav }[role] || studentNav;
@@ -99,7 +99,19 @@ export function renderSidebar() {
       </div>
     </div>
   </aside>
-  <div class="sidebar-overlay ${state.sidebarOpen ? '' : 'hidden'}" id="sidebar-overlay"></div>`;
+  <div class="sidebar-overlay ${state.sidebarOpen ? '' : 'hidden'}" id="sidebar-overlay"></div>
+  <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
+    ${items.slice(0, 5).map(item => `
+      <a class="mbn-item ${state.currentPage === item.page ? 'active' : ''}" data-page="${item.page}" href="#${item.page}">
+        <span class="mbn-icon">${item.icon}</span>
+        <span class="mbn-label">${t(item.key)}</span>
+      </a>
+    `).join('')}
+    <button class="mbn-item" id="mbn-more-btn">
+      <span class="mbn-icon">☰</span>
+      <span class="mbn-label">${state.lang === 'ar' ? 'المزيد' : 'More'}</span>
+    </button>
+  </nav>`;
 }
 
 // ========================= RENDER HEADER =========================
@@ -164,7 +176,7 @@ export function attachLayoutEvents(renderApp) {
     item.addEventListener('click', (e) => {
       e.preventDefault();
       navigate(item.dataset.page);
-      if (window.innerWidth <= 768) {
+      if (window.innerWidth <= 1024) {
         setSidebarState(false);
       }
     });
@@ -173,6 +185,17 @@ export function attachLayoutEvents(renderApp) {
   // Theme & Lang toggles
   document.getElementById('toggle-theme-btn')?.addEventListener('click', () => { toggleTheme(); renderApp(); });
   document.getElementById('toggle-lang-btn')?.addEventListener('click', () => { toggleLang(); renderApp(); });
+
+  // Mobile bottom nav
+  document.querySelectorAll('.mbn-item[data-page]').forEach(item => {
+    item.addEventListener('click', (e) => {
+      e.preventDefault();
+      navigate(item.dataset.page);
+    });
+  });
+  document.getElementById('mbn-more-btn')?.addEventListener('click', () => {
+    setSidebarState(true);
+  });
 
   // User menu
   document.getElementById('header-user-menu')?.addEventListener('click', () => {

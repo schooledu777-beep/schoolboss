@@ -68,24 +68,26 @@ async function loadAttendance() {
   }
 
   container.innerHTML = `
+    <div class="table-responsive">
     <table class="data-table"><thead><tr><th>#</th><th>${t('fullName')}</th>
-    ${canEdit ? `<th>${t('present')}</th><th>${t('absent')}</th><th>${t('late')}</th><th>${t('excused')}</th>` : `<th>${state.lang==='ar'?'الحالة':'Status'}</th>`}
+    ${canEdit ? `<th style="text-align:center">${t('present')}</th><th style="text-align:center">${t('absent')}</th><th style="text-align:center">${t('late')}</th><th style="text-align:center">${t('excused')}</th>` : `<th>${state.lang==='ar'?'الحالة':'Status'}</th>`}
     </tr></thead><tbody>
     ${students.map((s, i) => {
       const rec = existing.find(a => a.studentId === s.id);
       const status = rec?.status || '';
       if (canEdit) {
         return `<tr><td>${i+1}</td><td>${s.name}</td>
-          <td><input type="radio" name="att-${s.id}" value="present" ${status==='present'?'checked':''}></td>
-          <td><input type="radio" name="att-${s.id}" value="absent" ${status==='absent'?'checked':''}></td>
-          <td><input type="radio" name="att-${s.id}" value="late" ${status==='late'?'checked':''}></td>
-          <td><input type="radio" name="att-${s.id}" value="excused" ${status==='excused'?'checked':''}></td></tr>`;
+          <td style="text-align:center"><input type="radio" name="att-${s.id}" value="present" ${status==='present'?'checked':''}></td>
+          <td style="text-align:center"><input type="radio" name="att-${s.id}" value="absent" ${status==='absent'?'checked':''}></td>
+          <td style="text-align:center"><input type="radio" name="att-${s.id}" value="late" ${status==='late'?'checked':''}></td>
+          <td style="text-align:center"><input type="radio" name="att-${s.id}" value="excused" ${status==='excused'?'checked':''}></td></tr>`;
       } else {
         const statusLabels = { present: '✅ '+t('present'), absent: '❌ '+t('absent'), late: '⏰ '+t('late'), excused: '📋 '+t('excused') };
         return `<tr><td>${i+1}</td><td>${s.name}</td><td>${statusLabels[status]||'—'}</td></tr>`;
       }
     }).join('')}
-    </tbody></table>`;
+    </tbody></table>
+    </div>`;
 
   if (canEdit) {
     const saveBtn = document.getElementById('save-att-btn');

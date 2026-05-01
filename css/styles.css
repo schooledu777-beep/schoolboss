@@ -95,6 +95,9 @@ img{max-width:100%;display:block}
 .notif-badge{position:absolute;top:2px;right:2px;width:8px;height:8px;background:var(--danger);border-radius:50%}
 
 .main-content{flex:1;padding:1.5rem;overflow-y:auto;min-width:0;background-image:linear-gradient(180deg,transparent,rgba(99,102,241,.025)),url('../assets/education-doodles.svg');background-repeat:no-repeat;background-position:left bottom;background-size:min(520px,55vw)}
+[dir="rtl"] .main-content{background-position:right bottom}
+@media (max-width: 768px){.main-content{background-size:min(300px,60vw)}}
+@media (max-width: 480px){.main-content{background-image:linear-gradient(180deg,transparent,rgba(99,102,241,.025));/* remove doodle on tiny screens */}}
 .page-content{animation:fadeIn .3s ease-out;min-width:0}
 
 @media(max-width:768px){
@@ -693,4 +696,452 @@ textarea.form-input{min-height:80px;resize:vertical}
   .id-card{box-shadow:none!important;border:2px solid #e2e8f0}
   .modal-actions{display:none!important}
   .glass-card{box-shadow:none;border:1px solid #e2e8f0;background:#fff!important}
+}
+
+/* ========================= MOBILE BOTTOM NAV ========================= */
+.mobile-bottom-nav {
+  display: none; /* hidden by default — only shown on mobile via media query */
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 110;
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  padding: .35rem .5rem;
+  padding-bottom: max(.35rem, env(safe-area-inset-bottom));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 -8px 24px rgba(0,0,0,.18);
+  justify-content: space-around;
+  align-items: stretch;
+  gap: .15rem;
+}
+.mbn-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .18rem;
+  padding: .4rem .35rem;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--text2);
+  font-family: var(--font);
+  cursor: pointer;
+  text-decoration: none;
+  flex: 1;
+  transition: background .18s, color .18s, transform .15s;
+  min-width: 0;
+}
+.mbn-item:hover { background: var(--surface2); color: var(--text); }
+.mbn-item.active {
+  color: var(--primary-light);
+  background: rgba(99,102,241,.12);
+}
+.mbn-item.active .mbn-icon { transform: translateY(-2px); }
+.mbn-icon  { font-size: 1.3rem; line-height: 1; flex-shrink: 0; transition: transform .15s; }
+.mbn-label { font-size: .62rem; font-weight: 600; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 56px; }
+
+@media (max-width: 640px) {
+  .mobile-bottom-nav { display: flex; }
+  /* Push main content up so it isn't hidden behind the bottom nav */
+  .main-content { padding-bottom: calc(4.5rem + max(.75rem, env(safe-area-inset-bottom))); }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   COMPREHENSIVE RESPONSIVE & FLUID DESIGN SYSTEM
+   ═══════════════════════════════════════════════════════════════
+   Breakpoints:
+     1440px+ : Large desktop
+     1100px  : Narrow desktop
+     1024px  : Tablet landscape  → sidebar becomes drawer
+      768px  : Tablet portrait
+      640px  : Large phone
+      480px  : Small phone       → bottom-sheet modals
+      360px  : Very small phone
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── 1. Fluid Typography (no media-query needed) ────────────── */
+.page-header h2      { font-size: clamp(1.1rem, 2.5vw + .4rem, 1.55rem); }
+.auth-title          { font-size: clamp(1.45rem, 4vw + .5rem, 2.2rem);   }
+.stat-info h3        { font-size: clamp(1.1rem,  3vw + .2rem, 1.6rem);   }
+.sp-widget-value     { font-size: clamp(1.2rem,  3.5vw + .1rem, 1.6rem); }
+.modal-header h3,
+.modal-header h2     { font-size: clamp(.95rem, 2vw + .3rem, 1.2rem); overflow-wrap: break-word; }
+.header-title        { font-size: clamp(.9rem,  1.5vw + .4rem, 1.15rem); }
+.brand-text h2       { font-size: clamp(1rem, 1.2vw + .4rem, 1.1rem); }
+
+/* ── 2. Touch Targets (WCAG 2.5.5 — 44×44px minimum) ────────── */
+.btn:not(.btn-sm):not(.btn-icon) { min-height: 42px; }
+.nav-item                        { min-height: 44px; }
+.quick-action-btn                { min-height: 56px; }
+.form-input, .form-select,
+.form-textarea                   { min-height: 44px; }
+.btn-icon                        { min-width: 40px; min-height: 40px; }
+.pref-cell                       { min-width: 44px; min-height: 44px; }
+input[type="radio"],
+input[type="checkbox"]           { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; }
+
+/* ── 3. iOS Input Zoom Fix (font < 16px triggers zoom) ────────── */
+@media (max-width: 768px) {
+  .form-input, .form-select, .form-textarea { font-size: max(16px, .95rem); }
+}
+
+/* ── 4. Safe Area Insets (notch / home indicator) ────────────── */
+@supports (padding: env(safe-area-inset-top)) {
+  @media (max-width: 1024px) {
+    .header {
+      padding-inline-start: max(1rem, env(safe-area-inset-left));
+      padding-inline-end:   max(1rem, env(safe-area-inset-right));
+    }
+    .sidebar {
+      padding-bottom: max(.5rem, env(safe-area-inset-bottom));
+    }
+    .main-content {
+      padding-bottom: max(.75rem, env(safe-area-inset-bottom));
+    }
+  }
+}
+
+/* ── 5. Momentum scrolling for overflow areas ────────────────── */
+.table-responsive,
+.schedule-grid-shell,
+.schedule-grid-container,
+.pref-table-wrapper,
+.sp-sidebar,
+.profile-tabs { -webkit-overflow-scrolling: touch; }
+
+/* Hide scrollbar aesthetically for horizontal scroll tabs */
+.sp-sidebar::-webkit-scrollbar,
+.profile-tabs::-webkit-scrollbar { height: 3px; }
+.sp-sidebar::-webkit-scrollbar-thumb,
+.profile-tabs::-webkit-scrollbar-thumb { background: var(--border); border-radius: 9px; }
+
+/* Auto-scroll for glass cards containing data tables */
+@media (max-width: 768px) {
+  .glass-card:has(.data-table):not(.table-responsive) {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* ── 6. Narrow Desktop (≤1100px) ─────────────────────────────── */
+@media (max-width: 1100px) {
+  .app-layout { --sidebar-width: 260px; }
+  .schedule-class-select { max-width: 280px; }
+  .smart-schedule-panel  { gap: .85rem; }
+}
+
+/* ── 7. Tablet Landscape (≤1024px) — sidebar becomes drawer ──── */
+@media (max-width: 1024px) {
+  /* Sidebar drawer */
+  .sidebar {
+    transform: translateX(100%);
+    width: min(85vw, 300px);
+    box-shadow: -20px 0 40px rgba(0,0,0,.3);
+  }
+  [dir="ltr"] .sidebar {
+    transform: translateX(-100%);
+    box-shadow: 20px 0 40px rgba(0,0,0,.3);
+  }
+  .main-area          { margin-right: 0 !important; margin-left: 0 !important; }
+  .hamburger          { display: inline-flex !important; }
+  .sidebar-close-btn  { display: flex !important; }
+  .sidebar-overlay    { display: block; }
+
+  /* Stats 2-col */
+  .stats-grid { grid-template-columns: repeat(2, minmax(0,1fr)) !important; }
+
+  /* Schedule */
+  .schedule-board-head { flex-wrap: wrap; gap: .75rem; }
+  .schedule-metrics    { flex-wrap: wrap; }
+}
+
+/* ── 8. Tablet Portrait (≤768px) ─────────────────────────────── */
+@media (max-width: 768px) {
+  /* Header */
+  .header {
+    padding: .65rem 1rem;
+    gap: .5rem;
+    flex-wrap: nowrap;
+    align-items: center;
+    flex-direction: row;
+  }
+  .header-start { flex: 1; min-width: 0; gap: .5rem; }
+  .header-end   { flex-shrink: 0; gap: .35rem; flex-wrap: nowrap; }
+
+  /* Grids */
+  .stats-grid      { grid-template-columns: repeat(2, minmax(0,1fr)) !important; }
+  .grid-2,.grid-3  { grid-template-columns: 1fr !important; gap: 1rem; }
+  .form-grid       { grid-template-columns: 1fr !important; }
+  .quick-actions   { grid-template-columns: repeat(3, minmax(0,1fr)); gap: .5rem; }
+  .quick-action-btn { padding: .8rem .4rem; }
+  .quick-action-btn span:first-child { font-size: 1.3rem; }
+  .quick-action-btn span:last-child  { font-size: .72rem; }
+  .class-summary-grid  { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .classes-grid        { grid-template-columns: repeat(auto-fill, minmax(min(260px,100%),1fr)); }
+  .sp-widgets-grid     { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .sp-info-grid        { grid-template-columns: 1fr; }
+  .settings-grid       { grid-template-columns: 1fr; }
+  .children-grid-simple { grid-template-columns: 1fr; }
+
+  /* Filter bar: 2-column layout */
+  .filter-bar { padding: .6rem .75rem; gap: .6rem; }
+  .filter-bar > .form-group  {
+    flex: 1 1 calc(50% - .3rem);
+    min-width: calc(50% - .3rem);
+  }
+  .filter-bar .btn,
+  .filter-bar button { flex: 0 0 auto; min-width: fit-content; }
+
+  /* Page header */
+  .page-header { align-items: flex-start; flex-wrap: wrap; }
+  .header-actions { flex-wrap: wrap; gap: .5rem; }
+
+  /* Main content */
+  .main-content { padding: 1rem; }
+
+  /* Modals */
+  .modal-card  { width: min(94vw, 540px) !important; padding: 1.25rem; max-height: 90vh; }
+  .modal-wide  { width: min(96vw, 960px) !important; }
+  .modal-header { margin-bottom: .85rem; }
+
+  /* Form actions */
+  .form-actions { justify-content: stretch; }
+  .form-actions .btn { flex: 1 1 140px; }
+
+  /* Auth page shapes — scale down */
+  .shape-1 { width: 220px; height: 220px; top: -60px; }
+  .shape-2 { width: 160px; height: 160px; }
+  .shape-3 { width: 100px; height: 100px; }
+
+  /* ID Card */
+  .id-card { width: min(340px, 88vw) !important; }
+
+  /* Profile header */
+  .sp-header      { flex-direction: column; text-align: center; gap: .75rem; }
+  .sp-user-info   { flex-direction: column; align-items: center; text-align: center; }
+  .sp-user-details { text-align: center; }
+
+  /* Settings & Prefs */
+  .pref-header-row { flex-direction: column; gap: .75rem; }
+  .pref-selector   { justify-content: flex-start; flex-wrap: wrap; }
+
+  /* Schedule */
+  .schedule-toolbar      { flex-direction: column; align-items: stretch; gap: .75rem; }
+  .schedule-toolbar-main { width: 100%; }
+  .schedule-class-select { max-width: none !important; width: 100%; }
+  .schedule-container    { padding: .75rem; }
+  .schedule-board-head   { flex-direction: column; align-items: flex-start; gap: .75rem; }
+  .schedule-metrics span { font-size: .78rem; padding: .38rem .6rem; }
+  .sched-empty-actions   { grid-template-columns: 1fr; gap: .35rem; }
+  .schedule-slot         { grid-template-columns: 64px minmax(0,1fr); gap: .5rem; }
+  .smart-day-planner     { grid-template-columns: 1fr; }
+  .smart-day-row         { grid-template-columns: repeat(2, minmax(0,1fr)); gap: .5rem; padding: .7rem; }
+  .smart-schedule-panel  { flex-direction: column; gap: .75rem; }
+
+  /* Table columns tighten */
+  .data-table th, .data-table td { padding: .55rem .75rem; font-size: .85rem; }
+}
+
+/* ── 9. Large Phone (≤640px) ─────────────────────────────────── */
+@media (max-width: 640px) {
+  /* Stat cards compact */
+  .stat-card  { padding: .9rem; gap: .65rem; }
+  .stat-icon  { width: 44px; height: 44px; font-size: 1.5rem; }
+  .stat-info h3 { font-size: 1.2rem; }
+
+  /* Classes: 1 column */
+  .classes-grid { grid-template-columns: 1fr; }
+
+  /* Filter bar: full width */
+  .filter-bar > .form-group { flex: 1 1 100%; }
+
+  /* Page header: stack */
+  .page-header        { flex-direction: column; align-items: flex-start; gap: .5rem; }
+  .header-actions     { width: 100%; }
+  .header-actions .btn { font-size: .85rem; }
+
+  /* Profile tabs: horizontal scroll, hidden scrollbar */
+  .profile-tabs { overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+  .profile-tabs::-webkit-scrollbar { display: none; }
+  .tab-btn { padding: .5rem .85rem; font-size: .85rem; white-space: nowrap; }
+
+  /* Toast: full-width */
+  #toast-container {
+    left: .75rem !important;
+    right: .75rem !important;
+    transform: none !important;
+    min-width: unset;
+    max-width: calc(100vw - 1.5rem);
+  }
+
+  /* Communications */
+  .announce-header { flex-direction: column; align-items: flex-start; gap: .35rem; }
+  .announce-footer { flex-direction: column; align-items: flex-start; gap: .5rem; }
+  .msg-header      { flex-direction: column; align-items: flex-start; gap: .2rem; }
+
+  /* Quick actions: 3-col */
+  .quick-actions { grid-template-columns: repeat(3, minmax(0,1fr)); gap: .5rem; }
+
+  /* Class card actions */
+  .class-actions .btn { flex: 1 1 auto; font-size: .78rem; padding: .35rem .5rem; }
+
+  /* Settings */
+  .setting-row { flex-direction: column; align-items: flex-start; gap: .5rem; }
+  .toggle-group { flex-wrap: wrap; }
+  .toggle-label { flex: 0 1 auto; justify-content: center; }
+
+  /* Tables tighten */
+  .data-table th, .data-table td { padding: .5rem .65rem; font-size: .82rem; }
+  .data-table { min-width: 480px; }
+}
+
+/* ── 10. Small Phone (≤480px) ────────────────────────────────── */
+@media (max-width: 480px) {
+  /* ↩ Override: header stays horizontal on small phone */
+  .header {
+    align-items: center !important;
+    flex-direction: row !important;
+    padding: .55rem .85rem;
+  }
+  .header-start { flex: 1; min-width: 0; gap: .4rem; }
+  .header-end   { flex-shrink: 0; gap: .2rem; }
+  .header-title { max-width: 120px; font-size: .92rem; }
+
+  /* Stats: 1 col */
+  .stats-grid      { grid-template-columns: 1fr !important; }
+  .sp-widgets-grid { grid-template-columns: 1fr !important; }
+
+  /* Main content */
+  .main-content { padding: .75rem; }
+  .page-header h2 { font-size: 1.1rem; }
+
+  /* Bottom-sheet modals on small phones */
+  .modal-overlay { align-items: flex-end; padding: 0; }
+  .modal-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 20px 20px 0 0 !important;
+    max-height: 93vh;
+    margin: 0 !important;
+    animation: slideUpModal .28s cubic-bezier(.22,.61,.36,1);
+  }
+  @keyframes slideUpModal {
+    from { transform: translateY(60%); opacity: .7; }
+    to   { transform: translateY(0);   opacity: 1; }
+  }
+  /* Drag handle hint */
+  .modal-card::before {
+    content: "";
+    display: block;
+    width: 42px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 9px;
+    margin: 0 auto .75rem;
+    flex-shrink: 0;
+  }
+
+  /* Auth */
+  .auth-card  { padding: 1.5rem 1.15rem; }
+  .logo-icon  { width: 60px; height: 60px; border-radius: 16px; }
+  .logo-icon img { width: 52px; height: 52px; }
+  .shape-1 { width: 150px; height: 150px; top: -40px; right: -40px; }
+  .shape-2 { width: 110px; height: 110px; bottom: -30px; left: -30px; }
+  .shape-3 { width: 80px;  height: 80px; }
+  .auth-doodles { width: min(440px, 100vw); }
+
+  /* Quick actions: 2-col */
+  .quick-actions { grid-template-columns: repeat(2, minmax(0,1fr)); gap: .5rem; }
+
+  /* Classes */
+  .class-summary-grid { grid-template-columns: 1fr; }
+  .class-actions { gap: .35rem; }
+
+  /* Schedule */
+  .smart-day-name  { font-size: .86rem; }
+  .smart-day-row label span { font-size: .72rem; }
+  .schedule-metrics span { font-size: .74rem; padding: .32rem .5rem; }
+
+  /* Confirm dialog */
+  .confirm-card { width: 92vw; padding: 1.5rem; }
+
+  /* btn */
+  .btn:not(.btn-icon) { white-space: normal; }
+}
+
+/* ── 11. Very Small Phone (≤360px) ──────────────────────────── */
+@media (max-width: 360px) {
+  .main-content  { padding: .6rem; }
+  .header        { padding: .5rem .7rem; }
+  .nav-item      { padding: .6rem .65rem; font-size: .82rem; }
+  .quick-actions { grid-template-columns: repeat(2, minmax(0,1fr)); gap: .4rem; }
+  .smart-day-row { grid-template-columns: 1fr; }
+  .class-summary-grid { grid-template-columns: 1fr; }
+  .stat-icon     { width: 38px; height: 38px; font-size: 1.3rem; }
+  .stat-info h3  { font-size: 1rem; }
+  .page-header h2 { font-size: 1rem; }
+  .btn:not(.btn-icon):not(.btn-sm) { padding: .5rem .9rem; font-size: .82rem; }
+  .modal-card { border-radius: 16px 16px 0 0 !important; }
+}
+
+/* ── 12. Large Desktop (≥1440px) ─────────────────────────────── */
+@media (min-width: 1440px) {
+  .main-content { padding: 2rem 2.5rem; }
+  .stats-grid   { grid-template-columns: repeat(4, minmax(0,1fr)) !important; }
+  .grid-2       { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .grid-3       { grid-template-columns: repeat(3, minmax(0,1fr)); }
+}
+
+/* ── 13. Utility: Responsive Tables as Cards (mobile) ─────────── */
+/* Add class .table-cards to a .table-responsive for card-view on phone */
+@media (max-width: 480px) {
+  .table-responsive.table-cards .data-table { min-width: 0; }
+  .table-responsive.table-cards thead { display: none; }
+  .table-responsive.table-cards tbody tr {
+    display: block;
+    margin-bottom: .85rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: .75rem;
+    background: var(--surface);
+  }
+  .table-responsive.table-cards tbody tr:hover { background: var(--surface2); }
+  .table-responsive.table-cards td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: .3rem 0;
+    border: none;
+    border-bottom: 1px dashed var(--border);
+    font-size: .85rem;
+    gap: .5rem;
+    min-height: unset;
+  }
+  .table-responsive.table-cards td:last-child { border-bottom: none; padding-bottom: 0; }
+  .table-responsive.table-cards td::before {
+    content: attr(data-label);
+    font-weight: 700;
+    color: var(--text2);
+    font-size: .78rem;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+}
+
+/* ── 14. Responsive Helpers ──────────────────────────────────── */
+.hide-mobile  { }
+.show-mobile  { display: none; }
+
+@media (max-width: 640px) {
+  .hide-mobile  { display: none !important; }
+  .show-mobile  { display: initial !important; }
+  .hide-tablet  { }
+  .text-mobile-center { text-align: center; }
+}
+@media (max-width: 1024px) {
+  .hide-tablet { display: none !important; }
 }
