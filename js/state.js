@@ -8,7 +8,7 @@ export const state = {
   currentPage: 'dashboard',
   lang: localStorage.getItem('sms-lang') || 'ar',
   theme: localStorage.getItem('sms-theme') || 'dark',
-  sidebarOpen: window.innerWidth > 768,
+  sidebarOpen: window.innerWidth > 1024,
   schoolType: 'private', 
   // Data caches
   students: [],

@@ -94,6 +94,27 @@ img{max-width:100%;display:block}
 .header-action{position:relative;font-size:1rem;padding:.45rem}
 .notif-badge{position:absolute;top:2px;right:2px;width:8px;height:8px;background:var(--danger);border-radius:50%}
 
+/* ========================= GLOBAL SEARCH ========================= */
+.header-search-wrap{flex:1 1 0;min-width:0;max-width:420px;position:relative;align-self:center}
+.header-search-box{display:flex;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:.32rem .85rem;gap:.45rem;transition:border-color .2s,box-shadow .2s}
+.header-search-box:focus-within{border-color:var(--primary);box-shadow:0 0 0 3px rgba(99,102,241,.2)}
+.search-icon-inner{color:var(--text3);font-size:.9rem;flex-shrink:0;line-height:1}
+.global-search-input{flex:1;background:none;border:none;outline:none;color:var(--text);font-family:var(--font);font-size:.9rem;min-width:0;padding:0;line-height:1.6}
+.global-search-input::placeholder{color:var(--text3)}
+.search-clear-btn{background:none;border:none;color:var(--text3);cursor:pointer;font-size:.85rem;padding:2px;line-height:1;flex-shrink:0;transition:color .15s}
+.search-clear-btn:hover{color:var(--text)}
+.global-search-dropdown{position:absolute;top:calc(100% + .45rem);inset-inline-start:0;inset-inline-end:0;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);z-index:200;max-height:320px;overflow-y:auto;box-shadow:var(--shadow);-webkit-overflow-scrolling:touch}
+.search-result-item{display:flex;align-items:center;gap:.65rem;padding:.65rem 1rem;cursor:pointer;transition:background .15s;border-bottom:1px solid var(--border)}
+.search-result-item:last-child{border-bottom:none}
+.search-result-item:hover,.search-result-item.focused{background:var(--surface2)}
+.search-result-icon{font-size:1.1rem;flex-shrink:0;width:24px;text-align:center}
+.search-result-text{flex:1;min-width:0;display:flex;flex-direction:column;gap:.06rem}
+.search-result-label{font-size:.88rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+.search-result-sub{font-size:.76rem;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.search-result-type-badge{font-size:.7rem;font-weight:700;padding:.18rem .5rem;border-radius:999px;background:rgba(99,102,241,.12);color:var(--primary-light);flex-shrink:0;white-space:nowrap}
+.search-no-results{padding:1.25rem;text-align:center;color:var(--text3);font-size:.88rem}
+.search-more{padding:.55rem 1rem;text-align:center;color:var(--text3);font-size:.8rem;border-top:1px solid var(--border);background:var(--surface)}
+
 .main-content{flex:1;padding:1.5rem;overflow-y:auto;min-width:0;background-image:linear-gradient(180deg,transparent,rgba(99,102,241,.025)),url('../assets/education-doodles.svg');background-repeat:no-repeat;background-position:left bottom;background-size:min(520px,55vw)}
 [dir="rtl"] .main-content{background-position:right bottom}
 @media (max-width: 768px){.main-content{background-size:min(300px,60vw)}}
@@ -119,15 +140,11 @@ img{max-width:100%;display:block}
   .form-actions .btn{flex:1 1 140px}
 }
 @media(max-width:480px){
-  .stats-grid{grid-template-columns:1fr!important}
-  .header-end{gap:.25rem}
-  .main-content{padding:.75rem}
-  .header{align-items:flex-start;flex-direction:column}
-  .header-start,.header-end{width:100%}
-  .header-end{justify-content:flex-start}
+  /* filter-bar goes full-width at 480px */
   .filter-bar{padding:.75rem}
   .filter-bar>*{flex-basis:100%}
-  .btn{white-space:normal}
+  /* Note: header layout, stats-grid, btn, main-content all handled in
+     the comprehensive responsive system section below */
 }
 
 /* ========================= GLASS CARD ========================= */
@@ -791,6 +808,7 @@ input[type="checkbox"]           { width: 18px; height: 18px; accent-color: var(
 
 /* ── 4. Safe Area Insets (notch / home indicator) ────────────── */
 @supports (padding: env(safe-area-inset-top)) {
+  /* Header & sidebar safe-area on all tablet/mobile */
   @media (max-width: 1024px) {
     .header {
       padding-inline-start: max(1rem, env(safe-area-inset-left));
@@ -799,8 +817,17 @@ input[type="checkbox"]           { width: 18px; height: 18px; accent-color: var(
     .sidebar {
       padding-bottom: max(.5rem, env(safe-area-inset-bottom));
     }
+  }
+  /* Tablet only (≤1024 but NOT phone ≤640): add safe-area to main content */
+  @media (max-width: 1024px) and (min-width: 641px) {
     .main-content {
       padding-bottom: max(.75rem, env(safe-area-inset-bottom));
+    }
+  }
+  /* Phone (≤640): safe-area is already baked into the bottom-nav padding below */
+  @media (max-width: 640px) {
+    .main-content {
+      padding-bottom: calc(4.5rem + max(.75rem, env(safe-area-inset-bottom)));
     }
   }
 }
@@ -948,6 +975,10 @@ input[type="checkbox"]           { width: 18px; height: 18px; accent-color: var(
 
 /* ── 9. Large Phone (≤640px) ─────────────────────────────────── */
 @media (max-width: 640px) {
+  /* Search bar: compact on large phones */
+  .header-search-wrap { max-width: 180px; }
+  .global-search-input::placeholder { font-size: .82rem; }
+
   /* Stat cards compact */
   .stat-card  { padding: .9rem; gap: .65rem; }
   .stat-icon  { width: 44px; height: 44px; font-size: 1.5rem; }
@@ -1001,15 +1032,21 @@ input[type="checkbox"]           { width: 18px; height: 18px; accent-color: var(
 
 /* ── 10. Small Phone (≤480px) ────────────────────────────────── */
 @media (max-width: 480px) {
-  /* ↩ Override: header stays horizontal on small phone */
+  /* Header: horizontal row, fixed sizes */
   .header {
     align-items: center !important;
     flex-direction: row !important;
     padding: .55rem .85rem;
   }
-  .header-start { flex: 1; min-width: 0; gap: .4rem; }
-  .header-end   { flex-shrink: 0; gap: .2rem; }
-  .header-title { max-width: 120px; font-size: .92rem; }
+  .header-start  { flex: 1; min-width: 0; gap: .4rem; width: auto !important; }
+  .header-end    { flex-shrink: 0; gap: .2rem; width: auto !important; justify-content: flex-end !important; }
+  .header-title  { max-width: 110px; font-size: .9rem; }
+
+  /* Search: completely hidden on tiny screens (bottom nav = primary navigation) */
+  .header-search-wrap { display: none !important; }
+
+  /* Lang toggle: hide on very small phones to give space for notif + avatar */
+  #toggle-lang-btn { display: none !important; }
 
   /* Stats: 1 col */
   .stats-grid      { grid-template-columns: 1fr !important; }
