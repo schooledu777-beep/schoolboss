@@ -4,69 +4,162 @@ import { logout } from './auth.js';
 import { showConfirm, getInitials } from './ui.js';
 
 // ========================= SIDEBAR NAV CONFIG =========================
-function getNavItems() {
+function getNavGroups() {
   const role = state.profile?.role || 'student';
 
-  const adminNav = [
-    { icon: '📊', key: 'dashboard', page: 'dashboard' },
-    { icon: '🎓', key: 'students', page: 'students' },
-    { icon: '👨‍🏫', key: 'teachers', page: 'teachers' },
-    { icon: '👨‍👩‍👧', key: 'parents', page: 'parents' },
-    { icon: '🏫', key: 'classes', page: 'classes' },
-    { icon: '📚', key: 'subjects', page: 'subjects' },
-    { icon: '✅', key: 'attendance', page: 'attendance' },
-    { icon: '📝', key: 'grades', page: 'grades' },
-    { icon: '📅', key: 'schedule', page: 'schedule' },
-    { icon: '⚠️', key: 'academicAlerts', page: 'academic-alerts' },
-  ];
+  // ── ADMIN ──────────────────────────────────────────────────────────
+  if (role === 'admin') {
+    const groups = [
+      {
+        labelAr: 'الرئيسية', labelEn: 'Home',
+        items: [
+          { icon: '📊', key: 'dashboard', page: 'dashboard' },
+        ]
+      },
+      {
+        labelAr: 'المجتمع المدرسي', labelEn: 'School Community',
+        items: [
+          { icon: '🎓', key: 'students', page: 'students' },
+          { icon: '👨‍🏫', key: 'teachers', page: 'teachers' },
+          { icon: '👨‍👩‍👧', key: 'parents', page: 'parents' },
+        ]
+      },
+      {
+        labelAr: 'الشؤون الأكاديمية', labelEn: 'Academic',
+        items: [
+          { icon: '🏫', key: 'classes', page: 'classes' },
+          { icon: '📚', key: 'subjects', page: 'subjects' },
+          { icon: '✅', key: 'attendance', page: 'attendance' },
+          { icon: '📝', key: 'grades', page: 'grades' },
+          { icon: '📅', key: 'schedule', page: 'schedule' },
+          { icon: '⚠️', key: 'academicAlerts', page: 'academic-alerts' },
+        ]
+      },
+    ];
 
-  if (state.modules?.hr?.enabled) adminNav.push({ icon: '👥', key: 'hr', page: 'hr' });
-  if (state.modules?.library?.enabled) adminNav.push({ icon: '📖', key: 'library', page: 'library' });
-  if (state.modules?.hostel?.enabled) adminNav.push({ icon: '🏠', key: 'hostel', page: 'hostel' });
-  if (state.modules?.admissions?.enabled) adminNav.push({ icon: '📋', key: 'admissions', page: 'admissions' });
-  if (state.modules?.finance?.enabled) adminNav.push({ icon: '💰', key: 'finance', page: 'finance' });
-  if (state.modules?.communications?.enabled) {
-    adminNav.push({ icon: '📢', key: 'announcements', page: 'announcements' });
-    adminNav.push({ icon: '✉️', key: 'messages', page: 'messages' });
+    // Optional services group
+    const serviceItems = [];
+    if (state.modules?.hr?.enabled)         serviceItems.push({ icon: '👥', key: 'hr', page: 'hr' });
+    if (state.modules?.library?.enabled)    serviceItems.push({ icon: '📖', key: 'library', page: 'library' });
+    if (state.modules?.hostel?.enabled)     serviceItems.push({ icon: '🏠', key: 'hostel', page: 'hostel' });
+    if (state.modules?.admissions?.enabled) serviceItems.push({ icon: '📋', key: 'admissions', page: 'admissions' });
+    if (serviceItems.length)
+      groups.push({ labelAr: 'الخدمات', labelEn: 'Services', items: serviceItems });
+
+    // Optional finance & comms group
+    const commItems = [];
+    if (state.modules?.finance?.enabled)        commItems.push({ icon: '💰', key: 'finance', page: 'finance' });
+    if (state.modules?.communications?.enabled) {
+      commItems.push({ icon: '📢', key: 'announcements', page: 'announcements' });
+      commItems.push({ icon: '✉️', key: 'messages', page: 'messages' });
+    }
+    if (commItems.length)
+      groups.push({ labelAr: 'المالية والتواصل', labelEn: 'Finance & Comms', items: commItems });
+
+    // System always last
+    groups.push({
+      labelAr: 'النظام', labelEn: 'System',
+      items: [{ icon: '⚙️', key: 'settings', page: 'settings' }]
+    });
+
+    return groups;
   }
-  adminNav.push({ icon: '⚙️', key: 'settings', page: 'settings' });
 
-  const teacherNav = [
-    { icon: '📊', key: 'dashboard', page: 'dashboard' },
-    { icon: '🏫', key: 'myClasses', page: 'classes' },
-    { icon: '✅', key: 'attendance', page: 'attendance' },
-    { icon: '📝', key: 'grades', page: 'grades' },
-    { icon: '📅', key: 'mySchedule', page: 'schedule' },
-    { icon: '⚠️', key: 'academicAlerts', page: 'academic-alerts' },
+  // ── TEACHER ────────────────────────────────────────────────────────
+  if (role === 'teacher') {
+    const groups = [
+      {
+        labelAr: 'الرئيسية', labelEn: 'Home',
+        items: [{ icon: '📊', key: 'dashboard', page: 'dashboard' }]
+      },
+      {
+        labelAr: 'الفصول الدراسية', labelEn: 'Classroom',
+        items: [
+          { icon: '🏫', key: 'myClasses', page: 'classes' },
+          { icon: '✅', key: 'attendance', page: 'attendance' },
+          { icon: '📝', key: 'grades', page: 'grades' },
+          { icon: '📅', key: 'mySchedule', page: 'schedule' },
+        ]
+      },
+      {
+        labelAr: 'المتابعة', labelEn: 'Follow-up',
+        items: [{ icon: '⚠️', key: 'academicAlerts', page: 'academic-alerts' }]
+      },
+    ];
+    if (state.modules?.communications?.enabled)
+      groups.push({ labelAr: 'التواصل', labelEn: 'Communication', items: [{ icon: '✉️', key: 'messages', page: 'messages' }] });
+    return groups;
+  }
+
+  // ── PARENT ─────────────────────────────────────────────────────────
+  if (role === 'parent') {
+    const groups = [
+      {
+        labelAr: 'الرئيسية', labelEn: 'Home',
+        items: [{ icon: '📊', key: 'dashboard', page: 'dashboard' }]
+      },
+      {
+        labelAr: 'أبنائي', labelEn: 'My Children',
+        items: [
+          { icon: '👨‍👩‍👧', key: 'myChildren', page: 'my-children' },
+          { icon: '📝', key: 'grades', page: 'grades' },
+          { icon: '✅', key: 'attendance', page: 'attendance' },
+          { icon: '📅', key: 'schedule', page: 'schedule' },
+        ]
+      },
+    ];
+    if (state.modules?.finance?.enabled)
+      groups.push({ labelAr: 'المالية', labelEn: 'Finance', items: [{ icon: '💰', key: 'finance', page: 'finance' }] });
+    if (state.modules?.communications?.enabled)
+      groups.push({ labelAr: 'التواصل', labelEn: 'Communication', items: [{ icon: '✉️', key: 'messages', page: 'messages' }] });
+    return groups;
+  }
+
+  // ── STUDENT ────────────────────────────────────────────────────────
+  return [
+    {
+      labelAr: 'الرئيسية', labelEn: 'Home',
+      items: [{ icon: '📊', key: 'dashboard', page: 'dashboard' }]
+    },
+    {
+      labelAr: 'دراستي', labelEn: 'My Studies',
+      items: [
+        { icon: '📅', key: 'mySchedule', page: 'schedule' },
+        { icon: '📝', key: 'myGrades', page: 'grades' },
+        { icon: '📖', key: 'library', page: 'library' },
+      ]
+    },
   ];
-  if (state.modules?.communications?.enabled) teacherNav.push({ icon: '✉️', key: 'messages', page: 'messages' });
+}
 
-  const parentNav = [
-    { icon: '📊', key: 'dashboard', page: 'dashboard' },
-    { icon: '👨‍👩‍👧', key: 'myChildren', page: 'my-children' },
-    { icon: '📝', key: 'grades', page: 'grades' },
-    { icon: '✅', key: 'attendance', page: 'attendance' },
-    { icon: '📅', key: 'schedule', page: 'schedule' },
-  ];
-  if (state.modules?.finance?.enabled) parentNav.push({ icon: '💰', key: 'finance', page: 'finance' });
-  if (state.modules?.communications?.enabled) parentNav.push({ icon: '✉️', key: 'messages', page: 'messages' });
-
-  const studentNav = [
-    { icon: '📊', key: 'dashboard', page: 'dashboard' },
-    { icon: '📅', key: 'mySchedule', page: 'schedule' },
-    { icon: '📝', key: 'myGrades', page: 'grades' },
-    { icon: '📖', key: 'library', page: 'library' },
-  ];
-
-  return { admin: adminNav, teacher: teacherNav, parent: parentNav, student: studentNav }[role] || studentNav;
+// Flatten groups → flat item list (used by bottom nav)
+function flattenGroups(groups) {
+  return groups.flatMap(g => g.items);
 }
 
 // ========================= RENDER SIDEBAR =========================
 export function renderSidebar() {
   const role = state.profile?.role || 'student';
-  const items = getNavItems();
+  const groups = getNavGroups();
+  const allItems = flattenGroups(groups);
   const roleBadge = { admin: '🔴', teacher: '🟢', parent: '🔵', student: '🟡' };
-  
+  const isAr = state.lang === 'ar';
+
+  const navGroupsHtml = groups.map((group, idx) => `
+    <div class="nav-group ${idx > 0 ? 'nav-group-divided' : ''}">
+      <span class="nav-group-label">${isAr ? group.labelAr : group.labelEn}</span>
+      ${group.items.map(item => `
+        <a class="nav-item ${state.currentPage === item.page ? 'active' : ''}" data-page="${item.page}" href="#${item.page}">
+          <span class="nav-icon">${item.icon}</span>
+          <span class="nav-label">${t(item.key)}</span>
+        </a>
+      `).join('')}
+    </div>
+  `).join('');
+
+  // Bottom nav: dashboard + next 4 most important items (skipping Settings)
+  const bottomItems = allItems.filter(i => i.page !== 'settings').slice(0, 5);
+
   return `
   <aside class="sidebar ${state.sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}" id="sidebar">
     <div class="sidebar-inner">
@@ -81,12 +174,7 @@ export function renderSidebar() {
         <button class="btn-icon sidebar-close-btn" id="sidebar-close">✕</button>
       </div>
       <nav class="sidebar-nav">
-        ${items.map(item => `
-          <a class="nav-item ${state.currentPage === item.page ? 'active' : ''}" data-page="${item.page}" href="#${item.page}">
-            <span class="nav-icon">${item.icon}</span>
-            <span class="nav-label">${t(item.key)}</span>
-          </a>
-        `).join('')}
+        ${navGroupsHtml}
       </nav>
       <div class="sidebar-footer">
         <div class="sidebar-user">
@@ -101,7 +189,7 @@ export function renderSidebar() {
   </aside>
   <div class="sidebar-overlay ${state.sidebarOpen ? '' : 'hidden'}" id="sidebar-overlay"></div>
   <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
-    ${items.slice(0, 5).map(item => `
+    ${bottomItems.map(item => `
       <a class="mbn-item ${state.currentPage === item.page ? 'active' : ''}" data-page="${item.page}" href="#${item.page}">
         <span class="mbn-icon">${item.icon}</span>
         <span class="mbn-label">${t(item.key)}</span>
@@ -109,7 +197,7 @@ export function renderSidebar() {
     `).join('')}
     <button class="mbn-item" id="mbn-more-btn">
       <span class="mbn-icon">☰</span>
-      <span class="mbn-label">${state.lang === 'ar' ? 'المزيد' : 'More'}</span>
+      <span class="mbn-label">${isAr ? 'المزيد' : 'More'}</span>
     </button>
   </nav>`;
 }
