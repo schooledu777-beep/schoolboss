@@ -1,8 +1,8 @@
 import { state, t } from '../state.js';
 import { db, doc, updateDoc, arrayUnion } from '../firebase-config.js';
-import { escapeHTML, renderAvatar, showToast } from '../ui.js';
+import { escapeHTML, renderAvatar, showToast } from '../ui.js?v=20260502-photo-viewer';
 import { showTeacherForm } from './teachers.js';
-import { uploadFile } from '../services/uploadService.js';
+import { uploadFile } from '../services/uploadService.js?v=20260502-photo-sync';
 
 function sanitizeFileName(name = 'document') {
     return name.replace(/[\\/:*?"<>|]+/g, '-').trim() || 'document';
@@ -441,13 +441,6 @@ export function attachTeacherProfileEvents(modalElement) {
         if (downloadBtn) {
             e.preventDefault();
             await downloadDocument(downloadBtn.dataset.docUrl, downloadBtn.dataset.docName);
-            return;
-        }
-
-        // Photo Upload
-        const photoWrapper = e.target.closest('.profile-photo-wrapper');
-        if (photoWrapper) {
-            modalElement.querySelector('#teacher-photo-input')?.click();
             return;
         }
 

@@ -580,11 +580,6 @@ export function attachStudentProfileEvents(modalElement) {
       }
     }
 
-    // Photo Upload Handler
-    const wrapper = e.target.closest('.profile-photo-wrapper');
-    if (wrapper) {
-        modalElement.querySelector('#student-photo-input')?.click();
-    }
   });
 
   modalElement.addEventListener('change', async (e) => {

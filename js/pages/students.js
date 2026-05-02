@@ -2,7 +2,7 @@ import { state, t } from '../state.js';
 import { db, collection, addDoc, updateDoc, deleteDoc, doc, setDoc, serverTimestamp, arrayUnion } from '../firebase-config.js';
 import { adminCreateUser } from '../auth.js';
 import { showModal, closeModal, showConfirm, showToast, escapeHTML, renderAvatar } from '../ui.js?v=20260502-photo-sync';
-import { getStudentDashboardHTML, attachStudentProfileEvents } from './studentProfile.js';
+import { getStudentDashboardHTML, attachStudentProfileEvents } from './studentProfile.js?v=20260502-photo-viewer';
 import { uploadFile } from '../services/uploadService.js?v=20260502-photo-sync';
 
 export function renderStudents() {
