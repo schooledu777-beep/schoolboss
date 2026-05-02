@@ -33,7 +33,7 @@ export function renderParentProfile() {
   </div>`;
 }
 
-function getParentDashboardHTML(parentId, activeTab = 'overview') {
+export function getParentDashboardHTML(parentId, activeTab = 'overview') {
   const parent = state.parents.find(p => p.id === parentId);
   if (!parent) return '';
 
@@ -191,6 +191,19 @@ function getParentDashboardHTML(parentId, activeTab = 'overview') {
       </div>
     </div>
   `;
+}
+
+export function showParentCardModal(parentId) {
+  const parent = state.parents.find(p => p.id === parentId);
+  if (!parent) return;
+
+  showModal(
+    state.lang === 'ar' ? 'بطاقة ولي الأمر' : 'Parent Card',
+    getParentDashboardHTML(parentId),
+    { wide: true }
+  );
+
+  attachParentProfileEvents();
 }
 
 export function attachParentProfileEvents() {

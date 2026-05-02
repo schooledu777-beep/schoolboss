@@ -1,8 +1,8 @@
 import { state, t } from '../state.js';
 import { db, collection, addDoc, updateDoc, deleteDoc, doc, setDoc } from '../firebase-config.js';
 import { adminCreateUser } from '../auth.js';
-import { showModal, closeModal, showConfirm, showToast, escapeHTML, renderAvatar } from '../ui.js';
-import { uploadFile } from '../services/uploadService.js';
+import { showModal, closeModal, showConfirm, showToast, escapeHTML, renderAvatar } from '../ui.js?v=20260502-photo-sync';
+import { uploadFile } from '../services/uploadService.js?v=20260502-photo-sync';
 
 export function renderTeachers() {
   return `
@@ -37,8 +37,8 @@ export function attachTeacherEvents() {
   });
 }
 
-async function showTeacherCard(teacherId) {
-    const { getTeacherDashboardHTML, attachTeacherProfileEvents } = await import('./teacherProfile.js');
+export async function showTeacherCard(teacherId) {
+    const { getTeacherDashboardHTML, attachTeacherProfileEvents } = await import('./teacherProfile.js?v=20260502-photo-viewer');
     showModal(state.lang === 'ar' ? 'بطاقة المعلم' : 'Teacher Card', getTeacherDashboardHTML(teacherId), { wide: true });
     
     // Target the modal body to attach events

@@ -3,7 +3,7 @@ import { state, applyTheme, applyLang } from './state.js';
 import { hideLoading } from './ui.js?v=20260502-photo-sync';
 import { registerRoute, initRouter } from './router.js';
 import { renderAuthPage, attachAuthEvents, initAuth } from './auth.js?v=20260501-brand-assets';
-import { renderSidebar, renderHeader, attachLayoutEvents } from './components.js?v=20260501-brand-assets';
+import { renderSidebar, renderHeader, attachLayoutEvents } from './components.js?v=20260502-search-cards';
 import { syncService } from './services/syncService.js';
 import { academicService } from './services/academicService.js';
 import { libraryService } from './services/libraryService.js';
@@ -11,7 +11,7 @@ import { libraryService } from './services/libraryService.js';
 // Import all page renderers
 import { renderDashboard, attachDashboardEvents } from './pages/dashboard.js';
 import { renderStudents, attachStudentEvents } from './pages/students.js?v=20260502-photo-viewer';
-import { renderTeachers, attachTeacherEvents } from './pages/teachers.js';
+import { renderTeachers, attachTeacherEvents } from './pages/teachers.js?v=20260502-search-cards';
 import { renderParents, attachParentEvents } from './pages/parents.js';
 import { renderClasses, attachClassEvents } from './pages/classes.js';
 import { renderAttendance, attachAttendanceEvents } from './pages/attendance.js';
@@ -26,7 +26,7 @@ import { renderHR, attachHREvents } from './pages/hr.js';
 import { renderLibrary, attachLibraryEvents } from './pages/library.js';
 import { renderHostel, attachHostelEvents } from './pages/hostel.js';
 import { renderStudentProfile, attachStudentProfileEvents } from './pages/studentProfile.js?v=20260502-photo-viewer';
-import { renderParentProfile, attachParentProfileEvents } from './pages/parentProfile.js';
+import { renderParentProfile, attachParentProfileEvents } from './pages/parentProfile.js?v=20260502-search-cards';
 import { attachTeacherProfileEvents } from './pages/teacherProfile.js?v=20260502-photo-viewer';
 
 // ========================= APPLY INITIAL SETTINGS =========================

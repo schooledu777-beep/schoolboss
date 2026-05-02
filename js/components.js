@@ -401,7 +401,7 @@ export function attachLayoutEvents(renderApp) {
 
     // Attach click handlers on result rows
     dropdown.querySelectorAll('.search-result-item').forEach(el => {
-      el.addEventListener('click', () => {
+      el.addEventListener('click', async () => {
         const page = el.dataset.page;
         const id   = el.dataset.id;
         const type = el.dataset.type;
@@ -409,11 +409,25 @@ export function attachLayoutEvents(renderApp) {
         clearBtn.classList.add('hidden');
         dropdown.classList.add('hidden');
         // Navigate — for profile pages pass id in hash
-        if ((type === 'student' || type === 'parent') && id) {
-          navigate(page + '?id=' + id);
-        } else {
-          navigate(page);
+        if (type === 'student' && id) {
+          const { showStudentCardModal } = await import('./pages/students.js?v=20260502-search-cards');
+          showStudentCardModal(id);
+          return;
         }
+
+        if (type === 'teacher' && id) {
+          const { showTeacherCard } = await import('./pages/teachers.js?v=20260502-search-cards');
+          showTeacherCard(id);
+          return;
+        }
+
+        if (type === 'parent' && id) {
+          const { showParentCardModal } = await import('./pages/parentProfile.js?v=20260502-search-cards');
+          showParentCardModal(id);
+          return;
+        }
+
+        navigate(page);
       });
     });
   }
