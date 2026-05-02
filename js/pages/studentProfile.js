@@ -1,7 +1,7 @@
 import { state, t } from '../state.js';
 import { db, doc, updateDoc } from '../firebase-config.js';
-import { escapeHTML, getInitials, formatCurrency, renderAvatar, showToast, showModal, closeModal } from '../ui.js';
-import { uploadFile } from '../services/uploadService.js';
+import { escapeHTML, getInitials, formatCurrency, renderAvatar, showToast, showModal, closeModal } from '../ui.js?v=20260502-photo-sync';
+import { uploadFile } from '../services/uploadService.js?v=20260502-photo-sync';
 
 export function renderStudentProfile() {
   const hash = window.location.hash.slice(1);
@@ -593,8 +593,10 @@ export function attachStudentProfileEvents(modalElement) {
         const studentId = modalElement.querySelector('.profile-photo-wrapper').dataset.id;
         try {
             showToast(state.lang === 'ar' ? 'جاري رفع الصورة...' : 'Uploading photo...', 'info');
-            const url = await uploadFile(file);
+            const url = await uploadFile(file, 'students/photos');
             await updateDoc(doc(db, 'students', studentId), { photoURL: url });
+            const cachedStudent = state.students.find(s => s.id === studentId);
+            if (cachedStudent) cachedStudent.photoURL = url;
             showToast(state.lang === 'ar' ? 'تم تحديث الصورة بنجاح' : 'Photo updated successfully', 'success');
             
             // Refresh modal content
@@ -625,7 +627,7 @@ export function showStudentCardModalPreview(studentId) {
         <div class="id-card-body">
           <div class="id-card-photo-container">
             <div class="id-card-photo">
-              ${student.photoURL ? `<img src="${student.photoURL}" alt="${student.name}">` : `<div style="font-size: 4rem; display: flex; align-items: center; justify-content: center; height: 100%; background: #f8fafc; color: #cbd5e1;">👤</div>`}
+              ${student.photoURL ? `<img src="${escapeHTML(student.photoURL)}" alt="${escapeHTML(student.name)}" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><div style="font-size: 4rem; display: none; align-items: center; justify-content: center; height: 100%; background: #f8fafc; color: #cbd5e1;">👤</div>` : `<div style="font-size: 4rem; display: flex; align-items: center; justify-content: center; height: 100%; background: #f8fafc; color: #cbd5e1;">👤</div>`}
             </div>
             <div class="id-verified-badge">✓</div>
           </div>

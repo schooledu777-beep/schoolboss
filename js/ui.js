@@ -93,13 +93,26 @@ export function getInitials(name) {
   return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 }
 
+function isPortablePhotoURL(url) {
+  return /^https?:\/\//i.test(String(url || '').trim());
+}
+
 export function renderAvatar(name, photoURL, sizeClass = 'avatar-md') {
-  if (photoURL) {
-    return `<div class="avatar ${sizeClass}"><img src="${photoURL}" alt="${name}" style="width:100%; height:100%; object-fit:cover; border-radius:inherit;"></div>`;
-  }
   const initials = getInitials(name);
   const colors = ['gradient-purple', 'gradient-cyan', 'gradient-green', 'gradient-amber', 'gradient-red'];
-  const color = colors[name.length % colors.length];
+  const color = colors[(name || '').length % colors.length];
+
+  if (isPortablePhotoURL(photoURL)) {
+    const safeName = escapeHTML(name || '');
+    const safeUrl = escapeHTML(photoURL);
+    const safeInitials = escapeHTML(initials);
+    return `<div class="avatar ${sizeClass}" title="${safeName}" data-initials="${safeInitials}">
+      <img src="${safeUrl}" alt="${safeName}" loading="lazy" referrerpolicy="no-referrer"
+        onerror="this.parentElement.classList.add('${color}');this.parentElement.textContent=this.parentElement.dataset.initials;"
+        style="width:100%; height:100%; object-fit:cover; border-radius:inherit;">
+    </div>`;
+  }
+
   return `<div class="avatar ${sizeClass} ${color}">${initials}</div>`;
 }
 
@@ -224,7 +237,9 @@ export function openImageViewer(url, title, canChange = false) {
   const img = document.getElementById('viewer-img');
   const actions = document.getElementById('viewer-actions');
   
-  img.src = url || 'https://via.placeholder.com/400?text=No+Photo';
+  const fallbackUrl = 'https://via.placeholder.com/400?text=No+Photo';
+  img.onerror = () => { img.onerror = null; img.src = fallbackUrl; };
+  img.src = isPortablePhotoURL(url) ? url : fallbackUrl;
   actions.innerHTML = '';
   
   if (canChange) {

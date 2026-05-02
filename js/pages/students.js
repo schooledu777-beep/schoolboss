@@ -1,9 +1,9 @@
 import { state, t } from '../state.js';
 import { db, collection, addDoc, updateDoc, deleteDoc, doc, setDoc, serverTimestamp, arrayUnion } from '../firebase-config.js';
 import { adminCreateUser } from '../auth.js';
-import { showModal, closeModal, showConfirm, showToast, escapeHTML, renderAvatar } from '../ui.js';
+import { showModal, closeModal, showConfirm, showToast, escapeHTML, renderAvatar } from '../ui.js?v=20260502-photo-sync';
 import { getStudentDashboardHTML, attachStudentProfileEvents } from './studentProfile.js';
-import { uploadFile } from '../services/uploadService.js';
+import { uploadFile } from '../services/uploadService.js?v=20260502-photo-sync';
 
 export function renderStudents() {
   const students = state.students;
@@ -308,6 +308,7 @@ function showStudentForm(student = null) {
 
       if (isEdit) {
         await updateDoc(doc(db, 'students', student.id), data);
+        Object.assign(student, data);
       } else {
         data.createdAt = new Date().toISOString();
         let studentId = null;

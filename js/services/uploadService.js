@@ -18,6 +18,18 @@ function isPdf(file) {
   return file?.type === 'application/pdf' || /\.pdf$/i.test(file?.name || '');
 }
 
+async function assertImageDelivery(url) {
+  try {
+    const response = await fetch(url, { method: 'HEAD' });
+    if (response.status === 401 || response.status === 403) {
+      throw new Error('Cloudinary is blocking image delivery. Please check the upload preset/folder permissions and upload the image again.');
+    }
+  } catch (error) {
+    if (error?.message?.includes('Cloudinary is blocking')) throw error;
+    console.warn('Could not verify image delivery:', error);
+  }
+}
+
 async function assertPdfDelivery(url) {
   try {
     const response = await fetch(url, { method: 'HEAD' });
@@ -48,6 +60,7 @@ export async function uploadFile(file, folder = 'uploads') {
     const result = await response.json();
     
     if (result.secure_url) {
+      if (isImage(file)) await assertImageDelivery(result.secure_url);
       if (isPdf(file)) await assertPdfDelivery(result.secure_url);
       return result.secure_url;
     } else {
