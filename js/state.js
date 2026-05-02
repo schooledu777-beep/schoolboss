@@ -27,6 +27,9 @@ export const state = {
   clinic: [],
   library: [],
   buses: [],
+  routes: [],
+  routeStudents: [],
+  transportFees: [],
   subjects: [],
   roles: [],
   assessmentTypes: [],
@@ -55,7 +58,8 @@ export const state = {
     library: { enabled: true, monetized: false },
     hostel: { enabled: true, monetized: false },
     inventory: { enabled: false, monetized: true },
-    training_center: { enabled: false, monetized: false }
+    training_center: { enabled: false, monetized: false },
+    transportation: { enabled: true, monetized: false }
   },
   customFields: {
     student: [],

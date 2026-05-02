@@ -25,6 +25,7 @@ import { renderAcademicAlerts, attachAcademicAlertsEvents } from './pages/academ
 import { renderHR, attachHREvents } from './pages/hr.js';
 import { renderLibrary, attachLibraryEvents } from './pages/library.js';
 import { renderHostel, attachHostelEvents } from './pages/hostel.js';
+import { renderTransportation, attachTransportationEvents } from './pages/transportation.js';
 import { renderStudentProfile, attachStudentProfileEvents } from './pages/studentProfile.js?v=20260502-photo-viewer';
 import { renderParentProfile, attachParentProfileEvents } from './pages/parentProfile.js?v=20260502-search-cards';
 import { attachTeacherProfileEvents } from './pages/teacherProfile.js?v=20260502-photo-viewer';
@@ -52,6 +53,7 @@ const pages = {
   hr:             { render: renderHR, events: attachHREvents },
   library:         { render: renderLibrary, events: attachLibraryEvents },
   hostel:          { render: renderHostel, events: attachHostelEvents },
+  transportation:  { render: renderTransportation, events: attachTransportationEvents },
   'student-profile': { render: renderStudentProfile, events: attachStudentProfileEvents },
   'parent-profile': { render: renderParentProfile, events: attachParentProfileEvents },
   settings:        { render: renderSettings, events: (renderApp) => attachSettingsEvents(renderApp) },

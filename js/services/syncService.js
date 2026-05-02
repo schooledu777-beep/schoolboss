@@ -24,6 +24,7 @@ class SyncService {
       'student-profile': ['students', 'attendance', 'grades', 'fees', 'classes'],
       'parent-profile': ['parents', 'students', 'fees', 'notification_logs'],
       'academic-alerts': ['academic_alerts', 'students', 'subjects'],
+      transportation: ['buses', 'routes', 'route_students', 'transport_fees', 'students'],
     };
 
     // Helper to map DB names to state keys (if different)
@@ -34,7 +35,9 @@ class SyncService {
       academic_alerts: 'academicAlerts',
       salary_slips: 'salarySlips',
       borrowing_records: 'borrowingRecords',
-      bed_allocations: 'bedAllocations'
+      bed_allocations: 'bedAllocations',
+      route_students: 'routeStudents',
+      transport_fees: 'transportFees'
     };
   }
 

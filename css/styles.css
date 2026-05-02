@@ -1164,6 +1164,79 @@ input[type="checkbox"]           { width: 18px; height: 18px; accent-color: var(
   .modal-card { border-radius: 16px 16px 0 0 !important; }
 }
 
+/* ========================= TRANSPORTATION MODULE ========================= */
+
+/* -- Tabs bar -- */
+.tabs-bar{display:flex;gap:.35rem;flex-wrap:wrap;margin-bottom:1.25rem;background:var(--surface);padding:.4rem;border-radius:var(--radius);border:1px solid var(--border)}
+.tab-btn{flex:1 1 auto;padding:.5rem .9rem;border:none;background:transparent;color:var(--text2);border-radius:var(--radius-sm);font-family:var(--font);font-size:.85rem;font-weight:500;cursor:pointer;transition:background .18s,color .18s;white-space:nowrap}
+.tab-btn:hover{background:var(--surface2);color:var(--text)}
+.tab-btn.active{background:linear-gradient(135deg,var(--primary),var(--secondary));color:#fff;font-weight:700;box-shadow:0 2px 8px rgba(99,102,241,.3)}
+
+/* -- Section toolbar -- */
+.section-toolbar{display:flex;justify-content:flex-end;margin-bottom:1rem}
+
+/* -- Bus Tracking Overview -- */
+.transport-overview{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:1.25rem}
+.bus-tracking-card{padding:1.25rem;display:flex;flex-direction:column;gap:.85rem}
+.bus-track-header{display:flex;align-items:center;justify-content:space-between;gap:.75rem}
+.bus-track-left{display:flex;align-items:center;gap:.75rem}
+.bus-track-icon{font-size:1.6rem;line-height:1}
+.bus-track-title{font-size:1rem;font-weight:700}
+.bus-track-sub{font-size:.78rem;color:var(--text3)}
+.bus-track-right{display:flex;flex-direction:column;align-items:flex-end;gap:.3rem}
+.bus-capacity-badge{font-size:.76rem;background:var(--surface2);padding:.18rem .55rem;border-radius:999px;color:var(--text2)}
+.bus-track-route{display:flex;align-items:center;justify-content:space-between;font-size:.82rem;color:var(--text2);flex-wrap:wrap;gap:.35rem}
+.bus-route-name{font-weight:600;color:var(--text)}
+.bus-route-times{color:var(--text3);font-size:.78rem}
+.bus-progress-wrap{display:flex;align-items:center;gap:.65rem}
+.bus-progress-bar{flex:1;height:7px;background:var(--surface2);border-radius:99px;overflow:hidden}
+.bus-progress-fill{height:100%;border-radius:99px;transition:width .4s ease}
+.bus-progress-label{font-size:.75rem;color:var(--text3);white-space:nowrap;min-width:3.5rem;text-align:end}
+.bus-driver-contact{padding-top:.2rem}
+
+/* -- Bus Stop Timeline -- */
+.bus-stops-row{display:flex;align-items:flex-start;overflow-x:auto;padding:.4rem 0;gap:0;-webkit-overflow-scrolling:touch}
+.bus-stop-dot{display:flex;flex-direction:column;align-items:center;min-width:70px;text-align:center;gap:.2rem;flex-shrink:0}
+.stop-circle{width:12px;height:12px;border-radius:50%;background:var(--border);border:2px solid var(--text3);flex-shrink:0}
+.stop-circle.stop-first{background:var(--success);border-color:var(--success)}
+.stop-circle.stop-last{background:var(--primary);border-color:var(--primary)}
+.stop-name{font-size:.7rem;color:var(--text2);word-break:break-word;max-width:65px}
+.stop-time{font-size:.65rem}
+.stop-line{flex:1;height:2px;background:var(--border);margin-top:5px;min-width:18px;flex-shrink:0}
+
+/* -- Routes Grid -- */
+.routes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1.1rem}
+.route-card{padding:1.1rem;display:flex;flex-direction:column;gap:.75rem}
+.route-card-header{display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem}
+.route-card-title{font-size:.95rem;font-weight:700}
+.route-card-sub{font-size:.78rem;color:var(--text3);margin-top:.15rem}
+.route-card-actions{display:flex;gap:.35rem;flex-shrink:0}
+.route-info-row{display:flex;justify-content:space-between;font-size:.8rem;color:var(--text2);flex-wrap:wrap;gap:.35rem;padding:.4rem .6rem;background:var(--surface);border-radius:var(--radius-sm)}
+.route-stops-list{display:flex;flex-direction:column;gap:.25rem}
+.route-stop-item{display:flex;align-items:center;gap:.5rem;font-size:.8rem}
+.stop-dot{width:8px;height:8px;border-radius:50%;background:var(--primary);flex-shrink:0}
+.stop-name-sm{flex:1;color:var(--text2)}
+.stop-time-sm{font-size:.72rem}
+
+/* -- Route Students header -- */
+.route-students-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem}
+.route-students-header h4{font-size:.95rem;font-weight:700}
+
+/* -- Fees toolbar -- */
+.fees-toolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1rem}
+.month-picker-wrap{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+
+/* -- Responsive -- */
+@media (max-width:640px){
+  .transport-overview{grid-template-columns:1fr}
+  .routes-grid{grid-template-columns:1fr}
+  .tabs-bar{gap:.2rem}
+  .tab-btn{font-size:.76rem;padding:.4rem .55rem}
+  .fees-toolbar{flex-direction:column;align-items:stretch}
+  .fees-toolbar>div{justify-content:stretch}
+  .fees-toolbar .btn{flex:1}
+}
+
 /* ── 12. Large Desktop (≥1440px) ─────────────────────────────── */
 @media (min-width: 1440px) {
   .main-content { padding: 2rem 2.5rem; }

@@ -39,10 +39,11 @@ function getNavGroups() {
 
     // Optional services group
     const serviceItems = [];
-    if (state.modules?.hr?.enabled)         serviceItems.push({ icon: '👥', key: 'hr', page: 'hr' });
-    if (state.modules?.library?.enabled)    serviceItems.push({ icon: '📖', key: 'library', page: 'library' });
-    if (state.modules?.hostel?.enabled)     serviceItems.push({ icon: '🏠', key: 'hostel', page: 'hostel' });
-    if (state.modules?.admissions?.enabled) serviceItems.push({ icon: '📋', key: 'admissions', page: 'admissions' });
+    if (state.modules?.hr?.enabled)             serviceItems.push({ icon: '👥', key: 'hr', page: 'hr' });
+    if (state.modules?.library?.enabled)        serviceItems.push({ icon: '📖', key: 'library', page: 'library' });
+    if (state.modules?.hostel?.enabled)         serviceItems.push({ icon: '🏠', key: 'hostel', page: 'hostel' });
+    if (state.modules?.admissions?.enabled)     serviceItems.push({ icon: '📋', key: 'admissions', page: 'admissions' });
+    if (state.modules?.transportation?.enabled) serviceItems.push({ icon: '🚌', key: 'transportation', page: 'transportation' });
     if (serviceItems.length)
       groups.push({ labelAr: 'الخدمات', labelEn: 'Services', items: serviceItems });
 
