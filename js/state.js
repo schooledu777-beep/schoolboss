@@ -48,6 +48,12 @@ export const state = {
   bedAllocations: [],
   notificationLogs: [],
   transfers: [],
+  // ── NEW COLLECTIONS ──────────────────────────────────────────────
+  calendarEvents: [],
+  examSchedule: [],
+  clinicVisits: [],
+  healthRecords: [],
+  discounts: [],
   modules: {
     admissions: { enabled: true, monetized: false },
     finance: { enabled: true, monetized: false },

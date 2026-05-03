@@ -244,6 +244,41 @@ service cloud.firestore {
       allow create: if isAdmin() || request.resource.data.teacherId == request.auth.uid;
     }
 
+    // ── NEW COLLECTIONS ─────────────────────────────────────────────
+
+    match /calendar_events/{eventId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /exam_schedule/{examId} {
+      allow read: if signedIn();
+      allow create, update: if isAdmin() || isTeacher();
+      allow delete: if isAdmin();
+    }
+
+    match /clinic_visits/{visitId} {
+      allow read: if isAdmin() ||
+        hasStudent(resource.data.studentId) ||
+        parentLinkedTo(resource.data.studentId);
+      allow create, update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /health_records/{recordId} {
+      allow read: if isAdmin() ||
+        hasStudent(resource.data.studentId) ||
+        parentLinkedTo(resource.data.studentId);
+      allow write: if isAdmin();
+    }
+
+    match /discounts/{discountId} {
+      allow read: if isAdmin() ||
+        hasStudent(resource.data.studentId) ||
+        parentLinkedTo(resource.data.studentId);
+      allow write: if isAdmin();
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

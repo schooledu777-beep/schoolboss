@@ -29,6 +29,12 @@ import { renderTransportation, attachTransportationEvents } from './pages/transp
 import { renderStudentProfile, attachStudentProfileEvents } from './pages/studentProfile.js?v=20260503-admin-accounts';
 import { renderParentProfile, attachParentProfileEvents } from './pages/parentProfile.js?v=20260503-admin-accounts';
 import { attachTeacherProfileEvents } from './pages/teacherProfile.js?v=20260503-admin-accounts';
+// New pages
+import { renderReportCards, attachReportCardsEvents } from './pages/reportCards.js';
+import { renderCalendar, attachCalendarEvents } from './pages/calendar.js';
+import { renderHomework, attachHomeworkEvents } from './pages/homeworkPage.js';
+import { renderClinic, attachClinicEvents } from './pages/clinicPage.js';
+import { renderExams, attachExamsEvents } from './pages/examsPage.js';
 
 // ========================= APPLY INITIAL SETTINGS =========================
 applyTheme();
@@ -55,8 +61,14 @@ const pages = {
   hostel:          { render: renderHostel, events: attachHostelEvents },
   transportation:  { render: renderTransportation, events: attachTransportationEvents },
   'student-profile': { render: renderStudentProfile, events: attachStudentProfileEvents },
-  'parent-profile': { render: renderParentProfile, events: attachParentProfileEvents },
-  settings:        { render: renderSettings, events: (renderApp) => attachSettingsEvents(renderApp) },
+  'parent-profile':  { render: renderParentProfile,  events: attachParentProfileEvents  },
+  settings:          { render: renderSettings, events: (renderApp) => attachSettingsEvents(renderApp) },
+  // New pages
+  'report-cards': { render: renderReportCards, events: attachReportCardsEvents },
+  calendar:       { render: renderCalendar,    events: attachCalendarEvents    },
+  homework:       { render: renderHomework,    events: attachHomeworkEvents    },
+  clinic:         { render: renderClinic,      events: attachClinicEvents      },
+  exams:          { render: renderExams,       events: attachExamsEvents       },
 };
 
 pages['my-children'] = pages.dashboard;

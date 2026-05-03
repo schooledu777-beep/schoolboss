@@ -5,7 +5,7 @@ class SyncService {
   constructor() {
     this.activeSubscriptions = new Map();
     this.pageCollectionMap = {
-      dashboard: ['students', 'teachers', 'classes', 'attendance', 'announcements', 'fees', 'notification_logs', 'schedules', 'rewards', 'homework'],
+      dashboard: ['students', 'teachers', 'classes', 'attendance', 'announcements', 'fees', 'notification_logs', 'schedules', 'rewards', 'homework', 'calendar_events', 'exam_schedule'],
       students: ['students', 'classes', 'parents'],
       teachers: ['teachers', 'subjects'],
       parents: ['parents', 'students'],
@@ -14,7 +14,7 @@ class SyncService {
       grades: ['grades', 'students', 'subjects', 'classes'],
       subjects: ['subjects', 'teachers'],
       schedule: ['schedules', 'classes', 'teachers', 'subjects', 'timeslots', 'classrooms'],
-      finance: ['fees', 'students'],
+      finance: ['fees', 'students', 'discounts'],
       announcements: ['announcements'],
       messages: ['messages', 'students', 'teachers', 'parents'],
       admissions: ['students', 'parents', 'classes'],
@@ -25,6 +25,12 @@ class SyncService {
       'parent-profile': ['parents', 'students', 'fees', 'notification_logs'],
       'academic-alerts': ['academic_alerts', 'students', 'subjects'],
       transportation: ['buses', 'routes', 'route_students', 'transport_fees', 'students'],
+      // New pages
+      'report-cards': ['grades', 'students', 'classes', 'attendance'],
+      calendar:       ['calendar_events'],
+      homework:       ['homework', 'students', 'classes', 'subjects'],
+      clinic:         ['clinic_visits', 'health_records', 'students', 'classes'],
+      exams:          ['exam_schedule', 'students', 'classes', 'subjects'],
     };
 
     // Helper to map DB names to state keys (if different)
@@ -36,8 +42,12 @@ class SyncService {
       salary_slips: 'salarySlips',
       borrowing_records: 'borrowingRecords',
       bed_allocations: 'bedAllocations',
-      route_students: 'routeStudents',
-      transport_fees: 'transportFees'
+      route_students:  'routeStudents',
+      transport_fees:  'transportFees',
+      calendar_events: 'calendarEvents',
+      exam_schedule:   'examSchedule',
+      clinic_visits:   'clinicVisits',
+      health_records:  'healthRecords',
     };
   }
 

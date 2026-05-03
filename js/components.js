@@ -27,11 +27,15 @@ function getNavGroups() {
       {
         labelAr: 'الشؤون الأكاديمية', labelEn: 'Academic',
         items: [
-          { icon: '🏫', key: 'classes', page: 'classes' },
-          { icon: '📚', key: 'subjects', page: 'subjects' },
-          { icon: '✅', key: 'attendance', page: 'attendance' },
-          { icon: '📝', key: 'grades', page: 'grades' },
-          { icon: '📅', key: 'schedule', page: 'schedule' },
+          { icon: '🏫', key: 'classes',        page: 'classes'         },
+          { icon: '📚', key: 'subjects',       page: 'subjects'        },
+          { icon: '✅', key: 'attendance',     page: 'attendance'      },
+          { icon: '📝', key: 'grades',         page: 'grades'          },
+          { icon: '📅', key: 'schedule',       page: 'schedule'        },
+          { icon: '📋', key: 'examsPage',      page: 'exams'           },
+          { icon: '📄', key: 'reportCards',    page: 'report-cards'    },
+          { icon: '📆', key: 'calendar',       page: 'calendar'        },
+          { icon: '📚', key: 'homeworkPage',   page: 'homework'        },
           { icon: '⚠️', key: 'academicAlerts', page: 'academic-alerts' },
         ]
       },
@@ -39,11 +43,12 @@ function getNavGroups() {
 
     // Optional services group
     const serviceItems = [];
-    if (state.modules?.hr?.enabled)             serviceItems.push({ icon: '👥', key: 'hr', page: 'hr' });
-    if (state.modules?.library?.enabled)        serviceItems.push({ icon: '📖', key: 'library', page: 'library' });
-    if (state.modules?.hostel?.enabled)         serviceItems.push({ icon: '🏠', key: 'hostel', page: 'hostel' });
-    if (state.modules?.admissions?.enabled)     serviceItems.push({ icon: '📋', key: 'admissions', page: 'admissions' });
+    if (state.modules?.hr?.enabled)             serviceItems.push({ icon: '👥', key: 'hr',             page: 'hr'             });
+    if (state.modules?.library?.enabled)        serviceItems.push({ icon: '📖', key: 'library',        page: 'library'        });
+    if (state.modules?.hostel?.enabled)         serviceItems.push({ icon: '🏠', key: 'hostel',         page: 'hostel'         });
+    if (state.modules?.admissions?.enabled)     serviceItems.push({ icon: '📋', key: 'admissions',     page: 'admissions'     });
     if (state.modules?.transportation?.enabled) serviceItems.push({ icon: '🚌', key: 'transportation', page: 'transportation' });
+    if (state.modules?.clinic?.enabled)         serviceItems.push({ icon: '🏥', key: 'clinicPage',     page: 'clinic'         });
     if (serviceItems.length)
       groups.push({ labelAr: 'الخدمات', labelEn: 'Services', items: serviceItems });
 
@@ -76,10 +81,13 @@ function getNavGroups() {
       {
         labelAr: 'الفصول الدراسية', labelEn: 'Classroom',
         items: [
-          { icon: '🏫', key: 'myClasses', page: 'classes' },
-          { icon: '✅', key: 'attendance', page: 'attendance' },
-          { icon: '📝', key: 'grades', page: 'grades' },
-          { icon: '📅', key: 'mySchedule', page: 'schedule' },
+          { icon: '🏫', key: 'myClasses',    page: 'classes'      },
+          { icon: '✅', key: 'attendance',   page: 'attendance'   },
+          { icon: '📝', key: 'grades',       page: 'grades'       },
+          { icon: '📋', key: 'examsPage',    page: 'exams'        },
+          { icon: '📚', key: 'homeworkPage', page: 'homework'     },
+          { icon: '📅', key: 'mySchedule',   page: 'schedule'     },
+          { icon: '📆', key: 'calendar',     page: 'calendar'     },
         ]
       },
       {
@@ -102,10 +110,14 @@ function getNavGroups() {
       {
         labelAr: 'أبنائي', labelEn: 'My Children',
         items: [
-          { icon: '👨‍👩‍👧', key: 'myChildren', page: 'my-children' },
-          { icon: '📝', key: 'grades', page: 'grades' },
-          { icon: '✅', key: 'attendance', page: 'attendance' },
-          { icon: '📅', key: 'schedule', page: 'schedule' },
+          { icon: '👨‍👩‍👧', key: 'myChildren',   page: 'my-children'  },
+          { icon: '📝', key: 'grades',         page: 'grades'       },
+          { icon: '✅', key: 'attendance',     page: 'attendance'   },
+          { icon: '📄', key: 'reportCards',    page: 'report-cards' },
+          { icon: '📋', key: 'examsPage',      page: 'exams'        },
+          { icon: '📚', key: 'homeworkPage',   page: 'homework'     },
+          { icon: '📅', key: 'schedule',       page: 'schedule'     },
+          { icon: '📆', key: 'calendar',       page: 'calendar'     },
         ]
       },
     ];
