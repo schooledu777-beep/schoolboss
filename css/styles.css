@@ -303,6 +303,29 @@ textarea.form-input{min-height:80px;resize:vertical}
 .grade-subject-card{padding:1rem}
 .grade-subject-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:.75rem}
 .grade-subject-head .sp-section-title{margin:0}
+.grade-record-actions{display:flex;align-items:center;justify-content:flex-end;gap:.6rem;flex-wrap:wrap}
+.grade-report-pdf-host{position:fixed;left:-12000px;top:0;width:210mm;background:#fff;color:#102033;z-index:-1}
+.grade-report-page{box-sizing:border-box;width:210mm;min-height:297mm;padding:12mm 12mm 10mm;font-family:Tajawal,Inter,Arial,sans-serif;background:#fff;color:#102033}
+.grade-report-page *{box-sizing:border-box}
+.grade-report-hero{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:18px 20px;border-radius:18px;background:linear-gradient(135deg,#0f3b73,#1986d5);color:#fff}
+.grade-report-brand{display:flex;align-items:center;gap:14px}
+.grade-report-brand img{width:54px;height:54px;border-radius:14px;background:#fff;padding:8px}
+.grade-report-brand h1{font-size:24px;line-height:1.25;margin:0 0 4px;font-weight:900;letter-spacing:0}
+.grade-report-brand p,.grade-report-date{margin:0;font-size:12px;opacity:.9}
+.grade-report-student{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}
+.grade-report-student div,.grade-report-summary div{border:1px solid #d9e4f2;border-radius:12px;padding:10px 12px;background:#f8fbff}
+.grade-report-student span,.grade-report-summary span{display:block;font-size:11px;color:#64748b;margin-bottom:4px}
+.grade-report-student strong,.grade-report-summary strong{display:block;font-size:14px;color:#102033}
+.grade-report-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.grade-report-summary strong{font-size:20px;color:#1769c2}
+.grade-report-page section{margin-top:12px;break-inside:avoid}
+.grade-report-page h2{font-size:15px;margin:0 0 8px;color:#102033}
+.grade-report-page table{width:100%;border-collapse:separate;border-spacing:0;border:1px solid #d9e4f2;border-radius:12px;overflow:hidden;font-size:11px}
+.grade-report-page th{background:#eef5ff;color:#24496f;font-weight:800;padding:8px;border-bottom:1px solid #d9e4f2}
+.grade-report-page td{padding:7px 8px;border-bottom:1px solid #edf2f7;text-align:center}
+.grade-report-page tr:last-child td{border-bottom:0}
+.grade-report-page tbody tr:nth-child(even) td{background:#fbfdff}
+.grade-report-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;padding-top:10px;border-top:1px solid #d9e4f2;color:#64748b;font-size:11px}
 .subject-profile{display:flex;flex-direction:column;gap:1rem}
 .subject-profile-header{border-radius:var(--radius)}
 .subject-linked-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.75rem}

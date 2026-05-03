@@ -50,6 +50,18 @@ function getAssessmentLabel(type) {
   return item ? (state.lang === 'ar' ? item.ar : item.name) : (type || (state.lang === 'ar' ? 'غير محدد' : 'Unspecified'));
 }
 
+function formatGradeDate(date) {
+  return date ? new Date(date).toLocaleDateString(state.lang === 'ar' ? 'ar-SA' : 'en-US') : '—';
+}
+
+function getGradeRemark(percent) {
+  if (percent >= 90) return state.lang === 'ar' ? 'ممتاز' : 'Excellent';
+  if (percent >= 80) return state.lang === 'ar' ? 'جيد جدا' : 'Very Good';
+  if (percent >= 70) return state.lang === 'ar' ? 'جيد' : 'Good';
+  if (percent >= 60) return state.lang === 'ar' ? 'مقبول' : 'Pass';
+  return state.lang === 'ar' ? 'بحاجة لمتابعة' : 'Needs Follow-up';
+}
+
 function summarizeStudentGrades(studentId, grades) {
   const list = grades.filter(g => g.studentId === studentId);
   const total = list.reduce((sum, g) => sum + Number(g.score || 0), 0);
@@ -58,6 +70,135 @@ function summarizeStudentGrades(studentId, grades) {
   const subjects = new Set(list.map(g => g.subject).filter(Boolean)).size;
   const latest = [...list].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))[0];
   return { list, total, max, avg, subjects, latest };
+}
+
+function buildGradeReportHtml(student, cls, studentGrades, summary) {
+  const isAr = state.lang === 'ar';
+  const bySubject = {};
+  studentGrades.forEach(g => {
+    const subject = g.subject || (isAr ? 'بدون مادة' : 'No Subject');
+    if (!bySubject[subject]) bySubject[subject] = [];
+    bySubject[subject].push(g);
+  });
+
+  const subjectRows = Object.entries(bySubject).map(([subject, items], index) => {
+    const total = items.reduce((sum, g) => sum + Number(g.score || 0), 0);
+    const max = items.reduce((sum, g) => sum + Number(g.maxScore || 100), 0);
+    const pct = max > 0 ? Math.round((total / max) * 100) : 0;
+    return `
+      <tr>
+        <td>${index + 1}</td>
+        <td>${escapeHTML(subject)}</td>
+        <td>${items.length}</td>
+        <td>${total} / ${max || 0}</td>
+        <td><strong>${pct}%</strong></td>
+        <td>${escapeHTML(getGradeRemark(pct))}</td>
+      </tr>`;
+  }).join('');
+
+  const detailRows = studentGrades.map((g, index) => {
+    const pct = getPct(g.score, g.maxScore);
+    return `
+      <tr>
+        <td>${index + 1}</td>
+        <td>${escapeHTML(g.subject || '—')}</td>
+        <td>${escapeHTML(getAssessmentLabel(g.examType))}</td>
+        <td>${Number(g.score || 0)} / ${Number(g.maxScore || 100)}</td>
+        <td>${pct}%</td>
+        <td>${formatGradeDate(g.date)}</td>
+      </tr>`;
+  }).join('');
+
+  return `
+    <div class="grade-report-page" dir="${isAr ? 'rtl' : 'ltr'}">
+      <div class="grade-report-hero">
+        <div class="grade-report-brand">
+          <img src="assets/edumanage-mark.svg" alt="EduManage">
+          <div>
+            <h1>${isAr ? 'كشف درجات الطالب' : 'Student Grade Report'}</h1>
+            <p>EduManage Pro</p>
+          </div>
+        </div>
+        <div class="grade-report-date">${formatGradeDate(new Date().toISOString())}</div>
+      </div>
+
+      <div class="grade-report-student">
+        <div>
+          <span>${isAr ? 'اسم الطالب' : 'Student Name'}</span>
+          <strong>${escapeHTML(student.name || '—')}</strong>
+        </div>
+        <div>
+          <span>${isAr ? 'الصف' : 'Class'}</span>
+          <strong>${escapeHTML(cls?.name || '—')}</strong>
+        </div>
+        <div>
+          <span>${isAr ? 'البريد الإلكتروني' : 'Email'}</span>
+          <strong>${escapeHTML(student.email || '—')}</strong>
+        </div>
+      </div>
+
+      <div class="grade-report-summary">
+        <div><span>${isAr ? 'عدد النتائج' : 'Results'}</span><strong>${summary.list.length}</strong></div>
+        <div><span>${isAr ? 'عدد المواد' : 'Subjects'}</span><strong>${summary.subjects}</strong></div>
+        <div><span>${isAr ? 'المجموع' : 'Total'}</span><strong>${summary.total} / ${summary.max || 0}</strong></div>
+        <div><span>${isAr ? 'المتوسط العام' : 'Average'}</span><strong>${summary.list.length ? `${summary.avg}%` : '—'}</strong></div>
+      </div>
+
+      <section>
+        <h2>${isAr ? 'ملخص المواد' : 'Subject Summary'}</h2>
+        <table>
+          <thead><tr><th>#</th><th>${isAr ? 'المادة' : 'Subject'}</th><th>${isAr ? 'الاختبارات' : 'Tests'}</th><th>${isAr ? 'الدرجة' : 'Score'}</th><th>${isAr ? 'النسبة' : 'Percent'}</th><th>${isAr ? 'التقدير' : 'Remark'}</th></tr></thead>
+          <tbody>${subjectRows || `<tr><td colspan="6">${isAr ? 'لا توجد نتائج' : 'No results'}</td></tr>`}</tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>${isAr ? 'تفاصيل الاختبارات' : 'Assessment Details'}</h2>
+        <table>
+          <thead><tr><th>#</th><th>${isAr ? 'المادة' : 'Subject'}</th><th>${isAr ? 'نوع الاختبار' : 'Type'}</th><th>${isAr ? 'الدرجة' : 'Score'}</th><th>${isAr ? 'النسبة' : 'Percent'}</th><th>${isAr ? 'التاريخ' : 'Date'}</th></tr></thead>
+          <tbody>${detailRows || `<tr><td colspan="6">${isAr ? 'لا توجد نتائج' : 'No results'}</td></tr>`}</tbody>
+        </table>
+      </section>
+
+      <div class="grade-report-footer">
+        <span>${isAr ? 'تم إنشاء الكشف آليا من نظام EduManage Pro' : 'Generated automatically by EduManage Pro'}</span>
+        <span>${escapeHTML(getGradeRemark(summary.avg))}</span>
+      </div>
+    </div>`;
+}
+
+async function downloadStudentGradeReport(student, cls, studentGrades, summary) {
+  if (typeof window.html2pdf !== 'function') {
+    showToast(state.lang === 'ar' ? 'أداة تصدير PDF غير متاحة حاليا' : 'PDF export is not available right now', 'error');
+    return;
+  }
+
+  const holder = document.createElement('div');
+  holder.className = 'grade-report-pdf-host';
+  holder.innerHTML = buildGradeReportHtml(student, cls, studentGrades, summary);
+  document.body.appendChild(holder);
+
+  const safeName = String(student.name || 'student').replace(/[\\/:*?"<>|]/g, '-').trim() || 'student';
+  const filename = `${safeName}-grade-report-${new Date().toISOString().split('T')[0]}.pdf`;
+
+  try {
+    await window.html2pdf()
+      .set({
+        margin: 0,
+        filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+      })
+      .from(holder.querySelector('.grade-report-page'))
+      .save();
+  } catch (err) {
+    console.error('[Grades] PDF export error:', err);
+    showToast(state.lang === 'ar' ? 'تعذر إنشاء ملف PDF' : 'Could not create PDF', 'error');
+  } finally {
+    holder.remove();
+  }
 }
 
 export function renderGrades() {
@@ -233,7 +374,10 @@ function showStudentGradesModal(studentId) {
             <p>${escapeHTML(cls?.name || '—')} | ${escapeHTML(student.email || '—')}</p>
           </div>
         </div>
-        <div class="sp-status-badge">${state.lang === 'ar' ? 'سجل الدرجات' : 'Grade Record'}</div>
+        <div class="grade-record-actions">
+          <div class="sp-status-badge">${state.lang === 'ar' ? 'سجل الدرجات' : 'Grade Record'}</div>
+          <button class="btn btn-sm btn-primary" id="print-student-grade-pdf">📄 ${state.lang === 'ar' ? 'طباعة PDF' : 'Print PDF'}</button>
+        </div>
       </div>
       <div class="sp-widgets-grid">
         <div class="sp-widget widget-blue"><span class="sp-widget-title">${state.lang === 'ar' ? 'عدد النتائج' : 'Results'}</span><span class="sp-widget-value">${summary.list.length}</span></div>
@@ -246,6 +390,9 @@ function showStudentGradesModal(studentId) {
   );
 
   attachGradeActionEvents(document.getElementById('confirm-dialog'));
+  document.getElementById('print-student-grade-pdf')?.addEventListener('click', () => {
+    downloadStudentGradeReport(student, cls, studentGrades, summary);
+  });
 }
 
 function showGradeForm(grade = null) {
