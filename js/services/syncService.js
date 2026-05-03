@@ -25,12 +25,16 @@ class SyncService {
       'parent-profile': ['parents', 'students', 'fees', 'notification_logs'],
       'academic-alerts': ['academic_alerts', 'students', 'subjects'],
       transportation: ['buses', 'routes', 'route_students', 'transport_fees', 'students'],
-      // New pages
+      // New pages — round 1
       'report-cards': ['grades', 'students', 'classes', 'attendance'],
       calendar:       ['calendar_events'],
       homework:       ['homework', 'students', 'classes', 'subjects'],
       clinic:         ['clinic_visits', 'health_records', 'students', 'classes'],
       exams:          ['exam_schedule', 'students', 'classes', 'subjects'],
+      // New pages — round 2
+      analytics:  ['grades', 'students', 'classes', 'attendance', 'fees', 'teachers'],
+      'audit-log':['audit_logs'],
+      inventory:  ['inventory'],
     };
 
     // Helper to map DB names to state keys (if different)
@@ -48,6 +52,7 @@ class SyncService {
       exam_schedule:   'examSchedule',
       clinic_visits:   'clinicVisits',
       health_records:  'healthRecords',
+      audit_logs:      'auditLogs',
     };
   }
 

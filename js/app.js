@@ -35,6 +35,11 @@ import { renderCalendar, attachCalendarEvents } from './pages/calendar.js';
 import { renderHomework, attachHomeworkEvents } from './pages/homeworkPage.js';
 import { renderClinic, attachClinicEvents } from './pages/clinicPage.js';
 import { renderExams, attachExamsEvents } from './pages/examsPage.js';
+import { renderAnalytics, attachAnalyticsEvents } from './pages/analytics.js';
+import { renderAuditLog, attachAuditLogEvents } from './pages/auditLog.js';
+import { renderInventory, attachInventoryEvents } from './pages/inventory.js';
+// Export service (registers window.export* globals)
+import './services/exportService.js';
 
 // ========================= APPLY INITIAL SETTINGS =========================
 applyTheme();
@@ -63,12 +68,16 @@ const pages = {
   'student-profile': { render: renderStudentProfile, events: attachStudentProfileEvents },
   'parent-profile':  { render: renderParentProfile,  events: attachParentProfileEvents  },
   settings:          { render: renderSettings, events: (renderApp) => attachSettingsEvents(renderApp) },
-  // New pages
+  // New pages — round 1
   'report-cards': { render: renderReportCards, events: attachReportCardsEvents },
   calendar:       { render: renderCalendar,    events: attachCalendarEvents    },
   homework:       { render: renderHomework,    events: attachHomeworkEvents    },
   clinic:         { render: renderClinic,      events: attachClinicEvents      },
   exams:          { render: renderExams,       events: attachExamsEvents       },
+  // New pages — round 2
+  analytics:  { render: renderAnalytics,  events: attachAnalyticsEvents  },
+  'audit-log':{ render: renderAuditLog,   events: attachAuditLogEvents   },
+  inventory:  { render: renderInventory,  events: attachInventoryEvents   },
 };
 
 pages['my-children'] = pages.dashboard;

@@ -24,6 +24,7 @@ export function renderGrades() {
     <div class="page-header">
         <h2>${t('grades')}</h2>
         <div class="header-actions">
+            <button class="btn btn-outline" onclick="window.exportGrades?.()">📤 ${state.lang==='ar'?'تصدير CSV':'Export CSV'}</button>
             ${canEdit ? `<button class="btn btn-outline" id="manage-weights-btn">⚖️ ${state.lang==='ar'?'إدارة الأوزان':'Manage Weights'}</button>` : ''}
             ${canEdit ? `<button class="btn btn-primary" id="add-grade-btn">+ ${t('add')}</button>` : ''}
         </div>

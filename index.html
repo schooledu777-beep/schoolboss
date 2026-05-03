@@ -11,6 +11,8 @@
   <title>EduManage Pro — نظام إدارة المدارس</title>
   <meta name="description" content="نظام إدارة المدارس المتكامل - School Management System">
   <link rel="icon" type="image/svg+xml" href="assets/edumanage-mark.svg">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="assets/edumanage-mark.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -40,5 +42,13 @@
     </div>
   </div>
   <script type="module" src="js/app.js?v=20260503-admin-accounts"></script>
+  <script>
+    // Register Service Worker for PWA
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      });
+    }
+  </script>
 </body>
 </html>

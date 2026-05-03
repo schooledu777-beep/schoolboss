@@ -49,6 +49,7 @@ function getNavGroups() {
     if (state.modules?.admissions?.enabled)     serviceItems.push({ icon: '📋', key: 'admissions',     page: 'admissions'     });
     if (state.modules?.transportation?.enabled) serviceItems.push({ icon: '🚌', key: 'transportation', page: 'transportation' });
     if (state.modules?.clinic?.enabled)         serviceItems.push({ icon: '🏥', key: 'clinicPage',     page: 'clinic'         });
+    if (state.modules?.inventory?.enabled)      serviceItems.push({ icon: '📦', key: 'inventory',      page: 'inventory'      });
     if (serviceItems.length)
       groups.push({ labelAr: 'الخدمات', labelEn: 'Services', items: serviceItems });
 
@@ -65,7 +66,11 @@ function getNavGroups() {
     // System always last
     groups.push({
       labelAr: 'النظام', labelEn: 'System',
-      items: [{ icon: '⚙️', key: 'settings', page: 'settings' }]
+      items: [
+        { icon: '📊', key: 'analytics', page: 'analytics'  },
+        { icon: '🔍', key: 'auditLog',  page: 'audit-log'  },
+        { icon: '⚙️', key: 'settings',  page: 'settings'   },
+      ]
     });
 
     return groups;

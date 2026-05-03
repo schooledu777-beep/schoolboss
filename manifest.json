@@ -1,0 +1,19 @@
+{
+  "name": "EduManage Pro",
+  "short_name": "EduManage",
+  "description": "نظام إدارة المدارس الشامل",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a1a",
+  "theme_color": "#6366f1",
+  "orientation": "portrait-primary",
+  "lang": "ar",
+  "dir": "rtl",
+  "icons": [
+    { "src": "assets/edumanage-mark.svg", "type": "image/svg+xml", "sizes": "any", "purpose": "any maskable" },
+    { "src": "assets/icon-192.png", "type": "image/png", "sizes": "192x192" },
+    { "src": "assets/icon-512.png", "type": "image/png", "sizes": "512x512" }
+  ],
+  "categories": ["education", "productivity"],
+  "screenshots": []
+}

@@ -16,6 +16,7 @@ export function renderStudents() {
       <h2>${t('students')}</h2>
       <div style="display:flex;gap:.5rem;flex-wrap:wrap">
         ${isAdmin ? `<button class="btn btn-outline" id="import-students-btn">📥 ${state.lang==='ar'?'استيراد Excel':'Import Excel'}</button>` : ''}
+        <button class="btn btn-outline" onclick="window.exportStudents?.()">📤 ${state.lang==='ar'?'تصدير CSV':'Export CSV'}</button>
         <button class="btn btn-primary" id="add-student-btn">+ ${t('add')}</button>
       </div>
     </div>

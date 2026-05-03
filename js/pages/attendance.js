@@ -18,7 +18,10 @@ export function renderAttendance() {
   }
   return `
   <div class="page-content animate-in">
-    <div class="page-header"><h2>${t('attendance')}</h2></div>
+    <div class="page-header">
+      <h2>${t('attendance')}</h2>
+      <button class="btn btn-outline" onclick="window.exportAttendance?.()">📤 ${state.lang==='ar'?'تصدير CSV':'Export CSV'}</button>
+    </div>
     <div class="filter-bar glass-card">
       <div class="form-group"><label>${state.lang==='ar'?'الصف':'Level'}</label>
         <select id="att-class" class="form-select"><option value="">${state.lang==='ar'?'اختر صفاً':'Select Level'}</option>${classes.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}</select>

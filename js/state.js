@@ -54,6 +54,8 @@ export const state = {
   clinicVisits: [],
   healthRecords: [],
   discounts: [],
+  inventory: [],
+  auditLogs: [],
   modules: {
     admissions: { enabled: true, monetized: false },
     finance: { enabled: true, monetized: false },
@@ -63,7 +65,7 @@ export const state = {
     hr: { enabled: true, monetized: false },
     library: { enabled: true, monetized: false },
     hostel: { enabled: true, monetized: false },
-    inventory: { enabled: false, monetized: true },
+    inventory: { enabled: true, monetized: false },
     training_center: { enabled: false, monetized: false },
     transportation: { enabled: true, monetized: false }
   },
