@@ -13,6 +13,7 @@ class SyncService {
       attendance: ['attendance', 'students', 'classes'],
       grades: ['grades', 'students', 'subjects', 'classes'],
       subjects: ['subjects', 'teachers', 'classes', 'schedules', 'grades', 'homework'],
+      'annual-plan': ['annual_plans', 'classes', 'subjects', 'schedules', 'calendar_events'],
       schedule: ['schedules', 'classes', 'teachers', 'subjects', 'timeslots', 'classrooms'],
       finance: ['fees', 'students', 'discounts'],
       announcements: ['announcements'],
@@ -53,6 +54,7 @@ class SyncService {
       clinic_visits:   'clinicVisits',
       health_records:  'healthRecords',
       audit_logs:      'auditLogs',
+      annual_plans:    'annualPlans',
     };
   }
 

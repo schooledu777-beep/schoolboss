@@ -3,8 +3,8 @@ import { state, applyTheme, applyLang } from './state.js';
 import { hideLoading } from './ui.js?v=20260502-photo-sync';
 import { registerRoute, initRouter } from './router.js';
 import { renderAuthPage, attachAuthEvents, initAuth } from './auth.js?v=20260503-admin-accounts';
-import { renderSidebar, renderHeader, attachLayoutEvents } from './components.js?v=20260503-merged-report-cards';
-import { syncService } from './services/syncService.js?v=20260503-subject-profile';
+import { renderSidebar, renderHeader, attachLayoutEvents } from './components.js?v=20260503-annual-plan';
+import { syncService } from './services/syncService.js?v=20260503-annual-plan';
 import { academicService } from './services/academicService.js';
 import { libraryService } from './services/libraryService.js';
 
@@ -16,6 +16,7 @@ import { renderParents, attachParentEvents } from './pages/parents.js?v=20260503
 import { renderClasses, attachClassEvents } from './pages/classes.js?v=20260503-class-profile';
 import { renderAttendance, attachAttendanceEvents } from './pages/attendance.js';
 import { renderSubjects, attachSubjectEvents } from './pages/subjects.js?v=20260503-subject-material-upload';
+import { renderAnnualPlan, attachAnnualPlanEvents } from './pages/annualPlan.js?v=20260503-annual-plan';
 import { renderSchedule, attachScheduleEvents } from './pages/schedule.js?v=20260430-one-page-pdf';
 import { renderFinance, attachFinanceEvents } from './pages/finance.js';
 import { renderAnnouncements, attachAnnouncementEvents, renderMessages, attachMessageEvents, renderSettings, attachSettingsEvents } from './pages/communications.js';
@@ -54,6 +55,7 @@ const pages = {
   attendance:     { render: renderAttendance, events: attachAttendanceEvents },
   grades:         { render: renderReportCards, events: attachReportCardsEvents },
   subjects:       { render: renderSubjects, events: attachSubjectEvents },
+  'annual-plan':  { render: renderAnnualPlan, events: attachAnnualPlanEvents },
   schedule:       { render: renderSchedule, events: attachScheduleEvents },
   finance:        { render: renderFinance, events: attachFinanceEvents },
   announcements:  { render: renderAnnouncements, events: attachAnnouncementEvents },

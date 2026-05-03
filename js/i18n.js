@@ -22,6 +22,8 @@ export const translations = {
   teachers: { ar: 'المعلمون', en: 'Teachers' },
   classes: { ar: 'الصفوف', en: 'Levels' },
   subjects: { ar: 'المواد الدراسية', en: 'Subjects' },
+  annualPlan: { ar: '\u0627\u0644\u062e\u0637\u0629 \u0627\u0644\u0633\u0646\u0648\u064a\u0629', en: 'Annual Plan' },
+  annualplan: { ar: '\u0627\u0644\u062e\u0637\u0629 \u0627\u0644\u0633\u0646\u0648\u064a\u0629', en: 'Annual Plan' },
   attendance: { ar: 'الحضور والغياب', en: 'Attendance' },
   grades: { ar: 'الدرجات', en: 'Grades' },
   schedule: { ar: 'الجدول الدراسي', en: 'Schedule' },

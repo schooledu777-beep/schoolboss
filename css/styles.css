@@ -338,6 +338,26 @@ textarea.form-input{min-height:80px;resize:vertical}
 .subject-upload-label.disabled{pointer-events:none;opacity:.7}
 .subject-upload-hint{margin:.65rem 0 0}
 .subject-material-link{max-width:min(260px,100%);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.annual-plan-page{--ap-accent:#22c55e}
+.ap-hero{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1.25rem 1.5rem;margin-bottom:1rem;border-right:4px solid var(--ap-accent)}
+.ap-hero h3{margin:.2rem 0;font-size:1.25rem}.ap-hero p{margin:0;color:var(--text-muted)}
+.ap-year{font-weight:900;color:var(--primary-light);font-size:1.1rem;background:var(--surface-2);border-radius:var(--radius-sm);padding:.65rem .9rem;white-space:nowrap}
+.ap-layout{display:grid;grid-template-columns:minmax(260px,340px) 1fr;gap:1rem;align-items:start}
+.ap-panel{padding:1rem}.ap-section-head,.ap-week-head{display:flex;align-items:flex-start;justify-content:space-between;gap:.75rem;flex-wrap:wrap;margin-bottom:.8rem}
+.ap-section-head h3{margin:0;font-size:1rem}.ap-quota-list{display:flex;flex-direction:column;gap:.65rem}
+.ap-quota-card{display:flex;align-items:center;justify-content:space-between;gap:.75rem;padding:.75rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2)}
+.ap-quota-card strong,.ap-quota-card span{display:block}.ap-quota-card span{font-size:.78rem;color:var(--text-muted);margin-top:.25rem}
+.ap-term-tabs{display:flex;gap:.5rem;margin-bottom:1rem;border-bottom:1px solid var(--border);padding-bottom:.75rem;flex-wrap:wrap}
+.ap-term-tab{border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:var(--radius-sm);padding:.6rem 1rem;cursor:pointer;font-weight:700}
+.ap-term-tab.active{background:var(--primary);border-color:var(--primary);color:#fff}
+.ap-week-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:1rem}
+.ap-week-card{border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);padding:1rem;min-height:180px}
+.ap-week-head h4{margin:.15rem 0 0;font-size:1rem}.ap-week-head span{font-size:.75rem;color:var(--text-muted)}
+.ap-week-actions{display:flex;gap:.4rem;flex-wrap:wrap}.ap-week-empty{border:1px dashed var(--border);border-radius:var(--radius-sm);padding:1rem;text-align:center;color:var(--text-muted);font-size:.85rem}
+.ap-assessment-row,.ap-item-row{display:flex;align-items:flex-start;justify-content:space-between;gap:.75rem;padding:.65rem;border-radius:var(--radius-sm);background:var(--surface-2);margin-bottom:.55rem}
+.ap-assessment-row{align-items:center;border:1px solid rgba(99,102,241,.2)}.ap-item-row strong{display:block;margin:.35rem 0 .2rem}.ap-item-row p{margin:0;color:var(--text-muted);font-size:.82rem}
+.ap-item-actions{display:flex;gap:.35rem;flex-shrink:0}
+@media (max-width:900px){.ap-layout{grid-template-columns:1fr}.ap-hero{align-items:flex-start;flex-direction:column}.ap-year{white-space:normal}}
 .class-profile{display:flex;flex-direction:column;gap:1rem}
 .class-profile-header{border-radius:var(--radius)}
 .class-linked-grid,.class-student-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.75rem}

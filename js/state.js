@@ -35,6 +35,7 @@ export const state = {
   assessmentTypes: [],
   subjectWeights: [],
   academicAlerts: [],
+  annualPlans: [],
   timeslots: [],
   classrooms: [],
   teacherAvailability: [],
@@ -124,4 +125,3 @@ export function toggleLang() {
   applyLang();
   state.notify();
 }
-

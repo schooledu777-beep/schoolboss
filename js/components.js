@@ -29,6 +29,7 @@ function getNavGroups() {
         items: [
           { icon: '🏫', key: 'classes',        page: 'classes'         },
           { icon: '📚', key: 'subjects',       page: 'subjects'        },
+          { icon: '🗺️', key: 'annualPlan',    page: 'annual-plan'    },
           { icon: '✅', key: 'attendance',     page: 'attendance'      },
           { icon: '📅', key: 'schedule',       page: 'schedule'        },
           { icon: '📋', key: 'examsPage',      page: 'exams'           },
@@ -86,6 +87,7 @@ function getNavGroups() {
         labelAr: 'الفصول الدراسية', labelEn: 'Classroom',
         items: [
           { icon: '🏫', key: 'myClasses',    page: 'classes'      },
+          { icon: '🗺️', key: 'annualPlan',  page: 'annual-plan' },
           { icon: '✅', key: 'attendance',   page: 'attendance'   },
           { icon: '📄', key: 'reportCards',  page: 'report-cards' },
           { icon: '📋', key: 'examsPage',    page: 'exams'        },

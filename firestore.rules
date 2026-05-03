@@ -104,6 +104,11 @@ service cloud.firestore {
       allow write: if isAdmin() || isTeacher();
     }
 
+    match /annual_plans/{planId} {
+      allow read: if signedIn();
+      allow write: if isAdmin() || isTeacher();
+    }
+
     match /attendance/{attendanceId} {
       allow read: if isAdmin() ||
         hasStudent(resource.data.studentId) ||
