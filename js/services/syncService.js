@@ -9,7 +9,7 @@ class SyncService {
       students: ['students', 'classes', 'parents'],
       teachers: ['teachers', 'subjects'],
       parents: ['parents', 'students'],
-      classes: ['classes', 'teachers', 'students'],
+      classes: ['classes', 'teachers', 'students', 'schedules', 'attendance', 'grades', 'subjects', 'homework'],
       attendance: ['attendance', 'students', 'classes'],
       grades: ['grades', 'students', 'subjects', 'classes'],
       subjects: ['subjects', 'teachers', 'classes', 'schedules', 'grades', 'homework'],

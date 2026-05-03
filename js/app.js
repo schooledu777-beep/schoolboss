@@ -13,7 +13,7 @@ import { renderDashboard, attachDashboardEvents } from './pages/dashboard.js';
 import { renderStudents, attachStudentEvents } from './pages/students.js?v=20260503-admin-accounts';
 import { renderTeachers, attachTeacherEvents } from './pages/teachers.js?v=20260503-admin-accounts';
 import { renderParents, attachParentEvents } from './pages/parents.js?v=20260503-admin-accounts';
-import { renderClasses, attachClassEvents } from './pages/classes.js';
+import { renderClasses, attachClassEvents } from './pages/classes.js?v=20260503-class-profile';
 import { renderAttendance, attachAttendanceEvents } from './pages/attendance.js';
 import { renderGrades, attachGradeEvents } from './pages/grades.js?v=20260503-student-grade-records';
 import { renderSubjects, attachSubjectEvents } from './pages/subjects.js?v=20260503-subject-profile';
