@@ -2,6 +2,7 @@ import { state, t } from '../state.js';
 import { db, collection, addDoc, updateDoc, deleteDoc, doc } from '../firebase-config.js';
 import { showModal, closeModal, showConfirm, showToast, checkValid } from '../ui.js';
 import { academicService } from '../services/academicService.js';
+import { recordAudit } from './auditLog.js';
 
 export function renderGrades() {
   const role = state.profile?.role;
@@ -50,7 +51,14 @@ export function attachGradeEvents() {
   document.getElementById('manage-weights-btn')?.addEventListener('click', () => showWeightForm());
   document.querySelectorAll('.edit-grade').forEach(b => b.addEventListener('click', () => { const g = state.grades.find(x=>x.id===b.dataset.id); if(g) showGradeForm(g); }));
   document.querySelectorAll('.delete-grade').forEach(b => b.addEventListener('click', () => {
-    showConfirm(t('delete'),t('confirmDelete'), async()=>{ try{ await deleteDoc(doc(db,'grades',b.dataset.id)); showToast(t('deletedSuccess'),'success'); }catch(e){ showToast(t('errorOccurred'),'error'); }});
+    showConfirm(t('delete'),t('confirmDelete'), async()=>{
+      try{
+        const g = state.grades.find(x => x.id === b.dataset.id);
+        await deleteDoc(doc(db,'grades',b.dataset.id));
+        await recordAudit('delete', 'grades', `حذف درجة: ${g?.subject || ''} - ${state.students.find(s=>s.id===g?.studentId)?.name || ''}`);
+        showToast(t('deletedSuccess'),'success');
+      }catch(e){ showToast(t('errorOccurred'),'error'); }
+    });
   }));
   document.getElementById('grade-search')?.addEventListener('input', e => {
     const v = e.target.value.toLowerCase();
@@ -100,8 +108,13 @@ function showGradeForm(grade = null) {
     const oldHtml = btn.innerHTML;
     btn.disabled = true; btn.innerHTML = '<span class="spinner-sm"></span>';
     try {
-        if(isEdit) await updateDoc(doc(db,'grades',grade.id),data);
-        else await addDoc(collection(db,'grades'),data);
+        if(isEdit) {
+          await updateDoc(doc(db,'grades',grade.id),data);
+          await recordAudit('update', 'grades', `تعديل درجة: ${data.subject} - ${state.students.find(s=>s.id===data.studentId)?.name || ''} - ${data.score}/${data.maxScore}`);
+        } else {
+          await addDoc(collection(db,'grades'),data);
+          await recordAudit('create', 'grades', `إضافة درجة: ${data.subject} - ${state.students.find(s=>s.id===data.studentId)?.name || ''} - ${data.score}/${data.maxScore}`);
+        }
         academicService.processAcademicAlerts(data.studentId);
         closeModal();
         showToast(t('savedSuccess'),'success');

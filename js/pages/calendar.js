@@ -1,6 +1,7 @@
 import { state, t } from '../state.js';
 import { db, collection, addDoc, updateDoc, deleteDoc, doc } from '../firebase-config.js';
 import { showModal, closeModal, showConfirm, showToast, checkValid } from '../ui.js';
+import { recordAudit } from './auditLog.js';
 
 // ========================= ACADEMIC CALENDAR =========================
 
@@ -214,7 +215,9 @@ function renderUpcoming() {
         state.lang === 'ar' ? 'هل أنت متأكد من حذف هذا الحدث؟' : 'Are you sure you want to delete this event?',
         async () => {
           try {
+            const evt = (state.calendarEvents || []).find(x => x.id === btn.dataset.id);
             await deleteDoc(doc(db, 'calendar_events', btn.dataset.id));
+            await recordAudit('delete', 'calendar_events', `حذف حدث: ${evt?.title || btn.dataset.id}`);
             showToast(state.lang === 'ar' ? 'تم الحذف' : 'Deleted', 'success');
           } catch { showToast(t('errorOccurred'), 'error'); }
         }
@@ -325,8 +328,13 @@ function showEventForm(event = null, preDate = null) {
     const old = btn.innerHTML;
     btn.disabled = true; btn.innerHTML = '<span class="spinner-sm"></span>';
     try {
-      if (isEdit) await updateDoc(doc(db, 'calendar_events', event.id), data);
-      else        await addDoc(collection(db, 'calendar_events'), data);
+      if (isEdit) {
+        await updateDoc(doc(db, 'calendar_events', event.id), data);
+        await recordAudit('update', 'calendar_events', `تعديل حدث: ${data.title} - ${data.date}`);
+      } else {
+        await addDoc(collection(db, 'calendar_events'), data);
+        await recordAudit('create', 'calendar_events', `إضافة حدث: ${data.title} - ${data.date}`);
+      }
       closeModal();
       showToast(t('savedSuccess'), 'success');
     } catch (err) {

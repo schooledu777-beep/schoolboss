@@ -3,6 +3,7 @@ import { db, collection, addDoc, updateDoc, deleteDoc, doc, setDoc } from '../fi
 import { adminCreateUser } from '../auth.js?v=20260503-admin-accounts';
 import { showModal, closeModal, showConfirm, showToast, escapeHTML, renderAvatar } from '../ui.js?v=20260502-photo-sync';
 import { uploadFile } from '../services/uploadService.js?v=20260502-photo-sync';
+import { recordAudit } from './auditLog.js';
 
 export function renderTeachers() {
   return `
@@ -29,7 +30,14 @@ export function attachTeacherEvents() {
 
   document.querySelectorAll('.edit-teacher').forEach(b => b.addEventListener('click', () => { const tc = state.teachers.find(x => x.id === b.dataset.id); if(tc) showTeacherForm(tc); }));
   document.querySelectorAll('.delete-teacher').forEach(b => b.addEventListener('click', () => {
-    showConfirm(t('delete'), t('confirmDelete'), async () => { try { await deleteDoc(doc(db,'teachers',b.dataset.id)); showToast(t('deletedSuccess'),'success'); } catch(e) { showToast(t('errorOccurred'),'error'); } });
+    showConfirm(t('delete'), t('confirmDelete'), async () => {
+      try {
+        const tc = state.teachers.find(x => x.id === b.dataset.id);
+        await deleteDoc(doc(db,'teachers',b.dataset.id));
+        await recordAudit('delete', 'teachers', `حذف معلم: ${tc?.name || b.dataset.id}`);
+        showToast(t('deletedSuccess'),'success');
+      } catch(e) { showToast(t('errorOccurred'),'error'); }
+    });
   }));
   document.getElementById('teacher-search')?.addEventListener('input', e => {
     const v = e.target.value.toLowerCase();
@@ -177,9 +185,10 @@ export function showTeacherForm(teacher = null) {
     try { 
       let teacherId = teacher?.id;
       if(isEdit) {
-        await updateDoc(doc(db,'teachers',teacher.id),data); 
-      } else { 
-        data.createdAt=new Date().toISOString(); 
+        await updateDoc(doc(db,'teachers',teacher.id),data);
+        await recordAudit('update', 'teachers', `تعديل بيانات المعلم: ${data.name}`);
+      } else {
+        data.createdAt=new Date().toISOString();
         const password = document.getElementById('tf-password').value;
         const newUid = await adminCreateUser(data.email, password, 'teacher', data.name);
         await setDoc(doc(db, 'teachers', newUid), {
@@ -187,7 +196,8 @@ export function showTeacherForm(teacher = null) {
           authManaged: { temporaryPassword: password, passwordUpdatedAt: new Date().toISOString(), passwordSource: 'admin-created', mustChange: true }
         });
         teacherId = newUid;
-      } 
+        await recordAudit('create', 'teachers', `إضافة معلم جديد: ${data.name}`);
+      }
 
       // Sync Classes
       const batchUpdates = [];

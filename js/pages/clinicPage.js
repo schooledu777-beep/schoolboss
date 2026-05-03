@@ -1,6 +1,7 @@
 import { state, t } from '../state.js';
 import { db, collection, addDoc, updateDoc, deleteDoc, doc } from '../firebase-config.js';
 import { showModal, closeModal, showConfirm, showToast, checkValid } from '../ui.js';
+import { recordAudit } from './auditLog.js';
 
 // ========================= CLINIC / HEALTH MODULE =========================
 
@@ -164,7 +165,10 @@ export function attachClinicEvents() {
           state.lang === 'ar' ? 'هل تريد حذف هذا السجل؟' : 'Delete this record?',
           async () => {
             try {
+              const visit = (state.clinicVisits || []).find(x => x.id === btn.dataset.id);
+              const vStudent = state.students.find(s => s.id === visit?.studentId);
               await deleteDoc(doc(db, 'clinic_visits', btn.dataset.id));
+              await recordAudit('delete', 'clinic_visits', `حذف زيارة عيادة: ${vStudent?.name || btn.dataset.id}`);
               showToast(t('deletedSuccess'), 'success');
             } catch { showToast(t('errorOccurred'), 'error'); }
           }
@@ -277,8 +281,14 @@ function showVisitForm(visit = null) {
     const old = btn.innerHTML;
     btn.disabled = true; btn.innerHTML = '<span class="spinner-sm"></span>';
     try {
-      if (isEdit) await updateDoc(doc(db, 'clinic_visits', visit.id), data);
-      else        await addDoc(collection(db, 'clinic_visits'), data);
+      const visitStudent = state.students.find(s => s.id === data.studentId);
+      if (isEdit) {
+        await updateDoc(doc(db, 'clinic_visits', visit.id), data);
+        await recordAudit('update', 'clinic_visits', `تعديل زيارة عيادة: ${visitStudent?.name || ''} - ${data.type}`);
+      } else {
+        await addDoc(collection(db, 'clinic_visits'), data);
+        await recordAudit('create', 'clinic_visits', `تسجيل زيارة عيادة: ${visitStudent?.name || ''} - ${data.type} - ${data.date}`);
+      }
       closeModal();
       showToast(t('savedSuccess'), 'success');
     } catch (err) {
@@ -410,8 +420,14 @@ function showHealthRecordForm(record = null) {
     const old = btn.innerHTML;
     btn.disabled = true; btn.innerHTML = '<span class="spinner-sm"></span>';
     try {
-      if (isEdit) await updateDoc(doc(db, 'health_records', record.id), data);
-      else        await addDoc(collection(db, 'health_records'), data);
+      const hrStudent = state.students.find(s => s.id === data.studentId);
+      if (isEdit) {
+        await updateDoc(doc(db, 'health_records', record.id), data);
+        await recordAudit('update', 'health_records', `تعديل سجل صحي: ${hrStudent?.name || ''}`);
+      } else {
+        await addDoc(collection(db, 'health_records'), data);
+        await recordAudit('create', 'health_records', `إضافة سجل صحي: ${hrStudent?.name || ''}`);
+      }
       closeModal();
       showToast(t('savedSuccess'), 'success');
     } catch (err) {

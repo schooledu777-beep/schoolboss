@@ -1,6 +1,7 @@
 import { state, t } from '../state.js';
 import { db, collection, addDoc, updateDoc, deleteDoc, doc } from '../firebase-config.js';
 import { showModal, closeModal, showConfirm, showToast, checkValid } from '../ui.js';
+import { recordAudit } from './auditLog.js';
 
 // ========================= EXAMS MODULE =========================
 
@@ -222,7 +223,9 @@ export function attachExamsEvents() {
           isAr ? 'هل تريد حذف هذا الامتحان؟' : 'Delete this exam?',
           async () => {
             try {
+              const exam = (state.examSchedule || []).find(x => x.id === btn.dataset.id);
               await deleteDoc(doc(db, 'exam_schedule', btn.dataset.id));
+              await recordAudit('delete', 'exam_schedule', `حذف امتحان: ${exam?.subject || btn.dataset.id}`);
               showToast(t('deletedSuccess'), 'success');
             } catch { showToast(t('errorOccurred'), 'error'); }
           }
@@ -347,8 +350,13 @@ function showExamForm(exam = null) {
     const old = btn.innerHTML;
     btn.disabled = true; btn.innerHTML = '<span class="spinner-sm"></span>';
     try {
-      if (isEdit) await updateDoc(doc(db, 'exam_schedule', exam.id), data);
-      else        await addDoc(collection(db, 'exam_schedule'), data);
+      if (isEdit) {
+        await updateDoc(doc(db, 'exam_schedule', exam.id), data);
+        await recordAudit('update', 'exam_schedule', `تعديل امتحان: ${data.subject} - ${data.date}`);
+      } else {
+        await addDoc(collection(db, 'exam_schedule'), data);
+        await recordAudit('create', 'exam_schedule', `إضافة امتحان: ${data.subject} - ${data.date}`);
+      }
       closeModal();
       showToast(t('savedSuccess'), 'success');
     } catch (err) {

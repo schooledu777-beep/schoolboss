@@ -1,6 +1,7 @@
 import { state, t } from '../state.js';
 import { db, collection, addDoc, updateDoc, deleteDoc, doc } from '../firebase-config.js';
 import { showModal, closeModal, showConfirm, showToast, checkValid } from '../ui.js';
+import { recordAudit } from './auditLog.js';
 
 // ========================= HOMEWORK MODULE =========================
 
@@ -173,7 +174,9 @@ export function attachHomeworkEvents() {
           state.lang === 'ar' ? 'هل تريد حذف هذا الواجب؟' : 'Delete this homework?',
           async () => {
             try {
+              const hw = (state.homework || []).find(h => h.id === btn.dataset.id);
               await deleteDoc(doc(db, 'homework', btn.dataset.id));
+              await recordAudit('delete', 'homework', `حذف واجب: ${hw?.title || btn.dataset.id}`);
               showToast(t('deletedSuccess'), 'success');
             } catch { showToast(t('errorOccurred'), 'error'); }
           }
@@ -184,8 +187,11 @@ export function attachHomeworkEvents() {
     document.querySelectorAll('.toggle-hw').forEach(btn => {
       btn.addEventListener('click', async () => {
         const isClosed = btn.dataset.closed === 'true';
+        const newStatus = isClosed ? 'active' : 'closed';
         try {
-          await updateDoc(doc(db, 'homework', btn.dataset.id), { status: isClosed ? 'active' : 'closed' });
+          const hw = (state.homework || []).find(h => h.id === btn.dataset.id);
+          await updateDoc(doc(db, 'homework', btn.dataset.id), { status: newStatus });
+          await recordAudit('update', 'homework', `تغيير حالة الواجب: ${hw?.title || ''} - ${newStatus}`);
           showToast(t('savedSuccess'), 'success');
         } catch { showToast(t('errorOccurred'), 'error'); }
       });
@@ -291,8 +297,13 @@ function showHomeworkForm(hw = null) {
     const old = btn.innerHTML;
     btn.disabled = true; btn.innerHTML = '<span class="spinner-sm"></span>';
     try {
-      if (isEdit) await updateDoc(doc(db, 'homework', hw.id), data);
-      else        await addDoc(collection(db, 'homework'), data);
+      if (isEdit) {
+        await updateDoc(doc(db, 'homework', hw.id), data);
+        await recordAudit('update', 'homework', `تعديل واجب: ${data.title} - ${data.subject}`);
+      } else {
+        await addDoc(collection(db, 'homework'), data);
+        await recordAudit('create', 'homework', `إضافة واجب: ${data.title} - ${data.subject}`);
+      }
       closeModal();
       showToast(t('savedSuccess'), 'success');
     } catch (err) {

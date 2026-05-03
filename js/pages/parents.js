@@ -3,6 +3,7 @@ import { db, collection, addDoc, updateDoc, deleteDoc, doc, setDoc } from '../fi
 import { adminCreateUser } from '../auth.js?v=20260503-admin-accounts';
 import { showModal, closeModal, showConfirm, showToast, escapeHTML } from '../ui.js';
 import { showStudentCardModal } from './students.js';
+import { recordAudit } from './auditLog.js';
 
 
 export function renderParents() {
@@ -82,7 +83,9 @@ export function attachParentEvents() {
     e.stopPropagation();
     showConfirm(t('delete'), t('confirmDelete'), async () => {
       try {
+        const parent = (state.parents || []).find(p => p.id === b.dataset.id);
         await deleteDoc(doc(db,'parents',b.dataset.id));
+        await recordAudit('delete', 'parents', `حذف ولي أمر: ${parent?.name || b.dataset.id}`);
         showToast(t('deletedSuccess'),'success');
       } catch(e) { showToast(t('errorOccurred'),'error'); }
     });
@@ -169,19 +172,21 @@ function showParentForm(parent = null) {
     btn.innerHTML = '<span class="spinner-sm"></span>';
 
     const data = { name: document.getElementById('pf-name').value.trim(), email: document.getElementById('pf-email').value.trim(), phone: document.getElementById('pf-phone').value.trim(), role: 'parent', updatedAt: new Date().toISOString() };
-    try { 
+    try {
       if(isEdit) {
-        await updateDoc(doc(db,'parents',parent.id),data); 
-      } else { 
-        data.createdAt=new Date().toISOString(); 
+        await updateDoc(doc(db,'parents',parent.id),data);
+        await recordAudit('update', 'parents', `تعديل بيانات ولي الأمر: ${data.name}`);
+      } else {
+        data.createdAt=new Date().toISOString();
         const password = document.getElementById('pf-password').value;
         const newUid = await adminCreateUser(data.email, password, 'parent', data.name);
         await setDoc(doc(db, 'parents', newUid), {
           ...data, uid: newUid, id: newUid, studentIds: [], accountStatus: 'active',
           authManaged: { temporaryPassword: password, passwordUpdatedAt: new Date().toISOString(), passwordSource: 'admin-created', mustChange: true }
         });
-      } 
-      closeModal(); 
+        await recordAudit('create', 'parents', `إضافة ولي أمر جديد: ${data.name}`);
+      }
+      closeModal();
       showToast(t('savedSuccess'),'success'); 
     } catch(err) { 
       console.error(err);

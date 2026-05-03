@@ -3,6 +3,7 @@ import { db, collection, addDoc, updateDoc, doc, getDocs, query, where } from '.
 import { showToast } from '../ui.js';
 import { academicService } from '../services/academicService.js';
 import { notificationService } from '../services/notificationService.js';
+import { recordAudit } from './auditLog.js';
 
 export function renderAttendance() {
   const role = state.profile?.role;
@@ -118,6 +119,8 @@ async function saveAttendance() {
       } else {
         await addDoc(collection(db, 'attendance'), { studentId: sid, classId, date, status: radio.value, teacherId: state.profile?.uid, createdAt: new Date().toISOString() });
       }
+      const studentName = state.students.find(s => s.id === sid)?.name || sid;
+      await recordAudit('create', 'attendance', `تسجيل حضور: ${studentName} - ${radio.value} - ${date}`);
       // Trigger academic alerts check for this student
       academicService.processAcademicAlerts(sid);
 

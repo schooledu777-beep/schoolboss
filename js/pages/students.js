@@ -5,6 +5,7 @@ import { showModal, closeModal, showConfirm, showToast, escapeHTML, renderAvatar
 import { getStudentDashboardHTML, attachStudentProfileEvents } from './studentProfile.js?v=20260502-photo-viewer';
 import { uploadFile } from '../services/uploadService.js?v=20260502-photo-sync';
 import { showAdminAccountModal } from '../services/accountAdmin.js?v=20260503-admin-accounts';
+import { recordAudit } from './auditLog.js';
 
 export function renderStudents() {
   const students = state.students;
@@ -94,7 +95,9 @@ export function attachStudentEvents() {
   document.querySelectorAll('.delete-student').forEach(btn => btn.addEventListener('click', () => {
     showConfirm(t('delete'), t('confirmDelete'), async () => {
       try {
+        const student = state.students.find(s => s.id === btn.dataset.id);
         await deleteDoc(doc(db, 'students', btn.dataset.id));
+        await recordAudit('delete', 'students', `حذف طالب: ${student?.name || btn.dataset.id}`);
         showToast(t('deletedSuccess'), 'success');
       } catch(e) { showToast(t('errorOccurred'), 'error'); }
     });
@@ -135,7 +138,9 @@ export function attachStudentEvents() {
       tbody.querySelectorAll('.delete-student').forEach(btn => btn.addEventListener('click', () => {
         showConfirm(t('delete'), t('confirmDelete'), async () => {
           try {
+            const student = state.students.find(s => s.id === btn.dataset.id);
             await deleteDoc(doc(db, 'students', btn.dataset.id));
+            await recordAudit('delete', 'students', `حذف طالب: ${student?.name || btn.dataset.id}`);
             showToast(t('deletedSuccess'), 'success');
           } catch(e) { showToast(t('errorOccurred'), 'error'); }
         });
@@ -202,6 +207,7 @@ function showTransferModal(student) {
         classId: newClassId,
         updatedAt: new Date().toISOString()
       });
+      await recordAudit('update', 'students', `نقل الطالب ${student.name} من ${currentClass?.name || '—'} إلى ${newClass?.name || '—'}`);
 
       closeModal();
       showToast(state.lang === 'ar' ? 'تم نقل الطالب بنجاح' : 'Student transferred successfully', 'success');
@@ -313,6 +319,7 @@ function showStudentForm(student = null) {
       if (isEdit) {
         await updateDoc(doc(db, 'students', student.id), data);
         Object.assign(student, data);
+        await recordAudit('update', 'students', `تعديل بيانات الطالب: ${data.name}`);
       } else {
         data.createdAt = new Date().toISOString();
         let studentId = null;
@@ -327,6 +334,7 @@ function showStudentForm(student = null) {
           const studentRef = await addDoc(collection(db, 'students'), data);
           studentId = studentRef.id;
         }
+        await recordAudit('create', 'students', `إضافة طالب جديد: ${data.name}`);
         if (finalParentId && studentId) {
           await updateDoc(doc(db, 'parents', finalParentId), {
             studentIds: arrayUnion(studentId),
@@ -538,6 +546,7 @@ function showImportModal() {
           importedAt: new Date().toISOString(),
         };
         await addDoc(collection(db, 'students'), data);
+        await recordAudit('create', 'students', `استيراد طالب: ${data.name}`);
         successCount++;
       } catch(e) {
         console.error('[Import] row failed:', row, e);

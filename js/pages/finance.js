@@ -2,6 +2,7 @@ import { state, t } from '../state.js';
 import { db, collection, addDoc, updateDoc, deleteDoc, doc } from '../firebase-config.js';
 import { showModal, closeModal, showConfirm, showToast, formatCurrency, checkValid } from '../ui.js';
 import { notificationService } from '../services/notificationService.js';
+import { recordAudit } from './auditLog.js';
 
 // ========================= ENHANCED FINANCE MODULE =========================
 
@@ -253,7 +254,13 @@ export function attachFinanceEvents() {
   document.querySelectorAll('.pay-fee').forEach(b => b.addEventListener('click', () => showPaymentForm(b.dataset.id)));
   document.querySelectorAll('.delete-fee').forEach(b => b.addEventListener('click', () => {
     showConfirm(t('delete'), t('confirmDelete'), async () => {
-      try { await deleteDoc(doc(db, 'fees', b.dataset.id)); showToast(t('deletedSuccess'), 'success'); }
+      try {
+        const fee = state.fees.find(f => f.id === b.dataset.id);
+        const student = state.students.find(s => s.id === fee?.studentId);
+        await deleteDoc(doc(db, 'fees', b.dataset.id));
+        await recordAudit('delete', 'fees', `حذف رسوم: ${student?.name || ''} - ${fee?.feeType || ''}`);
+        showToast(t('deletedSuccess'), 'success');
+      }
       catch { showToast(t('errorOccurred'), 'error'); }
     });
   }));
@@ -352,9 +359,14 @@ function showFeeForm(fee = null) {
     const old = btn.innerHTML;
     btn.disabled = true; btn.innerHTML = '<span class="spinner-sm"></span>';
     try {
-      if (isEdit) await updateDoc(doc(db, 'fees', fee.id), data);
-      else        await addDoc(collection(db, 'fees'), data);
       const student = state.students.find(s => s.id === data.studentId);
+      if (isEdit) {
+        await updateDoc(doc(db, 'fees', fee.id), data);
+        await recordAudit('update', 'fees', `تعديل رسوم: ${student?.name || ''} - ${data.feeType}`);
+      } else {
+        await addDoc(collection(db, 'fees'), data);
+        await recordAudit('create', 'fees', `إضافة رسوم: ${student?.name || ''} - ${data.feeType} - ${data.amount}`);
+      }
       if (student?.parentId && data.amount > data.paidAmount) {
         notificationService.triggerEventNotification('invoice_overdue', {
           recipientId: student.parentId,
@@ -439,6 +451,8 @@ function showPaymentForm(feeId) {
         paymentHistory,
         lastPaymentDate: paymentRecord.date,
       });
+      const feeStudent = state.students.find(s => s.id === fee.studentId);
+      await recordAudit('update', 'fees', `دفعة رسوم: ${feeStudent?.name || ''} - ${amount} - ${paymentRecord.method}`);
       closeModal();
       showToast(isAr ? 'تم تسجيل الدفعة بنجاح ✅' : 'Payment recorded ✅', 'success');
     } catch {

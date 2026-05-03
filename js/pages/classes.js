@@ -1,6 +1,7 @@
 import { state, t } from '../state.js';
 import { db, collection, addDoc, updateDoc, deleteDoc, doc } from '../firebase-config.js';
 import { showModal, closeModal, showConfirm, showToast, escapeHTML } from '../ui.js';
+import { recordAudit } from './auditLog.js';
 
 
 export function renderClasses() {
@@ -123,7 +124,9 @@ export function attachClassEvents() {
     e.stopPropagation();
     showConfirm(t('delete'), t('confirmDelete'), async () => {
       try {
+        const cls = state.classes.find(c => c.id === b.dataset.id);
         await deleteDoc(doc(db, 'classes', b.dataset.id));
+        await recordAudit('delete', 'classes', `حذف صف: ${cls?.name || b.dataset.id}`);
         showToast(t('deletedSuccess'), 'success');
       } catch (e) {
         showToast(t('errorOccurred'), 'error');
@@ -199,10 +202,13 @@ function showClassForm(cls = null) {
       updatedAt: new Date().toISOString()
     };
     try {
-      if (isEdit) await updateDoc(doc(db, 'classes', cls.id), data);
-      else {
+      if (isEdit) {
+        await updateDoc(doc(db, 'classes', cls.id), data);
+        await recordAudit('update', 'classes', `تعديل صف: ${data.name}`);
+      } else {
         data.createdAt = new Date().toISOString();
         await addDoc(collection(db, 'classes'), data);
+        await recordAudit('create', 'classes', `إضافة صف جديد: ${data.name}`);
       }
       closeModal();
       showToast(t('savedSuccess'), 'success');
