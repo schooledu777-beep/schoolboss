@@ -35,6 +35,35 @@ function badgeType(percent) {
   return 'danger';
 }
 
+function isAllowedMaterialFile(file) {
+  const name = String(file?.name || '').toLowerCase();
+  const type = String(file?.type || '').toLowerCase();
+  return type.startsWith('image/') || type === 'application/pdf' || name.endsWith('.pdf');
+}
+
+function getMaterialType(file) {
+  const name = String(file?.name || '').toLowerCase();
+  if (String(file?.type || '').startsWith('image/')) return file.type;
+  if (String(file?.type || '').toLowerCase() === 'application/pdf' || name.endsWith('.pdf')) return 'application/pdf';
+  return file?.type || 'application/octet-stream';
+}
+
+function materialIcon(material) {
+  return String(material?.type || '').startsWith('image/') ? '🖼️' : '📄';
+}
+
+function renderSubjectMaterials(materials = []) {
+  if (!materials.length) {
+    return `<span class="text-muted">${state.lang === 'ar' ? 'لا توجد ملفات مرفوعة' : 'No uploaded files'}</span>`;
+  }
+
+  return materials.map(m => `
+    <a class="btn btn-sm btn-outline subject-material-link" href="${escapeHTML(m.url || '#')}" target="_blank" rel="noopener" title="${escapeHTML(m.name || 'file')}">
+      ${materialIcon(m)} ${escapeHTML(m.name || 'file')}
+    </a>
+  `).join('');
+}
+
 export function renderSubjects() {
   const isAdmin = state.profile?.role === 'admin';
   return `
@@ -150,6 +179,7 @@ function attachActionEvents() {
 
 function showSubjectProfile(subject) {
   const isAdmin = state.profile?.role === 'admin';
+  const canManageMaterials = ['admin', 'teacher'].includes(state.profile?.role);
   const stats = getSubjectStats(subject);
   const scheduleRows = stats.schedules.slice(0, 12).map(s => {
     const cls = state.classes.find(c => c.id === s.classId);
@@ -204,12 +234,20 @@ function showSubjectProfile(subject) {
       </div>
 
       <div class="sp-section-card">
+        <div class="subject-materials-toolbar">
         <h4 class="sp-section-title">📎 ${state.lang === 'ar' ? 'ملفات وملازم المادة' : 'Subject Materials'}</h4>
-        <div class="subject-materials">
-          ${(subject.materials || []).map(m => `<a class="btn btn-sm btn-outline" href="${m.url}" target="_blank" rel="noopener">📄 ${escapeHTML(m.name || 'file')}</a>`).join('') || `<span class="text-muted">${state.lang === 'ar' ? 'لا توجد ملفات مرفوعة' : 'No uploaded files'}</span>`}
+          ${canManageMaterials ? `
+            <label class="btn btn-sm btn-primary subject-upload-label" id="subject-material-upload-label">
+              + ${state.lang === 'ar' ? '\u0631\u0641\u0639 \u0635\u0648\u0631\u0629 \u0623\u0648 PDF' : 'Upload image/PDF'}
+              <input type="file" id="subject-material-upload" accept="image/*,.pdf,application/pdf" multiple hidden>
+            </label>
+          ` : ''}
         </div>
+        <div class="subject-materials" id="subject-materials-list">
+          ${renderSubjectMaterials(subject.materials || [])}
+        </div>
+        ${canManageMaterials ? `<p class="text-muted text-sm subject-upload-hint">${state.lang === 'ar' ? '\u0627\u0644\u0623\u0646\u0648\u0627\u0639 \u0627\u0644\u0645\u062f\u0639\u0648\u0645\u0629: \u0627\u0644\u0635\u0648\u0631 \u0648\u0645\u0644\u0641\u0627\u062a PDF \u0641\u0642\u0637.' : 'Supported files: images and PDF only.'}</p>` : ''}
       </div>
-
       <div class="sp-section-card">
         <h4 class="sp-section-title">📅 ${state.lang === 'ar' ? 'آخر الحصص المجدولة' : 'Recent Scheduled Lessons'}</h4>
         <div class="table-responsive"><table class="data-table"><thead><tr><th>${state.lang === 'ar' ? 'الصف' : 'Class'}</th><th>${state.lang === 'ar' ? 'المعلم' : 'Teacher'}</th><th>${state.lang === 'ar' ? 'اليوم' : 'Day'}</th><th>${state.lang === 'ar' ? 'الوقت' : 'Time'}</th></tr></thead><tbody>${scheduleRows || `<tr><td colspan="4" class="text-center text-muted">${t('noData')}</td></tr>`}</tbody></table></div>
@@ -231,6 +269,63 @@ function showSubjectProfile(subject) {
   document.getElementById('subject-add-grade-btn')?.addEventListener('click', () => {
     closeModal();
     showSubjectGradeForm(subject);
+  });
+
+  document.getElementById('subject-material-upload')?.addEventListener('change', async e => {
+    const input = e.currentTarget;
+    const files = [...(input.files || [])];
+    if (!files.length) return;
+
+    const invalidFiles = files.filter(file => !isAllowedMaterialFile(file));
+    if (invalidFiles.length) {
+      showToast(state.lang === 'ar' ? 'يمكن رفع الصور وملفات PDF فقط' : 'Only images and PDF files are allowed', 'error');
+      input.value = '';
+      return;
+    }
+
+    const label = document.getElementById('subject-material-upload-label');
+    const oldLabel = label?.innerHTML;
+    if (label) {
+      label.classList.add('disabled');
+      label.innerHTML = `<span class="spinner-sm"></span> ${state.lang === 'ar' ? 'جاري الرفع...' : 'Uploading...'}`;
+    }
+
+    try {
+      const uploadedMaterials = [];
+      for (const file of files) {
+        const url = await uploadFile(file, 'subjects/materials');
+        uploadedMaterials.push({
+          name: file.name,
+          url,
+          type: getMaterialType(file),
+          size: file.size || 0,
+          uploadedAt: new Date().toISOString(),
+          uploadedBy: state.profile?.uid || null
+        });
+      }
+
+      const materials = [...(subject.materials || []), ...uploadedMaterials];
+      await updateDoc(doc(db, 'subjects', subject.id), {
+        materials,
+        isOnline: true,
+        updatedAt: new Date().toISOString()
+      });
+      subject.materials = materials;
+      subject.isOnline = true;
+
+      const list = document.getElementById('subject-materials-list');
+      if (list) list.innerHTML = renderSubjectMaterials(materials);
+      showToast(t('savedSuccess'), 'success');
+    } catch (err) {
+      console.error(err);
+      showToast(err?.message || t('errorOccurred'), 'error', 5000);
+    } finally {
+      input.value = '';
+      if (label && oldLabel) {
+        label.classList.remove('disabled');
+        label.innerHTML = oldLabel;
+      }
+    }
   });
 }
 
@@ -282,7 +377,7 @@ function showSubjectForm(subject = null) {
       </div>
       <div class="form-group full-width">
         <label>${state.lang === 'ar' ? 'ملفات وملازم المادة' : 'Subject Files'}</label>
-        <input type="file" id="sf-materials" class="form-input" multiple>
+        <input type="file" id="sf-materials" class="form-input" accept="image/*,.pdf,application/pdf" multiple>
         <div id="existing-materials" class="subject-materials" style="margin-top:.75rem">
           ${(subject?.materials || []).map(m => `<span class="badge badge-info" data-url="${escapeHTML(m.url)}" data-name="${escapeHTML(m.name)}">📄 ${escapeHTML(m.name)} <button type="button" class="btn-icon remove-material" style="font-size:.75rem">×</button></span>`).join('')}
         </div>
@@ -311,11 +406,18 @@ function showSubjectForm(subject = null) {
         name: el.dataset.name
       })).filter(m => m.url);
       const uploadedMaterials = [];
-      const files = document.getElementById('sf-materials').files;
+      const files = [...document.getElementById('sf-materials').files];
+      const invalidFiles = files.filter(file => !isAllowedMaterialFile(file));
+      if (invalidFiles.length) {
+        showToast(state.lang === 'ar' ? 'يمكن رفع الصور وملفات PDF فقط' : 'Only images and PDF files are allowed', 'error');
+        btn.disabled = false;
+        btn.innerHTML = oldHtml;
+        return;
+      }
 
       for (const file of files) {
         const url = await uploadFile(file, 'subjects/materials');
-        uploadedMaterials.push({ name: file.name, url, type: file.type || 'application/octet-stream', size: file.size || 0 });
+        uploadedMaterials.push({ name: file.name, url, type: getMaterialType(file), size: file.size || 0 });
       }
 
       const data = {

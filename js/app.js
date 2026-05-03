@@ -16,7 +16,7 @@ import { renderParents, attachParentEvents } from './pages/parents.js?v=20260503
 import { renderClasses, attachClassEvents } from './pages/classes.js?v=20260503-class-profile';
 import { renderAttendance, attachAttendanceEvents } from './pages/attendance.js';
 import { renderGrades, attachGradeEvents } from './pages/grades.js?v=20260503-student-grade-records';
-import { renderSubjects, attachSubjectEvents } from './pages/subjects.js?v=20260503-subject-profile';
+import { renderSubjects, attachSubjectEvents } from './pages/subjects.js?v=20260503-subject-material-upload';
 import { renderSchedule, attachScheduleEvents } from './pages/schedule.js?v=20260430-one-page-pdf';
 import { renderFinance, attachFinanceEvents } from './pages/finance.js';
 import { renderAnnouncements, attachAnnouncementEvents, renderMessages, attachMessageEvents, renderSettings, attachSettingsEvents } from './pages/communications.js';
