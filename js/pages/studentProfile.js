@@ -2,6 +2,7 @@ import { state, t } from '../state.js';
 import { db, doc, updateDoc } from '../firebase-config.js';
 import { escapeHTML, getInitials, formatCurrency, renderAvatar, showToast, showModal, closeModal } from '../ui.js?v=20260502-photo-sync';
 import { uploadFile } from '../services/uploadService.js?v=20260502-photo-sync';
+import { showAdminAccountModal } from '../services/accountAdmin.js?v=20260503-admin-accounts';
 
 export function renderStudentProfile() {
   const hash = window.location.hash.slice(1);
@@ -542,6 +543,20 @@ export function printStudentReportCard(studentId) {
 export function attachStudentProfileEvents(modalElement) {
   if (!modalElement) return;
 
+  if (state.profile?.role === 'admin' && !modalElement.querySelector('.manage-profile-account')) {
+    const wrapper = modalElement.querySelector('.profile-photo-wrapper');
+    const studentId = wrapper?.dataset.id;
+    const statusBadge = modalElement.querySelector('.sp-status-badge');
+    if (studentId && statusBadge?.parentElement) {
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-sm btn-outline manage-profile-account';
+      btn.dataset.role = 'student';
+      btn.dataset.id = studentId;
+      btn.textContent = state.lang === 'ar' ? '🔐 إدارة الحساب' : '🔐 Account';
+      statusBadge.parentElement.insertBefore(btn, statusBadge);
+    }
+  }
+
   // Print report card from full page view
   document.getElementById('print-report-btn')?.addEventListener('click', e => {
     printStudentReportCard(e.currentTarget.dataset.id);
@@ -551,6 +566,13 @@ export function attachStudentProfileEvents(modalElement) {
     const printBtn = e.target.closest('.print-id-card-btn');
     if (printBtn) {
       showStudentCardModalPreview(printBtn.dataset.id);
+      return;
+    }
+
+    const accountBtn = e.target.closest('.manage-profile-account');
+    if (accountBtn?.dataset.role === 'student') {
+      const student = state.students.find(s => s.id === accountBtn.dataset.id);
+      if (student) showAdminAccountModal(student, 'student');
       return;
     }
 

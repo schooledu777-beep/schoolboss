@@ -3,6 +3,7 @@ import { db, doc, updateDoc, arrayUnion } from '../firebase-config.js';
 import { escapeHTML, renderAvatar, showToast } from '../ui.js?v=20260502-photo-viewer';
 import { showTeacherForm } from './teachers.js';
 import { uploadFile } from '../services/uploadService.js?v=20260502-photo-sync';
+import { showAdminAccountModal } from '../services/accountAdmin.js?v=20260503-admin-accounts';
 
 function sanitizeFileName(name = 'document') {
     return name.replace(/[\\/:*?"<>|]+/g, '-').trim() || 'document';
@@ -389,6 +390,20 @@ function getTeacherMetrics(teacherId) {
 export function attachTeacherProfileEvents(modalElement) {
     if (!modalElement) return;
 
+    if (state.profile?.role === 'admin' && !modalElement.querySelector('.manage-profile-account')) {
+        const wrapper = modalElement.querySelector('.profile-photo-wrapper');
+        const teacherId = wrapper?.dataset.id;
+        const statusBadge = modalElement.querySelector('.sp-status-badge');
+        if (teacherId && statusBadge?.parentElement) {
+            const btn = document.createElement('button');
+            btn.className = 'btn btn-sm btn-outline manage-profile-account';
+            btn.dataset.role = 'teacher';
+            btn.dataset.id = teacherId;
+            btn.textContent = state.lang === 'ar' ? '🔐 إدارة الحساب' : '🔐 Account';
+            statusBadge.parentElement.insertBefore(btn, statusBadge);
+        }
+    }
+
     // Tab Switching
     modalElement.addEventListener('click', (e) => {
         const btn = e.target.closest('.sp-tab-btn');
@@ -426,6 +441,13 @@ export function attachTeacherProfileEvents(modalElement) {
         if (!btn) return;
         const teacher = state.teachers.find(t => t.id === btn.dataset.id);
         if (teacher) showTeacherForm(teacher);
+    });
+
+    modalElement.addEventListener('click', (e) => {
+        const accountBtn = e.target.closest('.manage-profile-account');
+        if (accountBtn?.dataset.role !== 'teacher') return;
+        const teacher = state.teachers.find(t => t.id === accountBtn.dataset.id);
+        if (teacher) showAdminAccountModal(teacher, 'teacher');
     });
 
     // Refresh on update

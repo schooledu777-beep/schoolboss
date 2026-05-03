@@ -1,6 +1,6 @@
 import { state, t } from '../state.js';
 import { db, collection, addDoc, updateDoc, deleteDoc, doc, setDoc } from '../firebase-config.js';
-import { adminCreateUser } from '../auth.js';
+import { adminCreateUser } from '../auth.js?v=20260503-admin-accounts';
 import { showModal, closeModal, showConfirm, showToast, escapeHTML } from '../ui.js';
 import { showStudentCardModal } from './students.js';
 
@@ -176,7 +176,10 @@ function showParentForm(parent = null) {
         data.createdAt=new Date().toISOString(); 
         const password = document.getElementById('pf-password').value;
         const newUid = await adminCreateUser(data.email, password, 'parent', data.name);
-        await setDoc(doc(db, 'parents', newUid), { ...data, uid: newUid, id: newUid, studentIds: [] });
+        await setDoc(doc(db, 'parents', newUid), {
+          ...data, uid: newUid, id: newUid, studentIds: [], accountStatus: 'active',
+          authManaged: { temporaryPassword: password, passwordUpdatedAt: new Date().toISOString(), passwordSource: 'admin-created', mustChange: true }
+        });
       } 
       closeModal(); 
       showToast(t('savedSuccess'),'success'); 

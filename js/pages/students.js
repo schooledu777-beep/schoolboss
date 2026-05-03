@@ -1,9 +1,10 @@
 import { state, t } from '../state.js';
 import { db, collection, addDoc, updateDoc, deleteDoc, doc, setDoc, serverTimestamp, arrayUnion } from '../firebase-config.js';
-import { adminCreateUser } from '../auth.js';
+import { adminCreateUser } from '../auth.js?v=20260503-admin-accounts';
 import { showModal, closeModal, showConfirm, showToast, escapeHTML, renderAvatar } from '../ui.js?v=20260502-photo-sync';
 import { getStudentDashboardHTML, attachStudentProfileEvents } from './studentProfile.js?v=20260502-photo-viewer';
 import { uploadFile } from '../services/uploadService.js?v=20260502-photo-sync';
+import { showAdminAccountModal } from '../services/accountAdmin.js?v=20260503-admin-accounts';
 
 export function renderStudents() {
   const students = state.students;
@@ -282,7 +283,9 @@ function showStudentForm(student = null) {
           
           finalParentId = await adminCreateUser(pEmail, pPwd, 'parent', pName);
           await setDoc(doc(db, 'parents', finalParentId), {
-            uid: finalParentId, id: finalParentId, name: pName, email: pEmail, phone: pPhone, role: 'parent', studentIds: [], createdAt: new Date().toISOString()
+            uid: finalParentId, id: finalParentId, name: pName, email: pEmail, phone: pPhone, role: 'parent', studentIds: [], accountStatus: 'active',
+            authManaged: { temporaryPassword: pPwd, passwordUpdatedAt: new Date().toISOString(), passwordSource: 'admin-created', mustChange: true },
+            createdAt: new Date().toISOString()
           });
         } else {
           finalParentId = parentSelect;
@@ -315,7 +318,10 @@ function showStudentForm(student = null) {
         if (data.email) {
           const password = document.getElementById('sf-password').value || '123456';
           studentId = await adminCreateUser(data.email, password, 'student', data.name);
-          await setDoc(doc(db, 'students', studentId), { ...data, uid: studentId, id: studentId });
+          await setDoc(doc(db, 'students', studentId), {
+            ...data, uid: studentId, id: studentId, accountStatus: 'active',
+            authManaged: { temporaryPassword: password, passwordUpdatedAt: new Date().toISOString(), passwordSource: 'admin-created', mustChange: true }
+          });
         } else {
           const studentRef = await addDoc(collection(db, 'students'), data);
           studentId = studentRef.id;

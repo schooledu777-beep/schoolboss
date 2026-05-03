@@ -1,4 +1,4 @@
-import { auth, db, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, doc, getDoc, setDoc, getDocs, collection, query, where, deleteDoc, firebaseConfig, initializeApp, getAuth } from './firebase-config.js';
+import { auth, db, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, doc, getDoc, setDoc, getDocs, collection, query, where, deleteDoc, firebaseConfig, initializeApp, getAuth, updatePassword, sendPasswordResetEmail } from './firebase-config.js?v=20260503-admin-accounts';
 import { state, t } from './state.js';
 import { showToast, hideLoading } from './ui.js';
 
@@ -175,6 +175,11 @@ export function initAuth(onLogin, onLogout) {
           }
           state.profile = profile;
         }
+        if (state.profile?.accountStatus === 'suspended') {
+          showToast(state.lang === 'ar' ? 'تم إيقاف هذا الحساب من قبل الإدارة' : 'This account has been suspended by admin', 'error', 5000);
+          await signOut(auth);
+          return;
+        }
         // Load school settings
         try {
           const settingsDoc = await getDoc(doc(db, 'settings', 'general'));
@@ -252,6 +257,13 @@ export async function adminCreateUser(email, password, role, name) {
 
     await setDoc(doc(db, 'users', newUid), {
       email, role, name, uid: newUid,
+      accountStatus: 'active',
+      authManaged: {
+        temporaryPassword: password,
+        passwordUpdatedAt: new Date().toISOString(),
+        passwordSource: 'admin-created',
+        mustChange: true
+      },
       createdAt: new Date().toISOString()
     }, { merge: true });
 
@@ -265,4 +277,21 @@ export async function adminCreateUser(email, password, role, name) {
     _secondaryAuth = null;
     throw error;
   }
+}
+
+export async function adminUpdateManagedPassword(email, currentPassword, newPassword) {
+  const secondaryAuth = getSecondaryAuth();
+  try {
+    const credential = await signInWithEmailAndPassword(secondaryAuth, email, currentPassword);
+    await updatePassword(credential.user, newPassword);
+    await signOut(secondaryAuth).catch(() => {});
+    return true;
+  } catch (error) {
+    await signOut(secondaryAuth).catch(() => {});
+    throw error;
+  }
+}
+
+export async function adminSendPasswordReset(email) {
+  return sendPasswordResetEmail(auth, email);
 }

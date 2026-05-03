@@ -1,6 +1,7 @@
 import { state, t } from '../state.js';
 import { db, doc, updateDoc, deleteDoc } from '../firebase-config.js';
 import { showModal, closeModal, showConfirm, showToast, escapeHTML, getInitials, formatCurrency } from '../ui.js';
+import { showAdminAccountModal } from '../services/accountAdmin.js?v=20260503-admin-accounts';
 
 export function renderParentProfile() {
   const hash = window.location.hash.slice(1);
@@ -207,10 +208,33 @@ export function showParentCardModal(parentId) {
 }
 
 export function attachParentProfileEvents() {
+  if (state.profile?.role === 'admin') {
+    document.querySelectorAll('.student-profile-modal').forEach(panel => {
+      if (panel.querySelector('.manage-profile-account')) return;
+      const parentId = panel.querySelector('.sp-tab-btn[data-parent-id]')?.dataset.parentId;
+      const statusBadge = panel.querySelector('.sp-status-badge');
+      if (parentId && statusBadge?.parentElement) {
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-sm btn-outline manage-profile-account';
+        btn.dataset.role = 'parent';
+        btn.dataset.id = parentId;
+        btn.textContent = state.lang === 'ar' ? '🔐 إدارة الحساب' : '🔐 Account';
+        statusBadge.parentElement.insertBefore(btn, statusBadge);
+      }
+    });
+  }
+
   if (window._parentProfileEventsAttached) return;
   window._parentProfileEventsAttached = true;
 
   document.addEventListener('click', e => {
+    const accountBtn = e.target.closest('.manage-profile-account');
+    if (accountBtn?.dataset.role === 'parent') {
+      const parent = state.parents.find(p => p.id === accountBtn.dataset.id);
+      if (parent) showAdminAccountModal(parent, 'parent');
+      return;
+    }
+
     const tabBtn = e.target.closest('.sp-tab-btn');
     if (tabBtn && tabBtn.dataset.parentId) {
       const tabId = tabBtn.dataset.tab;

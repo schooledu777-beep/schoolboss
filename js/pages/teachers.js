@@ -1,6 +1,6 @@
 import { state, t } from '../state.js';
 import { db, collection, addDoc, updateDoc, deleteDoc, doc, setDoc } from '../firebase-config.js';
-import { adminCreateUser } from '../auth.js';
+import { adminCreateUser } from '../auth.js?v=20260503-admin-accounts';
 import { showModal, closeModal, showConfirm, showToast, escapeHTML, renderAvatar } from '../ui.js?v=20260502-photo-sync';
 import { uploadFile } from '../services/uploadService.js?v=20260502-photo-sync';
 
@@ -182,7 +182,10 @@ export function showTeacherForm(teacher = null) {
         data.createdAt=new Date().toISOString(); 
         const password = document.getElementById('tf-password').value;
         const newUid = await adminCreateUser(data.email, password, 'teacher', data.name);
-        await setDoc(doc(db, 'teachers', newUid), { ...data, uid: newUid, id: newUid });
+        await setDoc(doc(db, 'teachers', newUid), {
+          ...data, uid: newUid, id: newUid, accountStatus: 'active',
+          authManaged: { temporaryPassword: password, passwordUpdatedAt: new Date().toISOString(), passwordSource: 'admin-created', mustChange: true }
+        });
         teacherId = newUid;
       } 
 
