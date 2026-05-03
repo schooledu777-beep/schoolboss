@@ -15,7 +15,7 @@ import { renderTeachers, attachTeacherEvents } from './pages/teachers.js?v=20260
 import { renderParents, attachParentEvents } from './pages/parents.js?v=20260503-admin-accounts';
 import { renderClasses, attachClassEvents } from './pages/classes.js?v=20260503-class-profile';
 import { renderAttendance, attachAttendanceEvents } from './pages/attendance.js';
-import { renderGrades, attachGradeEvents } from './pages/grades.js?v=20260503-grade-report-pdf';
+import { renderGrades, attachGradeEvents } from './pages/grades.js?v=20260503-assessment-types';
 import { renderSubjects, attachSubjectEvents } from './pages/subjects.js?v=20260503-subject-material-upload';
 import { renderSchedule, attachScheduleEvents } from './pages/schedule.js?v=20260430-one-page-pdf';
 import { renderFinance, attachFinanceEvents } from './pages/finance.js';

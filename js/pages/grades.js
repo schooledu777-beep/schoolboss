@@ -50,6 +50,28 @@ function getAssessmentLabel(type) {
   return item ? (state.lang === 'ar' ? item.ar : item.name) : (type || (state.lang === 'ar' ? 'غير محدد' : 'Unspecified'));
 }
 
+function getAssessmentTypes() {
+  const defaults = [
+    { name: 'quiz', ar: 'اختبار قصير' },
+    { name: 'homework', ar: 'واجب' },
+    { name: 'oral', ar: 'شفهي' },
+    { name: 'practical', ar: 'عملي' },
+    { name: 'participation', ar: 'مشاركة' },
+    { name: 'midterm', ar: 'منتصف الفصل' },
+    { name: 'final', ar: 'نهائي' }
+  ];
+  const custom = Array.isArray(state.assessmentTypes) ? state.assessmentTypes : [];
+  const map = new Map();
+
+  [...custom, ...defaults].forEach(type => {
+    const name = String(type?.name || '').trim().toLowerCase();
+    if (!name || map.has(name)) return;
+    map.set(name, { name, ar: type.ar || type.name || name });
+  });
+
+  return [...map.values()];
+}
+
 function formatGradeDate(date) {
   return date ? new Date(date).toLocaleDateString(state.lang === 'ar' ? 'ar-SA' : 'en-US') : '—';
 }
@@ -408,9 +430,7 @@ function showGradeForm(grade = null) {
       <div class="form-group"><label>${state.lang === 'ar' ? 'المادة' : 'Subject'}</label><input type="text" id="gf-subject" class="form-input" value="${grade?.subject || ''}" required></div>
       <div class="form-group"><label>${state.lang === 'ar' ? 'نوع الامتحان' : 'Exam Type'}</label>
         <select id="gf-type" class="form-select">
-          ${(state.assessmentTypes || []).map(type => `<option value="${type.name.toLowerCase()}" ${grade?.examType === type.name.toLowerCase() ? 'selected' : ''}>${state.lang === 'ar' ? type.ar : type.name}</option>`).join('') || `
-            <option value="quiz">Quiz</option><option value="midterm">Midterm</option><option value="homework">Homework</option><option value="final">Final</option>
-          `}
+          ${getAssessmentTypes().map(type => `<option value="${type.name}" ${grade?.examType === type.name ? 'selected' : ''}>${state.lang === 'ar' ? type.ar : type.name}</option>`).join('')}
         </select>
       </div>
       <div class="form-group"><label>${state.lang === 'ar' ? 'الدرجة' : 'Score'}</label><input type="number" id="gf-score" class="form-input" value="${grade?.score || ''}" required min="0"></div>
@@ -475,7 +495,7 @@ function showWeightForm() {
         </div>
         <div class="form-group"><label>${state.lang === 'ar' ? 'نوع التقييم' : 'Assessment Type'}</label>
           <select id="wf-type" class="form-select" required>
-            ${(state.assessmentTypes || []).map(type => `<option value="${type.name.toLowerCase()}">${state.lang === 'ar' ? type.ar : type.name}</option>`).join('')}
+            ${getAssessmentTypes().map(type => `<option value="${type.name}">${state.lang === 'ar' ? type.ar : type.name}</option>`).join('')}
           </select>
         </div>
         <div class="form-group"><label>${state.lang === 'ar' ? 'الوزن (%)' : 'Weight (%)'}</label><input type="number" id="wf-weight" class="form-input" required min="1" max="100"></div>
