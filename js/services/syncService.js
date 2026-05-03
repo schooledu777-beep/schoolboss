@@ -12,7 +12,7 @@ class SyncService {
       classes: ['classes', 'teachers', 'students'],
       attendance: ['attendance', 'students', 'classes'],
       grades: ['grades', 'students', 'subjects', 'classes'],
-      subjects: ['subjects', 'teachers'],
+      subjects: ['subjects', 'teachers', 'classes', 'schedules', 'grades', 'homework'],
       schedule: ['schedules', 'classes', 'teachers', 'subjects', 'timeslots', 'classrooms'],
       finance: ['fees', 'students', 'discounts'],
       announcements: ['announcements'],

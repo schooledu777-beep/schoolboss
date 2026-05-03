@@ -303,6 +303,11 @@ textarea.form-input{min-height:80px;resize:vertical}
 .grade-subject-card{padding:1rem}
 .grade-subject-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:.75rem}
 .grade-subject-head .sp-section-title{margin:0}
+.subject-profile{display:flex;flex-direction:column;gap:1rem}
+.subject-profile-header{border-radius:var(--radius)}
+.subject-linked-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.75rem}
+.subject-linked-card{display:flex;align-items:center;gap:.75rem;padding:.75rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface)}
+.subject-materials{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
 
 /* ========================= QUICK ACTIONS ========================= */
 .quick-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(120px,100%),1fr));gap:.75rem}

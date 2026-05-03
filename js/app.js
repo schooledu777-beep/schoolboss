@@ -4,7 +4,7 @@ import { hideLoading } from './ui.js?v=20260502-photo-sync';
 import { registerRoute, initRouter } from './router.js';
 import { renderAuthPage, attachAuthEvents, initAuth } from './auth.js?v=20260503-admin-accounts';
 import { renderSidebar, renderHeader, attachLayoutEvents } from './components.js?v=20260502-search-cards';
-import { syncService } from './services/syncService.js';
+import { syncService } from './services/syncService.js?v=20260503-subject-profile';
 import { academicService } from './services/academicService.js';
 import { libraryService } from './services/libraryService.js';
 
@@ -16,7 +16,7 @@ import { renderParents, attachParentEvents } from './pages/parents.js?v=20260503
 import { renderClasses, attachClassEvents } from './pages/classes.js';
 import { renderAttendance, attachAttendanceEvents } from './pages/attendance.js';
 import { renderGrades, attachGradeEvents } from './pages/grades.js?v=20260503-student-grade-records';
-import { renderSubjects, attachSubjectEvents } from './pages/subjects.js';
+import { renderSubjects, attachSubjectEvents } from './pages/subjects.js?v=20260503-subject-profile';
 import { renderSchedule, attachScheduleEvents } from './pages/schedule.js?v=20260430-one-page-pdf';
 import { renderFinance, attachFinanceEvents } from './pages/finance.js';
 import { renderAnnouncements, attachAnnouncementEvents, renderMessages, attachMessageEvents, renderSettings, attachSettingsEvents } from './pages/communications.js';
