@@ -318,6 +318,7 @@ textarea.form-input{min-height:80px;resize:vertical}
 .grade-report-student strong,.grade-report-summary strong{display:block;font-size:14px;color:#102033}
 .grade-report-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
 .grade-report-summary strong{font-size:20px;color:#1769c2}
+.grade-score-pair{display:inline-block;direction:ltr;unicode-bidi:isolate;font-variant-numeric:tabular-nums;white-space:nowrap}
 .grade-report-page section{margin-top:12px;break-inside:avoid}
 .grade-report-page h2{font-size:15px;margin:0 0 8px;color:#102033}
 .grade-report-page table{width:100%;border-collapse:separate;border-spacing:0;border:1px solid #d9e4f2;border-radius:12px;overflow:hidden;font-size:11px}

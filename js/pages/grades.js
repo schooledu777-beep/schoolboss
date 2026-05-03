@@ -84,6 +84,15 @@ function getGradeRemark(percent) {
   return state.lang === 'ar' ? 'بحاجة لمتابعة' : 'Needs Follow-up';
 }
 
+function formatScoreNumber(value) {
+  const number = Number(value || 0);
+  return Number.isInteger(number) ? String(number) : number.toFixed(2).replace(/\.?0+$/, '');
+}
+
+function renderScorePair(score, maxScore) {
+  return `<span class="grade-score-pair" dir="ltr">${formatScoreNumber(score)} / ${formatScoreNumber(maxScore)}</span>`;
+}
+
 function summarizeStudentGrades(studentId, grades) {
   const list = grades.filter(g => g.studentId === studentId);
   const total = list.reduce((sum, g) => sum + Number(g.score || 0), 0);
@@ -112,7 +121,7 @@ function buildGradeReportHtml(student, cls, studentGrades, summary) {
         <td>${index + 1}</td>
         <td>${escapeHTML(subject)}</td>
         <td>${items.length}</td>
-        <td>${total} / ${max || 0}</td>
+        <td>${renderScorePair(total, max || 0)}</td>
         <td><strong>${pct}%</strong></td>
         <td>${escapeHTML(getGradeRemark(pct))}</td>
       </tr>`;
@@ -125,7 +134,7 @@ function buildGradeReportHtml(student, cls, studentGrades, summary) {
         <td>${index + 1}</td>
         <td>${escapeHTML(g.subject || '—')}</td>
         <td>${escapeHTML(getAssessmentLabel(g.examType))}</td>
-        <td>${Number(g.score || 0)} / ${Number(g.maxScore || 100)}</td>
+        <td>${renderScorePair(g.score, g.maxScore || 100)}</td>
         <td>${pct}%</td>
         <td>${formatGradeDate(g.date)}</td>
       </tr>`;
@@ -162,7 +171,7 @@ function buildGradeReportHtml(student, cls, studentGrades, summary) {
       <div class="grade-report-summary">
         <div><span>${isAr ? 'عدد النتائج' : 'Results'}</span><strong>${summary.list.length}</strong></div>
         <div><span>${isAr ? 'عدد المواد' : 'Subjects'}</span><strong>${summary.subjects}</strong></div>
-        <div><span>${isAr ? 'المجموع' : 'Total'}</span><strong>${summary.total} / ${summary.max || 0}</strong></div>
+        <div><span>${isAr ? 'المجموع' : 'Total'}</span><strong>${renderScorePair(summary.total, summary.max || 0)}</strong></div>
         <div><span>${isAr ? 'المتوسط العام' : 'Average'}</span><strong>${summary.list.length ? `${summary.avg}%` : '—'}</strong></div>
       </div>
 

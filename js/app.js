@@ -29,7 +29,7 @@ import { renderStudentProfile, attachStudentProfileEvents } from './pages/studen
 import { renderParentProfile, attachParentProfileEvents } from './pages/parentProfile.js?v=20260503-admin-accounts';
 import { attachTeacherProfileEvents } from './pages/teacherProfile.js?v=20260503-admin-accounts';
 // New pages
-import { renderReportCards, attachReportCardsEvents } from './pages/reportCards.js?v=20260503-merged-report-cards';
+import { renderReportCards, attachReportCardsEvents } from './pages/reportCards.js?v=20260503-grade-total-print-fix';
 import { renderCalendar, attachCalendarEvents } from './pages/calendar.js';
 import { renderHomework, attachHomeworkEvents } from './pages/homeworkPage.js';
 import { renderClinic, attachClinicEvents } from './pages/clinicPage.js';
