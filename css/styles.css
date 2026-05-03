@@ -299,6 +299,11 @@ textarea.form-input{min-height:80px;resize:vertical}
 .data-table tr.clickable-row{cursor:pointer}
 .user-cell{display:flex;align-items:center;gap:.5rem}
 
+.student-grade-profile{display:flex;flex-direction:column;gap:1rem}
+.grade-subject-card{padding:1rem}
+.grade-subject-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:.75rem}
+.grade-subject-head .sp-section-title{margin:0}
+
 /* ========================= QUICK ACTIONS ========================= */
 .quick-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(120px,100%),1fr));gap:.75rem}
 .quick-action-btn{display:flex;flex-direction:column;align-items:center;gap:.5rem;padding:1rem;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);transition:all .2s;text-decoration:none;color:var(--text);cursor:pointer;font-family:var(--font)}
