@@ -207,7 +207,7 @@ function renderTeacherDash() {
 
   const actions = [
     { href: '#attendance', icon: '📋', label: lang === 'ar' ? 'تسجيل حضور' : 'Take Attendance' },
-    { href: '#grades', icon: '📝', label: lang === 'ar' ? 'إدخال درجات' : 'Enter Grades' },
+    { href: '#report-cards', icon: '📝', label: lang === 'ar' ? 'إدخال درجات' : 'Enter Grades' },
     { id: 'bulk-grading-btn', icon: '📊', label: t('bulkGrading') },
     { href: '#messages', icon: '✉️', label: lang === 'ar' ? 'إرسال رسالة' : 'Send Message' }
   ];
@@ -260,7 +260,7 @@ function renderParentDash() {
         <h4 style="margin:.25rem 0;">${s.name}</h4>
         <p class="text-muted text-sm">${cls?.name || ''}</p>
         <div style="display:flex; gap:.5rem; margin-top:.5rem;">
-          <a href="#grades" class="btn btn-sm btn-outline">📝</a>
+          <a href="#report-cards" class="btn btn-sm btn-outline">📝</a>
           <a href="#attendance" class="btn btn-sm btn-outline">📋</a>
         </div>
       </div>`;
@@ -310,7 +310,7 @@ function renderStudentDash() {
 
   const actions = [
     { href: '#schedule', icon: '📅', label: t('mySchedule') },
-    { href: '#grades', icon: '📝', label: t('myGrades') }
+    { href: '#report-cards', icon: '📝', label: t('reportCards') }
   ];
 
   const actionsHtml = actions.map(a => `

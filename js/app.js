@@ -3,7 +3,7 @@ import { state, applyTheme, applyLang } from './state.js';
 import { hideLoading } from './ui.js?v=20260502-photo-sync';
 import { registerRoute, initRouter } from './router.js';
 import { renderAuthPage, attachAuthEvents, initAuth } from './auth.js?v=20260503-admin-accounts';
-import { renderSidebar, renderHeader, attachLayoutEvents } from './components.js?v=20260502-search-cards';
+import { renderSidebar, renderHeader, attachLayoutEvents } from './components.js?v=20260503-merged-report-cards';
 import { syncService } from './services/syncService.js?v=20260503-subject-profile';
 import { academicService } from './services/academicService.js';
 import { libraryService } from './services/libraryService.js';
@@ -15,7 +15,6 @@ import { renderTeachers, attachTeacherEvents } from './pages/teachers.js?v=20260
 import { renderParents, attachParentEvents } from './pages/parents.js?v=20260503-admin-accounts';
 import { renderClasses, attachClassEvents } from './pages/classes.js?v=20260503-class-profile';
 import { renderAttendance, attachAttendanceEvents } from './pages/attendance.js';
-import { renderGrades, attachGradeEvents } from './pages/grades.js?v=20260503-assessment-types';
 import { renderSubjects, attachSubjectEvents } from './pages/subjects.js?v=20260503-subject-material-upload';
 import { renderSchedule, attachScheduleEvents } from './pages/schedule.js?v=20260430-one-page-pdf';
 import { renderFinance, attachFinanceEvents } from './pages/finance.js';
@@ -30,7 +29,7 @@ import { renderStudentProfile, attachStudentProfileEvents } from './pages/studen
 import { renderParentProfile, attachParentProfileEvents } from './pages/parentProfile.js?v=20260503-admin-accounts';
 import { attachTeacherProfileEvents } from './pages/teacherProfile.js?v=20260503-admin-accounts';
 // New pages
-import { renderReportCards, attachReportCardsEvents } from './pages/reportCards.js';
+import { renderReportCards, attachReportCardsEvents } from './pages/reportCards.js?v=20260503-merged-report-cards';
 import { renderCalendar, attachCalendarEvents } from './pages/calendar.js';
 import { renderHomework, attachHomeworkEvents } from './pages/homeworkPage.js';
 import { renderClinic, attachClinicEvents } from './pages/clinicPage.js';
@@ -53,7 +52,7 @@ const pages = {
   parents:        { render: renderParents, events: attachParentEvents },
   classes:        { render: renderClasses, events: attachClassEvents },
   attendance:     { render: renderAttendance, events: attachAttendanceEvents },
-  grades:         { render: renderGrades, events: attachGradeEvents },
+  grades:         { render: renderReportCards, events: attachReportCardsEvents },
   subjects:       { render: renderSubjects, events: attachSubjectEvents },
   schedule:       { render: renderSchedule, events: attachScheduleEvents },
   finance:        { render: renderFinance, events: attachFinanceEvents },

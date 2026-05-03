@@ -30,7 +30,6 @@ function getNavGroups() {
           { icon: '🏫', key: 'classes',        page: 'classes'         },
           { icon: '📚', key: 'subjects',       page: 'subjects'        },
           { icon: '✅', key: 'attendance',     page: 'attendance'      },
-          { icon: '📝', key: 'grades',         page: 'grades'          },
           { icon: '📅', key: 'schedule',       page: 'schedule'        },
           { icon: '📋', key: 'examsPage',      page: 'exams'           },
           { icon: '📄', key: 'reportCards',    page: 'report-cards'    },
@@ -88,7 +87,7 @@ function getNavGroups() {
         items: [
           { icon: '🏫', key: 'myClasses',    page: 'classes'      },
           { icon: '✅', key: 'attendance',   page: 'attendance'   },
-          { icon: '📝', key: 'grades',       page: 'grades'       },
+          { icon: '📄', key: 'reportCards',  page: 'report-cards' },
           { icon: '📋', key: 'examsPage',    page: 'exams'        },
           { icon: '📚', key: 'homeworkPage', page: 'homework'     },
           { icon: '📅', key: 'mySchedule',   page: 'schedule'     },
@@ -116,9 +115,8 @@ function getNavGroups() {
         labelAr: 'أبنائي', labelEn: 'My Children',
         items: [
           { icon: '👨‍👩‍👧', key: 'myChildren',   page: 'my-children'  },
-          { icon: '📝', key: 'grades',         page: 'grades'       },
           { icon: '✅', key: 'attendance',     page: 'attendance'   },
-          { icon: '📄', key: 'reportCards',    page: 'report-cards' },
+          { icon: '📄', key: 'reportCards',  page: 'report-cards' },
           { icon: '📋', key: 'examsPage',      page: 'exams'        },
           { icon: '📚', key: 'homeworkPage',   page: 'homework'     },
           { icon: '📅', key: 'schedule',       page: 'schedule'     },
@@ -143,7 +141,7 @@ function getNavGroups() {
       labelAr: 'دراستي', labelEn: 'My Studies',
       items: [
         { icon: '📅', key: 'mySchedule', page: 'schedule' },
-        { icon: '📝', key: 'myGrades', page: 'grades' },
+        { icon: '📄', key: 'reportCards', page: 'report-cards' },
         { icon: '📖', key: 'library', page: 'library' },
       ]
     },
