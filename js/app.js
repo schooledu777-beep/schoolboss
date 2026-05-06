@@ -2,9 +2,9 @@
 import { state, applyTheme, applyLang } from './state.js';
 import { hideLoading } from './ui.js?v=20260502-photo-sync';
 import { registerRoute, initRouter } from './router.js';
-import { renderAuthPage, attachAuthEvents, initAuth } from './auth.js?v=20260503-admin-accounts';
+import { renderAuthPage, attachAuthEvents, initAuth } from './auth.js?v=20260506-setup-wizard';
 import { renderSidebar, renderHeader, attachLayoutEvents } from './components.js?v=20260503-annual-plan';
-import { syncService } from './services/syncService.js?v=20260503-annual-plan';
+import { syncService } from './services/syncService.js?v=20260506-setup-wizard';
 import { academicService } from './services/academicService.js';
 import { libraryService } from './services/libraryService.js';
 
@@ -38,6 +38,7 @@ import { renderExams, attachExamsEvents } from './pages/examsPage.js';
 import { renderAnalytics, attachAnalyticsEvents } from './pages/analytics.js';
 import { renderAuditLog, attachAuditLogEvents } from './pages/auditLog.js';
 import { renderInventory, attachInventoryEvents } from './pages/inventory.js';
+import { renderSetupWizard, attachSetupWizardEvents } from './pages/setupWizard.js?v=20260506-setup-wizard';
 // Export service (registers window.export* globals)
 import './services/exportService.js';
 
@@ -86,6 +87,10 @@ pages['my-children'] = pages.dashboard;
 // ========================= RENDER APP =========================
 let currentLayout = null; // Track current layout type (auth or app)
 
+function isSetupLocked() {
+  return state.profile?.role === 'admin' && state.setup?.completed === false;
+}
+
 function renderApp() {
   const app = document.getElementById('app');
   
@@ -96,6 +101,17 @@ function renderApp() {
       attachAuthEvents();
       currentLayout = 'auth';
     }
+    return;
+  }
+
+  if (isSetupLocked()) {
+    if (currentLayout !== 'setup') {
+      app.innerHTML = renderSetupWizard();
+      currentLayout = 'setup';
+    } else {
+      app.innerHTML = renderSetupWizard();
+    }
+    attachSetupWizardEvents();
     return;
   }
 
@@ -203,6 +219,10 @@ state.subscribe(() => {
     _isRendering = true;
     try {
       const mainContent = document.getElementById('main-content');
+      if (isSetupLocked()) {
+        renderApp();
+        return;
+      }
       if (!mainContent) return;
       const currentHash = window.location.hash.slice(1) || 'dashboard';
       const basePath = currentHash.split('?')[0];
@@ -234,7 +254,7 @@ state.subscribe(() => {
 // Init Auth
 initAuth(
   () => { // onLogin
-    const route = window.location.hash.slice(1) || 'dashboard';
+    const route = isSetupLocked() ? 'setup-wizard' : (window.location.hash.slice(1) || 'dashboard');
     state.currentPage = route;
     syncService.syncPage(route); // Initial sync on login
     if (state.profile?.role === 'admin') {

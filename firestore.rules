@@ -37,6 +37,15 @@ service cloud.firestore {
       return signedIn() && request.auth.uid == userId;
     }
 
+    function setupDocExists() {
+      return exists(/databases/$(database)/documents/school_settings/general_info);
+    }
+
+    function setupCompleted() {
+      return setupDocExists() &&
+        get(/databases/$(database)/documents/school_settings/general_info).data.setup_completed == true;
+    }
+
     function hasStudent(studentId) {
       return isStudent() && request.auth.uid == studentId;
     }
@@ -73,6 +82,11 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    match /school_settings/{settingId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
     match /roles/{roleId} {
       allow read: if signedIn();
       allow write: if isAdmin();
@@ -81,7 +95,7 @@ service cloud.firestore {
     match /students/{studentId} {
       allow read: if isAdmin() || hasStudent(studentId) || parentLinkedTo(studentId) ||
         (isTeacher() && resource.data.classId is string && teacherLinkedToClass(resource.data.classId));
-      allow write: if isAdmin();
+      allow write: if isAdmin() && setupCompleted();
     }
 
     match /parents/{parentId} {
@@ -101,7 +115,7 @@ service cloud.firestore {
 
     match /subjects/{subjectId} {
       allow read: if signedIn();
-      allow write: if isAdmin() || isTeacher();
+      allow write: if isAdmin() || (isTeacher() && setupCompleted());
     }
 
     match /annual_plans/{planId} {

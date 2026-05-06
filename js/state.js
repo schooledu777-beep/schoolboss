@@ -10,6 +10,12 @@ export const state = {
   theme: localStorage.getItem('sms-theme') || 'dark',
   sidebarOpen: window.innerWidth > 1024,
   schoolType: 'private', 
+  setup: {
+    completed: true,
+    currentStep: 1,
+    totalSteps: 3,
+    loading: true
+  },
   // Data caches
   students: [],
   teachers: [],
@@ -49,6 +55,7 @@ export const state = {
   bedAllocations: [],
   notificationLogs: [],
   transfers: [],
+  schoolSettings: [],
   // ── NEW COLLECTIONS ──────────────────────────────────────────────
   calendarEvents: [],
   examSchedule: [],

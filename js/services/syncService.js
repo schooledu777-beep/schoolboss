@@ -6,6 +6,7 @@ class SyncService {
     this.activeSubscriptions = new Map();
     this.pageCollectionMap = {
       dashboard: ['students', 'teachers', 'classes', 'attendance', 'announcements', 'fees', 'notification_logs', 'schedules', 'rewards', 'homework', 'calendar_events', 'exam_schedule'],
+      'setup-wizard': ['classes', 'subjects', 'teachers', 'school_settings'],
       students: ['students', 'classes', 'parents'],
       teachers: ['teachers', 'subjects'],
       parents: ['parents', 'students'],
@@ -55,6 +56,7 @@ class SyncService {
       health_records:  'healthRecords',
       audit_logs:      'auditLogs',
       annual_plans:    'annualPlans',
+      school_settings: 'schoolSettings',
     };
   }
 

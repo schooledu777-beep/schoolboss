@@ -8,6 +8,12 @@ const BOOTSTRAP_ADMIN_EMAIL = 'mohammed.soft7@gmail.com';
 // دالة مساعدة تُبقي التوافق مع الكود القديم الذي يستخدم ADMIN_EMAIL
 const ADMIN_EMAIL = BOOTSTRAP_ADMIN_EMAIL;
 
+const SETUP_DEFAULTS = {
+  setup_completed: false,
+  current_step: 1,
+  total_steps: 3
+};
+
 // ─── Secondary App Singleton (يمنع تسرب instances) ──────────────────────────
 let _secondaryApp = null;
 let _secondaryAuth = null;
@@ -18,6 +24,45 @@ function getSecondaryAuth() {
     _secondaryAuth = getAuth(_secondaryApp);
   }
   return _secondaryAuth;
+}
+
+async function hasFoundationData() {
+  try {
+    const [classesSnap, subjectsSnap, teachersSnap] = await Promise.all([
+      getDocs(collection(db, 'classes')),
+      getDocs(collection(db, 'subjects')),
+      getDocs(collection(db, 'teachers'))
+    ]);
+    return !classesSnap.empty && !subjectsSnap.empty && !teachersSnap.empty;
+  } catch (error) {
+    console.warn('[Setup] Failed to inspect foundation data:', error);
+    return false;
+  }
+}
+
+async function loadSetupStatus() {
+  const ref = doc(db, 'school_settings', 'general_info');
+  const snap = await getDoc(ref);
+  let data = snap.exists() ? snap.data() : null;
+
+  if (!data && state.profile?.role === 'admin') {
+    const foundationReady = await hasFoundationData();
+    data = {
+      ...SETUP_DEFAULTS,
+      setup_completed: foundationReady,
+      current_step: foundationReady ? 4 : 1,
+      initialized_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    await setDoc(ref, data, { merge: true });
+  }
+
+  state.setup = {
+    completed: data?.setup_completed !== false,
+    currentStep: Number(data?.current_step || 1),
+    totalSteps: Number(data?.total_steps || 3),
+    loading: false
+  };
 }
 
 export function renderAuthPage() {
@@ -195,9 +240,12 @@ export function initAuth(onLogin, onLogout) {
           const rolesData = [];
           rolesSnap.forEach(roleDoc => rolesData.push({ id: roleDoc.id, ...roleDoc.data() }));
           if (rolesData.length > 0) state.roles = rolesData;
+
+          await loadSetupStatus();
           
         } catch(e) {
           console.warn("Failed to load settings:", e);
+          state.setup = { ...state.setup, loading: false };
         }
       } catch (err) {
         console.error("Error during profile initialization (check Firebase rules/config):", err);
@@ -209,6 +257,7 @@ export function initAuth(onLogin, onLogout) {
           email: user.email || '',
           role: user.email === ADMIN_EMAIL ? 'admin' : 'student'
         };
+        state.setup = { ...state.setup, completed: true, loading: false };
       }
       
       hideLoading();
