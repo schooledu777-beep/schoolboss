@@ -233,6 +233,13 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    match /notification_outbox/{notificationId} {
+      allow read: if isAdmin() || resource.data.recipient_id == request.auth.uid;
+      allow create: if isAdmin() || isTeacher();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
     match /transfers/{transferId} {
       allow read: if isAdmin();
       allow write: if isAdmin();

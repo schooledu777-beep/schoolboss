@@ -12,13 +12,13 @@ import { libraryService } from './services/libraryService.js';
 import { renderDashboard, attachDashboardEvents } from './pages/dashboard.js';
 import { renderStudents, attachStudentEvents } from './pages/students.js?v=20260506-custom-fields';
 import { renderTeachers, attachTeacherEvents } from './pages/teachers.js?v=20260503-admin-accounts';
-import { renderParents, attachParentEvents } from './pages/parents.js?v=20260503-admin-accounts';
+import { renderParents, attachParentEvents } from './pages/parents.js?v=20260506-outbox';
 import { renderClasses, attachClassEvents } from './pages/classes.js?v=20260506-behavior';
-import { renderAttendance, attachAttendanceEvents } from './pages/attendance.js';
+import { renderAttendance, attachAttendanceEvents } from './pages/attendance.js?v=20260506-outbox';
 import { renderSubjects, attachSubjectEvents } from './pages/subjects.js?v=20260503-subject-material-upload';
 import { renderAnnualPlan, attachAnnualPlanEvents } from './pages/annualPlan.js?v=20260503-annual-plan';
 import { renderSchedule, attachScheduleEvents } from './pages/schedule.js?v=20260430-one-page-pdf';
-import { renderFinance, attachFinanceEvents } from './pages/finance.js';
+import { renderFinance, attachFinanceEvents } from './pages/finance.js?v=20260506-outbox';
 import { renderAnnouncements, attachAnnouncementEvents, renderMessages, attachMessageEvents, renderSettings, attachSettingsEvents } from './pages/communications.js';
 import { renderAdmissions, attachAdmissionsEvents } from './pages/admissions.js';
 import { renderAcademicAlerts, attachAcademicAlertsEvents } from './pages/academicAlerts.js';
@@ -39,6 +39,7 @@ import { renderAnalytics, attachAnalyticsEvents } from './pages/analytics.js';
 import { renderAuditLog, attachAuditLogEvents } from './pages/auditLog.js';
 import { renderInventory, attachInventoryEvents } from './pages/inventory.js';
 import { renderSetupWizard, attachSetupWizardEvents } from './pages/setupWizard.js?v=20260506-setup-wizard-fix';
+import { renderNotificationOutbox, attachNotificationOutboxEvents } from './pages/notificationOutbox.js?v=20260506-outbox';
 // Export service (registers window.export* globals)
 import './services/exportService.js';
 
@@ -81,6 +82,7 @@ const pages = {
   'audit-log':{ render: renderAuditLog,   events: attachAuditLogEvents   },
   inventory:  { render: renderInventory,  events: attachInventoryEvents   },
   'setup-wizard': { render: renderSetupWizard, events: attachSetupWizardEvents },
+  'notification-outbox': { render: renderNotificationOutbox, events: attachNotificationOutboxEvents },
 };
 
 pages['my-children'] = pages.dashboard;

@@ -577,6 +577,8 @@ textarea.form-input{min-height:80px;resize:vertical}
 .behavior-log-item.negative>span{background:rgba(239,68,68,.12);color:#ef4444}
 .behavior-log-item div{display:flex;flex-direction:column;gap:.1rem}
 .behavior-log-item small{color:var(--text3)}
+.notification-pref-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.65rem}
+@media (max-width: 720px){.notification-pref-grid{grid-template-columns:1fr}}
 .toggle-label:hover{border-color:var(--primary);background:rgba(99,102,241,.05)}
 .toggle-label.active{border-color:var(--primary);background:rgba(99,102,241,.1);color:var(--primary-light)}
 .toggle-label input[type="radio"]{display:none}

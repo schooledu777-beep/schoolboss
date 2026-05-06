@@ -162,6 +162,18 @@ function showParentForm(parent = null) {
       <div class="form-group"><label>${t('email')}</label><input type="email" id="pf-email" class="form-input" value="${parent?.email||''}" required></div>
       ${!isEdit ? `<div class="form-group"><label>${state.lang==='ar'?'كلمة المرور':'Password'}</label><input type="text" id="pf-password" class="form-input" value="123456" required></div>` : ''}
       <div class="form-group"><label>${state.lang==='ar'?'الهاتف':'Phone'}</label><input type="tel" id="pf-phone" class="form-input" value="${parent?.phone||''}"></div>
+      <div class="form-group full-width">
+        <label>${state.lang==='ar'?'تفضيلات الإشعارات':'Notification Preferences'}</label>
+        <div class="notification-pref-grid">
+          <label class="custom-checkbox-field"><input type="checkbox" id="pf-notif-push" ${parent?.notificationPreferences?.push?.enabled !== false ? 'checked' : ''}><span>${state.lang==='ar'?'تطبيق المدرسة':'School app'}</span></label>
+          <label class="custom-checkbox-field"><input type="checkbox" id="pf-notif-sms" ${parent?.notificationPreferences?.sms?.enabled ? 'checked' : ''}><span>SMS</span></label>
+          <label class="custom-checkbox-field"><input type="checkbox" id="pf-notif-telegram" ${parent?.notificationPreferences?.telegram?.enabled ? 'checked' : ''}><span>Telegram</span></label>
+        </div>
+      </div>
+      <div class="form-group full-width">
+        <label>${state.lang==='ar'?'Telegram Chat ID':'Telegram Chat ID'}</label>
+        <input type="text" id="pf-telegram-chat" class="form-input" value="${parent?.notificationPreferences?.telegram?.chatId || parent?.telegramChatId || ''}" placeholder="${state.lang==='ar'?'اختياري عند استخدام بوت تلغرام':'Optional when using Telegram bot'}">
+      </div>
       <div class="form-actions"><button type="button" class="btn btn-outline" onclick="document.getElementById('modal-close-x').click()">${t('cancel')}</button><button type="submit" class="btn btn-primary">${t('save')}</button></div>
     </form>`);
   document.getElementById('parent-form')?.addEventListener('submit', async e => {
@@ -171,7 +183,22 @@ function showParentForm(parent = null) {
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-sm"></span>';
 
-    const data = { name: document.getElementById('pf-name').value.trim(), email: document.getElementById('pf-email').value.trim(), phone: document.getElementById('pf-phone').value.trim(), role: 'parent', updatedAt: new Date().toISOString() };
+    const data = {
+      name: document.getElementById('pf-name').value.trim(),
+      email: document.getElementById('pf-email').value.trim(),
+      phone: document.getElementById('pf-phone').value.trim(),
+      telegramChatId: document.getElementById('pf-telegram-chat').value.trim(),
+      notificationPreferences: {
+        push: { enabled: document.getElementById('pf-notif-push').checked },
+        sms: { enabled: document.getElementById('pf-notif-sms').checked },
+        telegram: {
+          enabled: document.getElementById('pf-notif-telegram').checked,
+          chatId: document.getElementById('pf-telegram-chat').value.trim()
+        }
+      },
+      role: 'parent',
+      updatedAt: new Date().toISOString()
+    };
     try {
       if(isEdit) {
         await updateDoc(doc(db,'parents',parent.id),data);

@@ -5,18 +5,18 @@ class SyncService {
   constructor() {
     this.activeSubscriptions = new Map();
     this.pageCollectionMap = {
-      dashboard: ['students', 'teachers', 'classes', 'attendance', 'announcements', 'fees', 'notification_logs', 'schedules', 'rewards', 'behavior_logs', 'homework', 'calendar_events', 'exam_schedule'],
+      dashboard: ['students', 'teachers', 'classes', 'attendance', 'announcements', 'fees', 'notification_logs', 'notification_outbox', 'schedules', 'rewards', 'behavior_logs', 'homework', 'calendar_events', 'exam_schedule'],
       'setup-wizard': ['classes', 'subjects', 'teachers', 'school_settings'],
       students: ['students', 'classes', 'parents', 'custom_fields_schema', 'behavior_logs'],
       teachers: ['teachers', 'subjects'],
-      parents: ['parents', 'students'],
+      parents: ['parents', 'students', 'notification_outbox'],
       classes: ['classes', 'teachers', 'students', 'schedules', 'attendance', 'grades', 'subjects', 'homework', 'behavior_logs'],
-      attendance: ['attendance', 'students', 'classes'],
+      attendance: ['attendance', 'students', 'classes', 'parents', 'notification_outbox'],
       grades: ['grades', 'students', 'subjects', 'classes'],
       subjects: ['subjects', 'teachers', 'classes', 'schedules', 'grades', 'homework'],
       'annual-plan': ['annual_plans', 'classes', 'subjects', 'schedules', 'calendar_events'],
       schedule: ['schedules', 'classes', 'teachers', 'subjects', 'timeslots', 'classrooms'],
-      finance: ['fees', 'students', 'discounts'],
+      finance: ['fees', 'students', 'parents', 'discounts', 'notification_outbox'],
       announcements: ['announcements'],
       messages: ['messages', 'students', 'teachers', 'parents'],
       admissions: ['students', 'parents', 'classes'],
@@ -24,7 +24,7 @@ class SyncService {
       library: ['books', 'borrowing_records', 'students'],
       hostel: ['buildings', 'rooms', 'bed_allocations', 'students'],
       'student-profile': ['students', 'attendance', 'grades', 'fees', 'classes', 'behavior_logs'],
-      'parent-profile': ['parents', 'students', 'fees', 'notification_logs'],
+      'parent-profile': ['parents', 'students', 'fees', 'notification_logs', 'notification_outbox'],
       'academic-alerts': ['academic_alerts', 'students', 'subjects'],
       transportation: ['buses', 'routes', 'route_students', 'transport_fees', 'students'],
       // New pages — round 1
@@ -38,6 +38,7 @@ class SyncService {
       'audit-log':['audit_logs'],
       inventory:  ['inventory'],
       settings:   ['settings', 'custom_fields_schema'],
+      'notification-outbox': ['notification_outbox', 'parents', 'students'],
     };
 
     // Helper to map DB names to state keys (if different)
@@ -45,6 +46,7 @@ class SyncService {
       schedules: 'schedules',
       fees: 'fees',
       notification_logs: 'notificationLogs',
+      notification_outbox: 'notificationOutbox',
       academic_alerts: 'academicAlerts',
       salary_slips: 'salarySlips',
       borrowing_records: 'borrowingRecords',

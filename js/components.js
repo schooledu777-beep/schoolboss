@@ -59,6 +59,7 @@ function getNavGroups() {
     if (state.modules?.communications?.enabled) {
       commItems.push({ icon: '📢', key: 'announcements', page: 'announcements' });
       commItems.push({ icon: '✉️', key: 'messages', page: 'messages' });
+      if (state.profile?.role === 'admin') commItems.push({ icon: '📨', key: 'notificationOutbox', page: 'notification-outbox' });
     }
     if (commItems.length)
       groups.push({ labelAr: 'المالية والتواصل', labelEn: 'Finance & Comms', items: commItems });

@@ -1,5 +1,5 @@
 import { state, t } from '../state.js';
-import { db, collection, addDoc, updateDoc, doc, getDocs, query, where } from '../firebase-config.js';
+import { db, collection, doc, writeBatch } from '../firebase-config.js';
 import { showToast } from '../ui.js';
 import { academicService } from '../services/academicService.js';
 import { notificationService } from '../services/notificationService.js';
@@ -114,27 +114,29 @@ async function saveAttendance() {
       const radio = document.querySelector(`input[name="att-${sid}"]:checked`);
       if (!radio) continue;
       const existing = state.attendance.find(a => a.classId === classId && a.date === date && a.studentId === sid);
+      const batch = writeBatch(db);
       if (existing) {
-        await updateDoc(doc(db, 'attendance', existing.id), { status: radio.value, teacherId: state.profile?.uid });
+        batch.update(doc(db, 'attendance', existing.id), { status: radio.value, teacherId: state.profile?.uid });
       } else {
-        await addDoc(collection(db, 'attendance'), { studentId: sid, classId, date, status: radio.value, teacherId: state.profile?.uid, createdAt: new Date().toISOString() });
+        batch.set(doc(collection(db, 'attendance')), { studentId: sid, classId, date, status: radio.value, teacherId: state.profile?.uid, createdAt: new Date().toISOString() });
       }
       const studentName = state.students.find(s => s.id === sid)?.name || sid;
-      await recordAudit('create', 'attendance', `تسجيل حضور: ${studentName} - ${radio.value} - ${date}`);
-      // Trigger academic alerts check for this student
-      academicService.processAcademicAlerts(sid);
-
-      // Trigger notification if absent
       if (radio.value === 'absent') {
         const student = state.students.find(s => s.id === sid);
         if (student?.parentId) {
-          notificationService.triggerEventNotification('student_absent', {
+          const payload = notificationService.buildEventPayload('student_absent', {
             recipientId: student.parentId,
+            studentId: sid,
             studentName: student.name,
             date: date
           });
+          if (payload) notificationService.queueOutboxInBatch(batch, payload);
         }
       }
+      await batch.commit();
+      await recordAudit('create', 'attendance', `تسجيل حضور: ${studentName} - ${radio.value} - ${date}`);
+      // Trigger academic alerts check for this student
+      academicService.processAcademicAlerts(sid);
     }
     showToast(t('savedSuccess'), 'success');
   } catch(e) { showToast(t('errorOccurred'), 'error'); }

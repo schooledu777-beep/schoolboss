@@ -31,6 +31,7 @@ export const translations = {
   finance: { ar: 'النظام المالي', en: 'Finance' },
   announcements: { ar: 'الإعلانات', en: 'Announcements' },
   messages: { ar: 'الرسائل', en: 'Messages' },
+  notificationOutbox: { ar: 'سجل الإرسال', en: 'Send Log' },
   homework: { ar: 'الواجبات', en: 'Homework' },
   rewards: { ar: 'المكافآت', en: 'Rewards' },
   clinic: { ar: 'العيادة', en: 'Clinic' },

@@ -55,6 +55,7 @@ export const state = {
   rooms: [],
   bedAllocations: [],
   notificationLogs: [],
+  notificationOutbox: [],
   transfers: [],
   schoolSettings: [],
   customFieldsSchema: [],
