@@ -530,6 +530,25 @@ textarea.form-input{min-height:80px;resize:vertical}
 .setting-row:last-child{border-bottom:none}
 .toggle-group{display:flex;gap:.75rem;flex-wrap:wrap}
 .toggle-label{display:flex;align-items:center;gap:.5rem;padding:.6rem 1.25rem;border:2px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;transition:all .2s;font-weight:500}
+
+.custom-fields-section{grid-column:1 / -1;border:1px solid var(--border);background:var(--surface);border-radius:14px;padding:1rem;margin:.25rem 0}
+.custom-fields-header{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:1rem}
+.custom-fields-header h4{margin:0;color:var(--primary);font-size:1rem}
+.custom-fields-header p{margin:.25rem 0 0;color:var(--text3);font-size:.82rem}
+.custom-fields-header span{min-width:2rem;height:2rem;border-radius:10px;background:rgba(102,126,234,.14);color:var(--primary);display:grid;place-items:center;font-weight:900}
+.custom-fields-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}
+.custom-checkbox-field{display:flex;align-items:center;gap:.65rem;border:1px solid var(--border);background:var(--bg2);border-radius:12px;padding:.8rem .9rem;font-weight:700;color:var(--text2)}
+.custom-checkbox-field input{width:18px;height:18px;accent-color:var(--primary)}
+.custom-fields-admin-card{grid-column:1 / -1}
+.custom-fields-admin-head{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:1rem;flex-wrap:wrap}
+.custom-fields-admin-head p{margin:0;font-size:.86rem}
+.custom-fields-admin-list{display:flex;flex-direction:column;gap:.65rem}
+.custom-field-admin-row{display:flex;justify-content:space-between;align-items:center;gap:1rem;border:1px solid var(--border);background:var(--surface);border-radius:14px;padding:.85rem 1rem}
+.custom-field-admin-row strong{display:block;margin-bottom:.15rem}
+.custom-field-admin-row span{color:var(--text3);font-size:.78rem}
+.custom-field-admin-actions{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;justify-content:flex-end}
+.custom-field-preview{border:1px dashed var(--border);border-radius:14px;padding:1rem;background:var(--surface)}
+.custom-field-preview-title{font-weight:900;color:var(--primary);margin-bottom:.65rem;font-size:.85rem}
 .toggle-label:hover{border-color:var(--primary);background:rgba(99,102,241,.05)}
 .toggle-label.active{border-color:var(--primary);background:rgba(99,102,241,.1);color:var(--primary-light)}
 .toggle-label input[type="radio"]{display:none}
@@ -783,6 +802,9 @@ textarea.form-input{min-height:80px;resize:vertical}
   .sp-widgets-grid{grid-template-columns:1fr 1fr}
   .sp-info-grid{grid-template-columns:1fr}
   .settings-grid{grid-template-columns:1fr}
+  .custom-fields-grid{grid-template-columns:1fr}
+  .custom-field-admin-row{align-items:flex-start;flex-direction:column}
+  .custom-field-admin-actions{justify-content:flex-start}
   .pref-header-row{flex-direction:column}
   .pref-selector{justify-content:center}
   .children-grid-simple{grid-template-columns:1fr}

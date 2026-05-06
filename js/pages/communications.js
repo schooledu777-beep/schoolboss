@@ -1,6 +1,7 @@
 import { state, t } from '../state.js';
-import { db, collection, addDoc, deleteDoc, doc, setDoc, writeBatch, getDocs } from '../firebase-config.js';
-import { showModal, closeModal, showConfirm, showToast, formatDate } from '../ui.js';
+import { db, collection, addDoc, deleteDoc, doc, setDoc, updateDoc, writeBatch, getDocs } from '../firebase-config.js';
+import { showModal, closeModal, showConfirm, showToast, formatDate, escapeHTML } from '../ui.js';
+import { buildFieldKey } from '../services/customFields.js?v=20260506-custom-fields';
 
 // ========================= ANNOUNCEMENTS =========================
 export function renderAnnouncements() {
@@ -107,6 +108,48 @@ export function attachMessageEvents() {
 }
 
 // ========================= SETTINGS =========================
+function renderCustomFieldsSettingsCard() {
+  const isAr = state.lang === 'ar';
+  const fields = (state.customFieldsSchema || []).filter(field => field.is_active !== false);
+  const typeLabels = {
+    text: isAr ? 'نص' : 'Text',
+    number: isAr ? 'رقم' : 'Number',
+    boolean: isAr ? 'نعم / لا' : 'Yes / No',
+    date: isAr ? 'تاريخ' : 'Date',
+    dropdown: isAr ? 'قائمة خيارات' : 'Dropdown'
+  };
+  const targetLabels = {
+    student: isAr ? 'الطلاب' : 'Students',
+    teacher: isAr ? 'المعلمون' : 'Teachers',
+    clinic: isAr ? 'العيادة' : 'Clinic'
+  };
+
+  return `
+    <div class="card glass-card custom-fields-admin-card">
+      <div class="custom-fields-admin-head">
+        <div>
+          <h3 class="card-title">${isAr ? 'الحقول المخصصة' : 'Custom Fields'}</h3>
+          <p class="text-muted">${isAr ? 'أضف حقولاً مرنة تظهر داخل نماذج الطلاب أو المعلمين أو العيادة.' : 'Create flexible fields for students, teachers, or clinic records.'}</p>
+        </div>
+        <button class="btn btn-primary" id="add-custom-field-btn">+ ${isAr ? 'حقل جديد' : 'New Field'}</button>
+      </div>
+      <div class="custom-fields-admin-list">
+        ${fields.map(field => `
+          <div class="custom-field-admin-row">
+            <div>
+              <strong>${escapeHTML(field.field_label || field.field_key)}</strong>
+              <span>${escapeHTML(field.field_key)} · ${targetLabels[field.target_entity] || field.target_entity} · ${typeLabels[field.field_type] || field.field_type}</span>
+            </div>
+            <div class="custom-field-admin-actions">
+              ${field.is_required ? `<span class="badge badge-warning">${isAr ? 'إلزامي' : 'Required'}</span>` : ''}
+              <button class="btn btn-sm btn-danger remove-custom-field" data-id="${field.id}">${isAr ? 'إخفاء' : 'Hide'}</button>
+            </div>
+          </div>
+        `).join('') || `<div class="empty-state compact"><span class="empty-icon">🧩</span><h3>${isAr ? 'لا توجد حقول مخصصة بعد' : 'No custom fields yet'}</h3></div>`}
+      </div>
+    </div>`;
+}
+
 export function renderSettings() {
   if (state.profile?.role !== 'admin') {
     return `<div class="page-content animate-in"><div class="empty-state glass-card"><span class="empty-icon">🔒</span><h3>${state.lang==='ar'?'لا يوجد صلاحية':'Access Denied'}</h3></div></div>`;
@@ -149,6 +192,7 @@ export function renderSettings() {
           `).join('')}
         </div>
       </div>
+      ${renderCustomFieldsSettingsCard()}
       <div class="card glass-card">
         <h3 class="card-title">${state.lang==='ar'?'حسابي':'My Account'}</h3>
         <div class="setting-row"><span>${t('email')}</span><span class="text-muted">${state.profile?.email}</span></div>
@@ -164,6 +208,31 @@ export function renderSettings() {
 }
 
 export function attachSettingsEvents(renderApp) {
+  document.getElementById('add-custom-field-btn')?.addEventListener('click', () => showCustomFieldModal());
+
+  document.querySelectorAll('.remove-custom-field').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const isAr = state.lang === 'ar';
+      showConfirm(
+        isAr ? 'إخفاء الحقل المخصص' : 'Hide custom field',
+        isAr ? 'سيتم إخفاء الحقل من النماذج الجديدة مع الحفاظ على البيانات القديمة داخل سجلات الطلاب.' : 'The field will be hidden from new forms while old saved values remain archived.',
+        async () => {
+          try {
+            await updateDoc(doc(db, 'custom_fields_schema', btn.dataset.id), {
+              is_active: false,
+              updated_at: new Date().toISOString()
+            });
+            showToast(t('savedSuccess'), 'success');
+            renderApp();
+          } catch (error) {
+            console.error(error);
+            showToast(t('errorOccurred'), 'error');
+          }
+        }
+      );
+    });
+  });
+
   document.getElementById('clear-data-btn')?.addEventListener('click', async () => {
     const isAr = state.lang === 'ar';
     showConfirm(
@@ -227,4 +296,125 @@ export function attachSettingsEvents(renderApp) {
   });
   document.getElementById('setting-theme')?.addEventListener('click', () => { import('../state.js').then(m => { m.toggleTheme(); renderApp(); }); });
   document.getElementById('setting-lang')?.addEventListener('click', () => { import('../state.js').then(m => { m.toggleLang(); renderApp(); }); });
+}
+
+function showCustomFieldModal() {
+  const isAr = state.lang === 'ar';
+  showModal(isAr ? 'إضافة حقل مخصص' : 'Add Custom Field', `
+    <form id="custom-field-form" class="form-grid">
+      <div class="form-group">
+        <label>${isAr ? 'مكان ظهور الحقل' : 'Target Entity'}</label>
+        <select id="cf-target" class="form-select" required>
+          <option value="student">${isAr ? 'بطاقة الطالب' : 'Student'}</option>
+          <option value="teacher">${isAr ? 'بطاقة المعلم' : 'Teacher'}</option>
+          <option value="clinic">${isAr ? 'العيادة' : 'Clinic'}</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>${isAr ? 'نوع الحقل' : 'Field Type'}</label>
+        <select id="cf-type" class="form-select" required>
+          <option value="text">${isAr ? 'نص' : 'Text'}</option>
+          <option value="number">${isAr ? 'رقم' : 'Number'}</option>
+          <option value="boolean">${isAr ? 'نعم / لا' : 'Yes / No'}</option>
+          <option value="date">${isAr ? 'تاريخ' : 'Date'}</option>
+          <option value="dropdown">${isAr ? 'قائمة خيارات' : 'Dropdown'}</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>${isAr ? 'اسم الحقل' : 'Field Label'}</label>
+        <input id="cf-label" class="form-input" placeholder="${isAr ? 'مثال: الحساسية الطبية' : 'Example: Medical allergy'}" required>
+      </div>
+      <div class="form-group">
+        <label>${isAr ? 'المعرف البرمجي' : 'Field Key'}</label>
+        <input id="cf-key" class="form-input" placeholder="medical_allergy" required>
+      </div>
+      <div class="form-group full-width hidden" id="cf-options-wrap">
+        <label>${isAr ? 'خيارات القائمة' : 'Dropdown Options'}</label>
+        <input id="cf-options" class="form-input" placeholder="${isAr ? 'افصل الخيارات بفاصلة: نعم, لا, متابعة' : 'Separate options with commas'}">
+      </div>
+      <label class="custom-checkbox-field full-width">
+        <input id="cf-required" type="checkbox">
+        <span>${isAr ? 'هذا الحقل إلزامي' : 'This field is required'}</span>
+      </label>
+      <div class="custom-field-preview full-width" id="cf-preview"></div>
+      <div class="form-actions" style="grid-column: 1 / -1;">
+        <button type="button" class="btn btn-outline" onclick="document.getElementById('modal-close-x').click()">${t('cancel')}</button>
+        <button type="submit" class="btn btn-primary">${t('save')}</button>
+      </div>
+    </form>`);
+
+  const labelInput = document.getElementById('cf-label');
+  const keyInput = document.getElementById('cf-key');
+  const typeInput = document.getElementById('cf-type');
+  const optionsWrap = document.getElementById('cf-options-wrap');
+  const optionsInput = document.getElementById('cf-options');
+  const preview = document.getElementById('cf-preview');
+
+  function updatePreview() {
+    const type = typeInput.value;
+    const label = labelInput.value.trim() || (isAr ? 'اسم الحقل' : 'Field label');
+    optionsWrap.classList.toggle('hidden', type !== 'dropdown');
+    if (!keyInput.dataset.touched) keyInput.value = buildFieldKey(labelInput.value);
+    const options = optionsInput.value.split(',').map(item => item.trim()).filter(Boolean);
+    preview.innerHTML = `
+      <div class="custom-field-preview-title">${isAr ? 'معاينة' : 'Preview'}</div>
+      ${type === 'dropdown'
+        ? `<select class="form-select"><option>${escapeHTML(options[0] || (isAr ? 'اختر...' : 'Select...'))}</option></select>`
+        : type === 'boolean'
+          ? `<label class="custom-checkbox-field"><input type="checkbox"><span>${escapeHTML(label)}</span></label>`
+          : `<input class="form-input" type="${type === 'date' ? 'date' : type === 'number' ? 'number' : 'text'}" placeholder="${escapeHTML(label)}">`
+      }`;
+  }
+
+  labelInput?.addEventListener('input', updatePreview);
+  keyInput?.addEventListener('input', () => { keyInput.dataset.touched = '1'; });
+  typeInput?.addEventListener('change', updatePreview);
+  optionsInput?.addEventListener('input', updatePreview);
+  updatePreview();
+
+  document.getElementById('custom-field-form')?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const label = labelInput.value.trim();
+    const fieldKey = buildFieldKey(keyInput.value || label);
+    const fieldType = typeInput.value;
+    const options = optionsInput.value.split(',').map(item => item.trim()).filter(Boolean);
+    if (fieldType === 'dropdown' && !options.length) {
+      showToast(isAr ? 'أضف خياراً واحداً على الأقل للقائمة' : 'Add at least one dropdown option', 'error');
+      return;
+    }
+
+    const duplicate = (state.customFieldsSchema || []).some(field =>
+      field.is_active !== false &&
+      field.target_entity === document.getElementById('cf-target').value &&
+      field.field_key === fieldKey
+    );
+    if (duplicate) {
+      showToast(isAr ? 'يوجد حقل بنفس المعرف لهذا القسم' : 'A field with this key already exists for this target', 'error');
+      return;
+    }
+
+    const btn = event.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    try {
+      await addDoc(collection(db, 'custom_fields_schema'), {
+        target_entity: document.getElementById('cf-target').value,
+        field_label: label,
+        field_key: fieldKey,
+        field_type: fieldType,
+        options: fieldType === 'dropdown' ? options : [],
+        is_required: document.getElementById('cf-required').checked,
+        is_active: true,
+        sort_order: Date.now(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
+      closeModal();
+      showToast(t('savedSuccess'), 'success');
+    } catch (error) {
+      console.error(error);
+      showToast(t('errorOccurred'), 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  });
 }

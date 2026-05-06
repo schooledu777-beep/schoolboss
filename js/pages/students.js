@@ -1,11 +1,12 @@
 import { state, t } from '../state.js';
 import { db, collection, addDoc, updateDoc, deleteDoc, doc, setDoc, serverTimestamp, arrayUnion } from '../firebase-config.js';
-import { adminCreateUser } from '../auth.js?v=20260503-admin-accounts';
+import { adminCreateUser } from '../auth.js?v=20260506-setup-wizard-fix';
 import { showModal, closeModal, showConfirm, showToast, escapeHTML, renderAvatar } from '../ui.js?v=20260502-photo-sync';
 import { getStudentDashboardHTML, attachStudentProfileEvents } from './studentProfile.js?v=20260502-photo-viewer';
 import { uploadFile } from '../services/uploadService.js?v=20260502-photo-sync';
 import { showAdminAccountModal } from '../services/accountAdmin.js?v=20260503-admin-accounts';
 import { recordAudit } from './auditLog.js';
+import { renderCustomFieldInputs, collectCustomFieldValues } from '../services/customFields.js?v=20260506-custom-fields';
 
 export function renderStudents() {
   const students = state.students;
@@ -254,6 +255,8 @@ function showStudentForm(student = null) {
         <div class="form-group"><label>${state.lang === 'ar' ? 'الهاتف' : 'Phone'}</label><input type="tel" id="sf-parent-phone" class="form-input"></div>
       </div>
 
+      ${renderCustomFieldInputs('student', student?.custom_data || {})}
+
       <div class="form-actions" style="grid-column: 1 / -1;"><button type="button" class="btn btn-outline" onclick="document.getElementById('modal-close-x').click()">${t('cancel')}</button><button type="submit" class="btn btn-primary">${t('save')}</button></div>
     </form>
   `);
@@ -307,6 +310,7 @@ function showStudentForm(student = null) {
         dob: document.getElementById('sf-dob').value,
         phone: document.getElementById('sf-phone').value.trim(),
         parentId: finalParentId,
+        custom_data: collectCustomFieldValues('student'),
         updatedAt: new Date().toISOString()
       };
 

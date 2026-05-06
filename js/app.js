@@ -10,7 +10,7 @@ import { libraryService } from './services/libraryService.js';
 
 // Import all page renderers
 import { renderDashboard, attachDashboardEvents } from './pages/dashboard.js';
-import { renderStudents, attachStudentEvents } from './pages/students.js?v=20260503-admin-accounts';
+import { renderStudents, attachStudentEvents } from './pages/students.js?v=20260506-custom-fields';
 import { renderTeachers, attachTeacherEvents } from './pages/teachers.js?v=20260503-admin-accounts';
 import { renderParents, attachParentEvents } from './pages/parents.js?v=20260503-admin-accounts';
 import { renderClasses, attachClassEvents } from './pages/classes.js?v=20260503-class-profile';
@@ -26,7 +26,7 @@ import { renderHR, attachHREvents } from './pages/hr.js';
 import { renderLibrary, attachLibraryEvents } from './pages/library.js';
 import { renderHostel, attachHostelEvents } from './pages/hostel.js';
 import { renderTransportation, attachTransportationEvents } from './pages/transportation.js';
-import { renderStudentProfile, attachStudentProfileEvents } from './pages/studentProfile.js?v=20260503-admin-accounts';
+import { renderStudentProfile, attachStudentProfileEvents } from './pages/studentProfile.js?v=20260506-custom-fields';
 import { renderParentProfile, attachParentProfileEvents } from './pages/parentProfile.js?v=20260503-admin-accounts';
 import { attachTeacherProfileEvents } from './pages/teacherProfile.js?v=20260503-admin-accounts';
 // New pages

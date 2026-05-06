@@ -3,6 +3,7 @@ import { db, doc, updateDoc } from '../firebase-config.js';
 import { escapeHTML, getInitials, formatCurrency, renderAvatar, showToast, showModal, closeModal } from '../ui.js?v=20260502-photo-sync';
 import { uploadFile } from '../services/uploadService.js?v=20260502-photo-sync';
 import { showAdminAccountModal } from '../services/accountAdmin.js?v=20260503-admin-accounts';
+import { renderCustomDataSummary } from '../services/customFields.js?v=20260506-custom-fields';
 
 export function renderStudentProfile() {
   const hash = window.location.hash.slice(1);
@@ -155,6 +156,8 @@ export function getStudentDashboardHTML(studentId, activeTab = 'overview') {
           </div>
         </div>
       </div>
+
+      ${renderCustomDataSummary('student', student.custom_data || {})}
 
       <div class="sp-section-card">
         <h4 class="sp-section-title">📋 ${state.lang === 'ar' ? 'مهام عاجلة' : 'Urgent Tasks'}</h4>

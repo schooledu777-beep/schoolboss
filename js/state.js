@@ -56,6 +56,7 @@ export const state = {
   notificationLogs: [],
   transfers: [],
   schoolSettings: [],
+  customFieldsSchema: [],
   // ── NEW COLLECTIONS ──────────────────────────────────────────────
   calendarEvents: [],
   examSchedule: [],

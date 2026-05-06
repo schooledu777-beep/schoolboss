@@ -7,7 +7,7 @@ class SyncService {
     this.pageCollectionMap = {
       dashboard: ['students', 'teachers', 'classes', 'attendance', 'announcements', 'fees', 'notification_logs', 'schedules', 'rewards', 'homework', 'calendar_events', 'exam_schedule'],
       'setup-wizard': ['classes', 'subjects', 'teachers', 'school_settings'],
-      students: ['students', 'classes', 'parents'],
+      students: ['students', 'classes', 'parents', 'custom_fields_schema'],
       teachers: ['teachers', 'subjects'],
       parents: ['parents', 'students'],
       classes: ['classes', 'teachers', 'students', 'schedules', 'attendance', 'grades', 'subjects', 'homework'],
@@ -37,6 +37,7 @@ class SyncService {
       analytics:  ['grades', 'students', 'classes', 'attendance', 'fees', 'teachers'],
       'audit-log':['audit_logs'],
       inventory:  ['inventory'],
+      settings:   ['settings', 'custom_fields_schema'],
     };
 
     // Helper to map DB names to state keys (if different)
@@ -57,6 +58,7 @@ class SyncService {
       audit_logs:      'auditLogs',
       annual_plans:    'annualPlans',
       school_settings: 'schoolSettings',
+      custom_fields_schema: 'customFieldsSchema',
     };
   }
 
