@@ -2,9 +2,9 @@
 import { state, applyTheme, applyLang } from './state.js';
 import { hideLoading } from './ui.js?v=20260502-photo-sync';
 import { registerRoute, initRouter } from './router.js';
-import { renderAuthPage, attachAuthEvents, initAuth } from './auth.js?v=20260506-setup-wizard';
+import { renderAuthPage, attachAuthEvents, initAuth } from './auth.js?v=20260506-setup-wizard-fix';
 import { renderSidebar, renderHeader, attachLayoutEvents } from './components.js?v=20260503-annual-plan';
-import { syncService } from './services/syncService.js?v=20260506-setup-wizard';
+import { syncService } from './services/syncService.js?v=20260506-setup-wizard-fix';
 import { academicService } from './services/academicService.js';
 import { libraryService } from './services/libraryService.js';
 
@@ -38,7 +38,7 @@ import { renderExams, attachExamsEvents } from './pages/examsPage.js';
 import { renderAnalytics, attachAnalyticsEvents } from './pages/analytics.js';
 import { renderAuditLog, attachAuditLogEvents } from './pages/auditLog.js';
 import { renderInventory, attachInventoryEvents } from './pages/inventory.js';
-import { renderSetupWizard, attachSetupWizardEvents } from './pages/setupWizard.js?v=20260506-setup-wizard';
+import { renderSetupWizard, attachSetupWizardEvents } from './pages/setupWizard.js?v=20260506-setup-wizard-fix';
 // Export service (registers window.export* globals)
 import './services/exportService.js';
 
@@ -80,6 +80,7 @@ const pages = {
   analytics:  { render: renderAnalytics,  events: attachAnalyticsEvents  },
   'audit-log':{ render: renderAuditLog,   events: attachAuditLogEvents   },
   inventory:  { render: renderInventory,  events: attachInventoryEvents   },
+  'setup-wizard': { render: renderSetupWizard, events: attachSetupWizardEvents },
 };
 
 pages['my-children'] = pages.dashboard;
@@ -104,7 +105,9 @@ function renderApp() {
     return;
   }
 
-  if (isSetupLocked()) {
+  const requestedHash = window.location.hash.slice(1) || 'dashboard';
+  const requestedBasePath = requestedHash.split('?')[0];
+  if (isSetupLocked() || (requestedBasePath === 'setup-wizard' && state.profile?.role === 'admin')) {
     if (currentLayout !== 'setup') {
       app.innerHTML = renderSetupWizard();
       currentLayout = 'setup';
@@ -116,7 +119,7 @@ function renderApp() {
   }
 
   // Determine current page
-  const currentHash = window.location.hash.slice(1) || 'dashboard';
+  const currentHash = requestedHash;
   const basePath = currentHash.split('?')[0];
   let page = pages[basePath] || pages.dashboard;
 
@@ -219,13 +222,13 @@ state.subscribe(() => {
     _isRendering = true;
     try {
       const mainContent = document.getElementById('main-content');
-      if (isSetupLocked()) {
+      const currentHash = window.location.hash.slice(1) || 'dashboard';
+      const basePath = currentHash.split('?')[0];
+      if (isSetupLocked() || (basePath === 'setup-wizard' && state.profile?.role === 'admin')) {
         renderApp();
         return;
       }
       if (!mainContent) return;
-      const currentHash = window.location.hash.slice(1) || 'dashboard';
-      const basePath = currentHash.split('?')[0];
       const page = pages[basePath] || pages.dashboard;
       try {
         mainContent.innerHTML = page.render();

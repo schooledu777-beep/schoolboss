@@ -11,7 +11,8 @@ const ADMIN_EMAIL = BOOTSTRAP_ADMIN_EMAIL;
 const SETUP_DEFAULTS = {
   setup_completed: false,
   current_step: 1,
-  total_steps: 3
+  total_steps: 3,
+  completed_by_wizard: false
 };
 
 // ─── Secondary App Singleton (يمنع تسرب instances) ──────────────────────────
@@ -26,17 +27,20 @@ function getSecondaryAuth() {
   return _secondaryAuth;
 }
 
-async function hasFoundationData() {
+async function getFirstSetupStep() {
   try {
     const [classesSnap, subjectsSnap, teachersSnap] = await Promise.all([
       getDocs(collection(db, 'classes')),
       getDocs(collection(db, 'subjects')),
       getDocs(collection(db, 'teachers'))
     ]);
-    return !classesSnap.empty && !subjectsSnap.empty && !teachersSnap.empty;
+    if (classesSnap.empty) return 1;
+    if (subjectsSnap.empty) return 2;
+    if (teachersSnap.empty) return 3;
+    return 3;
   } catch (error) {
-    console.warn('[Setup] Failed to inspect foundation data:', error);
-    return false;
+    console.warn('[Setup] Failed to inspect setup step:', error);
+    return 1;
   }
 }
 
@@ -46,12 +50,23 @@ async function loadSetupStatus() {
   let data = snap.exists() ? snap.data() : null;
 
   if (!data && state.profile?.role === 'admin') {
-    const foundationReady = await hasFoundationData();
+    const firstStep = await getFirstSetupStep();
     data = {
       ...SETUP_DEFAULTS,
-      setup_completed: foundationReady,
-      current_step: foundationReady ? 4 : 1,
+      setup_completed: false,
+      current_step: firstStep,
       initialized_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    await setDoc(ref, data, { merge: true });
+  }
+
+  if (data && state.profile?.role === 'admin' && data.setup_completed === true && data.completed_by_wizard !== true) {
+    data = {
+      ...data,
+      setup_completed: false,
+      current_step: await getFirstSetupStep(),
+      completed_by_wizard: false,
       updated_at: new Date().toISOString()
     };
     await setDoc(ref, data, { merge: true });

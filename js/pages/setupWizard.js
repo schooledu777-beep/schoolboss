@@ -1,6 +1,6 @@
 import { state } from '../state.js';
 import { db, collection, addDoc, doc, setDoc, updateDoc } from '../firebase-config.js';
-import { adminCreateUser } from '../auth.js?v=20260506-setup-wizard';
+import { adminCreateUser } from '../auth.js?v=20260506-setup-wizard-fix';
 import { showToast, escapeHTML } from '../ui.js';
 
 const setupRef = () => doc(db, 'school_settings', 'general_info');
@@ -210,6 +210,8 @@ async function updateSetup(nextStep, completed = false) {
     current_step: nextStep,
     total_steps: 3,
     setup_completed: completed,
+    completed_by_wizard: completed,
+    completed_at: completed ? new Date().toISOString() : null,
     updated_at: new Date().toISOString()
   };
   await setDoc(setupRef(), payload, { merge: true });
