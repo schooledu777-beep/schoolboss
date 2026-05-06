@@ -66,6 +66,10 @@ service cloud.firestore {
         );
     }
 
+    function behaviorStudentUpdateOnly() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['total_points', 'updatedAt']);
+    }
+
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
       allow create: if isOwner(userId) &&
@@ -100,7 +104,9 @@ service cloud.firestore {
     match /students/{studentId} {
       allow read: if isAdmin() || hasStudent(studentId) || parentLinkedTo(studentId) ||
         (isTeacher() && resource.data.classId is string && teacherLinkedToClass(resource.data.classId));
-      allow write: if isAdmin() && setupCompleted();
+      allow create, delete: if isAdmin() && setupCompleted();
+      allow update: if (isAdmin() && setupCompleted()) ||
+        (isTeacher() && behaviorStudentUpdateOnly() && resource.data.classId is string && teacherLinkedToClass(resource.data.classId));
     }
 
     match /parents/{parentId} {
@@ -240,6 +246,19 @@ service cloud.firestore {
     match /rewards/{rewardId} {
       allow read: if isAdmin() || isTeacher() || hasStudent(resource.data.studentId) || parentLinkedTo(resource.data.studentId);
       allow write: if isAdmin() || isTeacher();
+    }
+
+    match /behavior_logs/{logId} {
+      allow read: if isAdmin() || isTeacher() ||
+        hasStudent(resource.data.student_id) ||
+        parentLinkedTo(resource.data.student_id);
+      allow create: if isAdmin() ||
+        (isTeacher() &&
+          request.resource.data.teacher_id == request.auth.uid &&
+          request.resource.data.student_id is string &&
+          exists(/databases/$(database)/documents/students/$(request.resource.data.student_id)) &&
+          teacherLinkedToClass(get(/databases/$(database)/documents/students/$(request.resource.data.student_id)).data.classId));
+      allow update, delete: if isAdmin();
     }
 
     match /assessment_types/{assessmentTypeId} {

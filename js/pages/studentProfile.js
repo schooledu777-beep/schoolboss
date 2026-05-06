@@ -4,6 +4,7 @@ import { escapeHTML, getInitials, formatCurrency, renderAvatar, showToast, showM
 import { uploadFile } from '../services/uploadService.js?v=20260502-photo-sync';
 import { showAdminAccountModal } from '../services/accountAdmin.js?v=20260503-admin-accounts';
 import { renderCustomDataSummary } from '../services/customFields.js?v=20260506-custom-fields';
+import { getClassLeaderboard, getStudentBehaviorLogs, renderBehaviorBadge } from '../services/behaviorService.js?v=20260506-behavior';
 
 export function renderStudentProfile() {
   const hash = window.location.hash.slice(1);
@@ -96,6 +97,8 @@ export function getStudentDashboardHTML(studentId, activeTab = 'overview') {
   const cls = state.classes.find(c => c.id === student.classId || (c.studentIds||[]).includes(studentId));
   const parent = state.parents.find(p => p.id === student.parentId);
   const metrics = getStudentMetrics(studentId);
+  const behaviorLogs = getStudentBehaviorLogs(studentId, 8);
+  const leaderboard = getClassLeaderboard(cls?.id, 5);
   
   const tabs = [
     { id: 'overview', label: state.lang === 'ar' ? 'نظرة عامة' : 'Overview', icon: '📊' },
@@ -135,6 +138,12 @@ export function getStudentDashboardHTML(studentId, activeTab = 'overview') {
           <span class="sp-widget-value">${metrics.gpa}%</span>
           <span class="sp-widget-footer">${state.lang === 'ar' ? 'بناءً على آخر النتائج' : 'Based on latest results'}</span>
         </div>
+        <div class="sp-widget widget-gold">
+          <span class="sp-widget-icon">🏅</span>
+          <span class="sp-widget-title">${state.lang === 'ar' ? 'نقاط السلوك' : 'Behavior Points'}</span>
+          <span class="sp-widget-value">${Number(student.total_points || 0)}</span>
+          <span class="sp-widget-footer">${renderBehaviorBadge(student)}</span>
+        </div>
       </div>
       
       <div class="sp-section-card">
@@ -158,6 +167,34 @@ export function getStudentDashboardHTML(studentId, activeTab = 'overview') {
       </div>
 
       ${renderCustomDataSummary('student', student.custom_data || {})}
+
+      <div class="sp-section-card">
+        <h4 class="sp-section-title">🏆 ${state.lang === 'ar' ? 'لوحة الشرف في الصف' : 'Class Leaderboard'}</h4>
+        <div class="behavior-leaderboard">
+          ${leaderboard.map((item, index) => `
+            <div class="behavior-leader-row ${item.id === studentId ? 'current' : ''}">
+              <span class="behavior-rank">${index + 1}</span>
+              <strong>${escapeHTML(item.name || '')}</strong>
+              ${renderBehaviorBadge(item, true)}
+            </div>
+          `).join('') || `<p class="text-muted text-sm">${t('noData')}</p>`}
+        </div>
+      </div>
+
+      <div class="sp-section-card">
+        <h4 class="sp-section-title">✨ ${state.lang === 'ar' ? 'سجل النقاط والسلوك' : 'Behavior Log'}</h4>
+        <div class="behavior-log-list">
+          ${behaviorLogs.map(log => `
+            <div class="behavior-log-item ${Number(log.points || 0) >= 0 ? 'positive' : 'negative'}">
+              <span>${Number(log.points || 0) >= 0 ? '+' : ''}${Number(log.points || 0)}</span>
+              <div>
+                <strong>${escapeHTML(log.category || '')}</strong>
+                <small>${escapeHTML(log.teacher_name || '')}${log.note ? ` · ${escapeHTML(log.note)}` : ''}</small>
+              </div>
+            </div>
+          `).join('') || `<p class="text-muted text-sm">${state.lang === 'ar' ? 'لا توجد نقاط مسجلة بعد' : 'No behavior points yet'}</p>`}
+        </div>
+      </div>
 
       <div class="sp-section-card">
         <h4 class="sp-section-title">📋 ${state.lang === 'ar' ? 'مهام عاجلة' : 'Urgent Tasks'}</h4>
@@ -356,6 +393,7 @@ export function getStudentDashboardHTML(studentId, activeTab = 'overview') {
           <div class="sp-user-details">
             <h3>${escapeHTML(student.name)}</h3>
             <p>${cls?.name || '—'} | ${state.lang === 'ar' ? 'الرقم:' : 'ID:'} ${student.id.substring(0, 8).toUpperCase()}</p>
+            <div style="margin-top:.45rem">${renderBehaviorBadge(student)}</div>
           </div>
         </div>
         <div style="display: flex; gap: 0.5rem; align-items: center;">

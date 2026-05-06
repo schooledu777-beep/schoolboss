@@ -2,7 +2,8 @@ import { state, t } from '../state.js';
 import { db, collection, addDoc, updateDoc, deleteDoc, doc } from '../firebase-config.js';
 import { showModal, closeModal, showConfirm, showToast, escapeHTML, renderAvatar } from '../ui.js';
 import { recordAudit } from './auditLog.js';
-import { showStudentCardModal } from './students.js?v=20260503-admin-accounts';
+import { showStudentCardModal } from './students.js?v=20260506-custom-fields';
+import { awardBehaviorPoints, renderBehaviorBadge, renderQuickBehaviorActions } from '../services/behaviorService.js?v=20260506-behavior';
 
 function getClassStudents(cls) {
   const explicitIds = cls.studentIds || [];
@@ -31,7 +32,8 @@ function getClassStats(cls) {
   const gradeTotal = grades.reduce((sum, g) => sum + Number(g.score || 0), 0);
   const gradeMax = grades.reduce((sum, g) => sum + Number(g.maxScore || 100), 0);
   const gradeAvg = grades.length && gradeMax > 0 ? Math.round((gradeTotal / gradeMax) * 100) : 0;
-  return { students, schedules, attendance, grades, homework, subjects, attendanceRate, gradeAvg };
+  const totalPoints = students.reduce((sum, s) => sum + Number(s.total_points || 0), 0);
+  return { students, schedules, attendance, grades, homework, subjects, attendanceRate, gradeAvg, totalPoints };
 }
 
 function badgeType(value) {
@@ -196,6 +198,7 @@ function showClassProfile(cls) {
         <div class="sp-widget widget-dark"><span class="sp-widget-title">${state.lang === 'ar' ? 'المعلمون' : 'Teachers'}</span><span class="sp-widget-value">${teachers.length}</span></div>
         <div class="sp-widget widget-dark"><span class="sp-widget-title">${state.lang === 'ar' ? 'الحضور' : 'Attendance'}</span><span class="sp-widget-value">${stats.attendance.length ? `${stats.attendanceRate}%` : '—'}</span></div>
         <div class="sp-widget widget-dark"><span class="sp-widget-title">${state.lang === 'ar' ? 'المتوسط' : 'Average'}</span><span class="sp-widget-value">${stats.grades.length ? `${stats.gradeAvg}%` : '—'}</span></div>
+        <div class="sp-widget widget-dark"><span class="sp-widget-title">${state.lang === 'ar' ? 'نقاط السلوك' : 'Behavior Points'}</span><span class="sp-widget-value">${stats.totalPoints}</span></div>
       </div>
 
       <div class="sp-section-card">
@@ -207,8 +210,17 @@ function showClassProfile(cls) {
 
       <div class="sp-section-card">
         <h4 class="sp-section-title">🎓 ${t('students')}</h4>
-        <div class="class-student-grid">
-          ${stats.students.map(s => `<button class="class-student-card" data-student-id="${s.id}">${renderAvatar(s.name, s.photoURL, 'avatar-sm')}<span>${escapeHTML(s.name || '')}</span></button>`).join('') || `<p class="text-muted">${t('noData')}</p>`}
+        <div class="class-student-grid behavior-class-grid">
+          ${stats.students.map(s => `
+            <div class="class-student-card behavior-student-card" data-student-id="${s.id}">
+              <button class="behavior-student-open" data-student-id="${s.id}">
+                ${renderAvatar(s.name, s.photoURL, 'avatar-sm')}
+                <span>${escapeHTML(s.name || '')}</span>
+                ${renderBehaviorBadge(s, true)}
+              </button>
+              ${renderQuickBehaviorActions(s.id)}
+            </div>
+          `).join('') || `<p class="text-muted">${t('noData')}</p>`}
         </div>
       </div>
 
@@ -239,8 +251,26 @@ function showClassProfile(cls) {
     closeModal();
     window.location.hash = 'schedule';
   });
-  document.querySelectorAll('.class-student-card').forEach(btn => {
+  document.querySelectorAll('.behavior-student-open').forEach(btn => {
     btn.addEventListener('click', () => showStudentCardModal(btn.dataset.studentId));
+  });
+  document.querySelectorAll('.behavior-quick-action').forEach(btn => {
+    btn.addEventListener('click', async (event) => {
+      event.stopPropagation();
+      const oldText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = '...';
+      try {
+        await awardBehaviorPoints(btn.dataset.studentId, Number(btn.dataset.points), btn.dataset.category);
+        showToast(state.lang === 'ar' ? 'تم تسجيل النقاط' : 'Points recorded', 'success');
+      } catch (error) {
+        console.error(error);
+        showToast(t('errorOccurred'), 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = oldText;
+      }
+    });
   });
 }
 

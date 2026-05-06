@@ -30,6 +30,7 @@ export const state = {
   messages: [],
   homework: [],
   rewards: [],
+  behaviorLogs: [],
   clinic: [],
   library: [],
   buses: [],
