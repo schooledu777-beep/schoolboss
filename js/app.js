@@ -33,7 +33,7 @@ import { attachTeacherProfileEvents } from './pages/teacherProfile.js?v=20260503
 import { renderReportCards, attachReportCardsEvents } from './pages/reportCards.js?v=20260503-grade-total-print-fix';
 import { renderCalendar, attachCalendarEvents } from './pages/calendar.js';
 import { renderHomework, attachHomeworkEvents } from './pages/homeworkPage.js';
-import { renderClinic, attachClinicEvents } from './pages/clinicPage.js';
+import { renderClinic, attachClinicEvents } from './pages/clinicPage.js?v=20260506-clinic';
 import { renderExams, attachExamsEvents } from './pages/examsPage.js';
 import { renderAnalytics, attachAnalyticsEvents } from './pages/analytics.js';
 import { renderAuditLog, attachAuditLogEvents } from './pages/auditLog.js';

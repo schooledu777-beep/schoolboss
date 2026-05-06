@@ -99,7 +99,10 @@ function getNavGroups() {
       },
       {
         labelAr: 'المتابعة', labelEn: 'Follow-up',
-        items: [{ icon: '⚠️', key: 'academicAlerts', page: 'academic-alerts' }]
+        items: [
+          { icon: '⚠️', key: 'academicAlerts', page: 'academic-alerts' },
+          ...(state.modules?.clinic?.enabled ? [{ icon: '🩺', key: 'clinicPage', page: 'clinic' }] : []),
+        ]
       },
     ];
     if (state.modules?.communications?.enabled)

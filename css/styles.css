@@ -1494,3 +1494,55 @@ input[type="checkbox"]           { width: 18px; height: 18px; accent-color: var(
 @media (max-width: 1024px) {
   .hide-tablet { display: none !important; }
 }
+
+/* ========================= CLINIC MODULE ========================= */
+
+/* Medical Excuse row highlight */
+.medical-excuse-row {
+  background: rgba(6, 182, 212, 0.06) !important;
+  position: relative;
+}
+.medical-excuse-row td { opacity: .85; }
+
+/* Disabled radio inputs for medically excused students */
+.medical-excuse-row input[type="radio"]:disabled {
+  accent-color: var(--primary);
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* 🩺 badge next to student name */
+.medical-badge {
+  display: inline-block;
+  vertical-align: middle;
+  cursor: help;
+  transition: transform .2s;
+}
+.medical-badge:hover { transform: scale(1.25); }
+
+/* Table row tinting for action type */
+.row-danger { background: rgba(239, 68, 68, 0.05) !important; }
+.row-warning { background: rgba(245, 158, 11, 0.05) !important; }
+
+/* gradient-orange stat card */
+.gradient-orange { background: linear-gradient(135deg, #f97316, #ea580c); color: #fff; }
+
+/* Stats grid 4-col */
+.grid-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+@media (max-width: 900px) {
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 500px) {
+  .grid-4 { grid-template-columns: 1fr; }
+}
+
+/* tabs-bar used in clinic + transportation */
+.tabs-bar {
+  display: flex;
+  gap: .35rem;
+  flex-wrap: wrap;
+}
+
+/* ── End Clinic Module ──────────────────────────────────────── */

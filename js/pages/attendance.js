@@ -1,5 +1,5 @@
 import { state, t } from '../state.js';
-import { db, collection, doc, writeBatch } from '../firebase-config.js';
+import { db, doc, setDoc, writeBatch } from '../firebase-config.js';
 import { showToast } from '../ui.js';
 import { academicService } from '../services/academicService.js';
 import { notificationService } from '../services/notificationService.js';
@@ -71,23 +71,49 @@ async function loadAttendance() {
     return;
   }
 
+  const isAr = state.lang === 'ar';
+
   container.innerHTML = `
     <div class="table-responsive">
     <table class="data-table"><thead><tr><th>#</th><th>${t('fullName')}</th>
-    ${canEdit ? `<th style="text-align:center">${t('present')}</th><th style="text-align:center">${t('absent')}</th><th style="text-align:center">${t('late')}</th><th style="text-align:center">${t('excused')}</th>` : `<th>${state.lang==='ar'?'الحالة':'Status'}</th>`}
+    ${canEdit
+      ? `<th style="text-align:center">${t('present')}</th><th style="text-align:center">${t('absent')}</th><th style="text-align:center">${t('late')}</th><th style="text-align:center">${t('excused')}</th>`
+      : `<th>${isAr ? 'الحالة' : 'Status'}</th>`}
     </tr></thead><tbody>
     ${students.map((s, i) => {
-      const rec = existing.find(a => a.studentId === s.id);
+      // Support both composite IDs (new: studentId_date) and legacy random IDs
+      const rec = existing.find(a => a.id === `${s.id}_${date}` || (a.studentId === s.id && a.date === date));
       const status = rec?.status || '';
+      const isMedical = status === 'medical_excuse';
+
       if (canEdit) {
-        return `<tr><td>${i+1}</td><td>${s.name}</td>
-          <td style="text-align:center"><input type="radio" name="att-${s.id}" value="present" ${status==='present'?'checked':''}></td>
-          <td style="text-align:center"><input type="radio" name="att-${s.id}" value="absent" ${status==='absent'?'checked':''}></td>
-          <td style="text-align:center"><input type="radio" name="att-${s.id}" value="late" ${status==='late'?'checked':''}></td>
-          <td style="text-align:center"><input type="radio" name="att-${s.id}" value="excused" ${status==='excused'?'checked':''}></td></tr>`;
+        // Medical-excuse row: freeze radios, show 🩺 badge
+        const medicalNote = isAr
+          ? 'مُعفى طبياً — تم التحويل من العيادة المدرسية'
+          : 'Medical Excuse — Referred from School Clinic';
+        return `
+        <tr class="${isMedical ? 'medical-excuse-row' : ''}">
+          <td>${i + 1}</td>
+          <td>
+            ${s.name}
+            ${isMedical ? `<span class="medical-badge" title="${medicalNote}" style="margin-${isAr?'right':'left'}:.35rem;font-size:1rem;cursor:help;">🩺</span>` : ''}
+          </td>
+          <td style="text-align:center"><input type="radio" name="att-${s.id}" value="present"  ${status==='present' ?'checked':''} ${isMedical?'disabled':''}></td>
+          <td style="text-align:center"><input type="radio" name="att-${s.id}" value="absent"   ${status==='absent'  ?'checked':''} ${isMedical?'disabled':''}></td>
+          <td style="text-align:center"><input type="radio" name="att-${s.id}" value="late"     ${status==='late'    ?'checked':''} ${isMedical?'disabled':''}></td>
+          <td style="text-align:center"><input type="radio" name="att-${s.id}" value="excused"  ${status==='excused' ?'checked':''} ${isMedical?'disabled':''}></td>
+        </tr>`;
       } else {
-        const statusLabels = { present: '✅ '+t('present'), absent: '❌ '+t('absent'), late: '⏰ '+t('late'), excused: '📋 '+t('excused') };
-        return `<tr><td>${i+1}</td><td>${s.name}</td><td>${statusLabels[status]||'—'}</td></tr>`;
+        const statusLabels = {
+          present:        '✅ ' + t('present'),
+          absent:         '❌ ' + t('absent'),
+          late:           '⏰ ' + t('late'),
+          excused:        '📋 ' + t('excused'),
+          medical_excuse: '🩺 ' + (isAr ? 'عذر طبي' : 'Medical Excuse'),
+        };
+        return `<tr class="${isMedical ? 'medical-excuse-row' : ''}">
+          <td>${i + 1}</td><td>${s.name}</td><td>${statusLabels[status] || '—'}</td>
+        </tr>`;
       }
     }).join('')}
     </tbody></table>
@@ -101,44 +127,78 @@ async function loadAttendance() {
 
 async function saveAttendance() {
   const classId = document.getElementById('att-class')?.value;
-  const date = document.getElementById('att-date')?.value;
+  const date    = document.getElementById('att-date')?.value;
   if (!classId || !date) return;
 
-  const cls = state.classes.find(c => c.id === classId);
+  const cls        = state.classes.find(c => c.id === classId);
   const studentIds = cls?.studentIds || [];
-  const btn = document.getElementById('save-att-btn');
+  const btn        = document.getElementById('save-att-btn');
   if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-sm"></span>'; }
 
   try {
+    // ── Single batch for all students ────────────────────────────────
+    const batch = writeBatch(db);
+    const now   = new Date().toISOString();
+    let   saved = 0;
+
     for (const sid of studentIds) {
       const radio = document.querySelector(`input[name="att-${sid}"]:checked`);
       if (!radio) continue;
-      const existing = state.attendance.find(a => a.classId === classId && a.date === date && a.studentId === sid);
-      const batch = writeBatch(db);
-      if (existing) {
-        batch.update(doc(db, 'attendance', existing.id), { status: radio.value, teacherId: state.profile?.uid });
-      } else {
-        batch.set(doc(collection(db, 'attendance')), { studentId: sid, classId, date, status: radio.value, teacherId: state.profile?.uid, createdAt: new Date().toISOString() });
-      }
-      const studentName = state.students.find(s => s.id === sid)?.name || sid;
+
+      // Skip students whose radio inputs are disabled (medical excuse)
+      if (radio.disabled) continue;
+
+      // ── Composite doc ID: studentId_date ─────────────────────────
+      const attDocId = `${sid}_${date}`;
+      const attRef   = doc(db, 'attendance', attDocId);
+
+      batch.set(attRef, {
+        studentId: sid,
+        classId,
+        date,
+        status:    radio.value,
+        teacherId: state.profile?.uid || '',
+        updatedAt: now,
+      }, { merge: true });
+
+      // Parent absent notification
       if (radio.value === 'absent') {
         const student = state.students.find(s => s.id === sid);
         if (student?.parentId) {
           const payload = notificationService.buildEventPayload('student_absent', {
-            recipientId: student.parentId,
-            studentId: sid,
-            studentName: student.name,
-            date: date
+            recipientId:  student.parentId,
+            studentId:    sid,
+            studentName:  student.name,
+            date,
           });
           if (payload) notificationService.queueOutboxInBatch(batch, payload);
         }
       }
-      await batch.commit();
-      await recordAudit('create', 'attendance', `تسجيل حضور: ${studentName} - ${radio.value} - ${date}`);
-      // Trigger academic alerts check for this student
+
+      saved++;
+    }
+
+    await batch.commit();
+
+    // Post-save: audit + academic alerts (outside batch — best effort)
+    for (const sid of studentIds) {
+      const radio = document.querySelector(`input[name="att-${sid}"]:checked`);
+      if (!radio || radio.disabled) continue;
+      const studentName = state.students.find(s => s.id === sid)?.name || sid;
+      recordAudit('create', 'attendance', `تسجيل حضور: ${studentName} - ${radio.value} - ${date}`).catch(() => {});
       academicService.processAcademicAlerts(sid);
     }
-    showToast(t('savedSuccess'), 'success');
-  } catch(e) { showToast(t('errorOccurred'), 'error'); }
+
+    showToast(
+      state.lang === 'ar'
+        ? `✅ تم حفظ حضور ${saved} طالب`
+        : `✅ Saved attendance for ${saved} student${saved !== 1 ? 's' : ''}`,
+      'success'
+    );
+  } catch (e) {
+    console.error('[Attendance] Save error:', e);
+    showToast(t('errorOccurred'), 'error');
+  }
+
   if (btn) { btn.disabled = false; btn.textContent = t('save'); }
 }
