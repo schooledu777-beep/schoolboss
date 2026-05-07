@@ -153,13 +153,19 @@ export function getTeacherDashboardHTML(teacherId, activeTab = 'overview') {
             <div class="sp-section-card">
                 <h4 class="sp-section-title">🏫 ${state.lang === 'ar' ? 'الصفوف التي أدرسها' : 'My Classes'}</h4>
                 <div class="grid-container" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
-                    ${state.classes.filter(c => c.teacherId === teacherId || (c.teacherIds || []).includes(teacherId)).map(c => `
+                    ${state.classes.filter(c => c.teacherId === teacherId || (c.teacherIds || []).includes(teacherId)).map(c => {
+                        const explicitIds = c.studentIds || [];
+                        const count = new Set([
+                          ...explicitIds,
+                          ...state.students.filter(s => s.classId === c.id).map(s => s.id),
+                        ]).size;
+                        return `
                         <div class="glass-card p-3 text-center">
                             <div style="font-size: 2rem; margin-bottom: 0.5rem;">🏫</div>
                             <div style="font-weight: 600;">${c.name}</div>
-                            <div class="text-muted text-sm">${c.studentIds?.length || 0} ${state.lang === 'ar' ? 'طالب' : 'Students'}</div>
-                        </div>
-                    `).join('') || `<p class="text-muted">${t('noData')}</p>`}
+                            <div class="text-muted text-sm">${count} ${state.lang === 'ar' ? 'طالب' : 'Students'}</div>
+                        </div>`;
+                    }).join('') || `<p class="text-muted">${t('noData')}</p>`}
                 </div>
             </div>
         `,
@@ -363,7 +369,13 @@ export function getTeacherDashboardHTML(teacherId, activeTab = 'overview') {
 
 function getTeacherMetrics(teacherId) {
     const myClasses = state.classes.filter(c => c.teacherId === teacherId || (c.teacherIds || []).includes(teacherId));
-    const studentIds = [...new Set(myClasses.flatMap(c => c.studentIds || []))];
+    // Dual Lookup: count students via class.studentIds[] OR student.classId
+    const myClassIds = myClasses.map(c => c.id);
+    const explicitIds = [...new Set(myClasses.flatMap(c => c.studentIds || []))];
+    const studentIds = [...new Set([
+      ...explicitIds,
+      ...state.students.filter(s => myClassIds.includes(s.classId)).map(s => s.id),
+    ])];
     
     // Upcoming Class
     const now = new Date();

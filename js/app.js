@@ -10,11 +10,11 @@ import { libraryService } from './services/libraryService.js';
 
 // Import all page renderers
 import { renderDashboard, attachDashboardEvents } from './pages/dashboard.js';
-import { renderStudents, attachStudentEvents } from './pages/students.js?v=20260506-custom-fields';
+import { renderStudents, attachStudentEvents } from './pages/students.js?v=20260507-class-sync';
 import { renderTeachers, attachTeacherEvents } from './pages/teachers.js?v=20260503-admin-accounts';
 import { renderParents, attachParentEvents } from './pages/parents.js?v=20260506-outbox';
 import { renderClasses, attachClassEvents } from './pages/classes.js?v=20260506-behavior';
-import { renderAttendance, attachAttendanceEvents } from './pages/attendance.js?v=20260506-outbox';
+import { renderAttendance, attachAttendanceEvents } from './pages/attendance.js?v=20260507-class-sync';
 import { renderSubjects, attachSubjectEvents } from './pages/subjects.js?v=20260503-subject-material-upload';
 import { renderAnnualPlan, attachAnnualPlanEvents } from './pages/annualPlan.js?v=20260503-annual-plan';
 import { renderSchedule, attachScheduleEvents } from './pages/schedule.js?v=20260430-one-page-pdf';
@@ -28,7 +28,7 @@ import { renderHostel, attachHostelEvents } from './pages/hostel.js';
 import { renderTransportation, attachTransportationEvents } from './pages/transportation.js';
 import { renderStudentProfile, attachStudentProfileEvents } from './pages/studentProfile.js?v=20260506-behavior';
 import { renderParentProfile, attachParentProfileEvents } from './pages/parentProfile.js?v=20260503-admin-accounts';
-import { attachTeacherProfileEvents } from './pages/teacherProfile.js?v=20260503-admin-accounts';
+import { attachTeacherProfileEvents } from './pages/teacherProfile.js?v=20260507-class-sync';
 // New pages
 import { renderReportCards, attachReportCardsEvents } from './pages/reportCards.js?v=20260503-grade-total-print-fix';
 import { renderCalendar, attachCalendarEvents } from './pages/calendar.js';

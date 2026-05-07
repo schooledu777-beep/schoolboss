@@ -51,8 +51,14 @@ async function loadAttendance() {
   if (!classId || !date || !container) return;
 
   const cls = state.classes.find(c => c.id === classId);
-  const studentIds = cls?.studentIds || [];
-  let students = state.students.filter(s => studentIds.includes(s.id));
+  // Dual Lookup: match via class.studentIds[] OR student.classId field
+  // This ensures students appear even if the class's studentIds array is out of sync
+  const explicitIds = cls?.studentIds || [];
+  let students = state.students.filter(s =>
+    explicitIds.includes(s.id) || s.classId === classId
+  );
+  // Sort alphabetically for consistent display
+  students.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ar'));
 
   const role = state.profile?.role;
   if (role === 'parent') {
@@ -130,9 +136,13 @@ async function saveAttendance() {
   const date    = document.getElementById('att-date')?.value;
   if (!classId || !date) return;
 
-  const cls        = state.classes.find(c => c.id === classId);
-  const studentIds = cls?.studentIds || [];
-  const btn        = document.getElementById('save-att-btn');
+  const cls         = state.classes.find(c => c.id === classId);
+  // Dual Lookup: same set shown in loadAttendance — class.studentIds[] OR student.classId
+  const explicitIds = cls?.studentIds || [];
+  const students    = state.students.filter(s =>
+    explicitIds.includes(s.id) || s.classId === classId
+  );
+  const btn = document.getElementById('save-att-btn');
   if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-sm"></span>'; }
 
   try {
@@ -141,7 +151,8 @@ async function saveAttendance() {
     const now   = new Date().toISOString();
     let   saved = 0;
 
-    for (const sid of studentIds) {
+    for (const student of students) {
+      const sid   = student.id;
       const radio = document.querySelector(`input[name="att-${sid}"]:checked`);
       if (!radio) continue;
 
@@ -181,11 +192,11 @@ async function saveAttendance() {
     await batch.commit();
 
     // Post-save: audit + academic alerts (outside batch — best effort)
-    for (const sid of studentIds) {
+    for (const student of students) {
+      const sid   = student.id;
       const radio = document.querySelector(`input[name="att-${sid}"]:checked`);
       if (!radio || radio.disabled) continue;
-      const studentName = state.students.find(s => s.id === sid)?.name || sid;
-      recordAudit('create', 'attendance', `تسجيل حضور: ${studentName} - ${radio.value} - ${date}`).catch(() => {});
+      recordAudit('create', 'attendance', `تسجيل حضور: ${student.name || sid} - ${radio.value} - ${date}`).catch(() => {});
       academicService.processAcademicAlerts(sid);
     }
 

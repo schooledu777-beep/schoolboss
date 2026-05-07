@@ -1,5 +1,5 @@
 import { state, t } from '../state.js';
-import { db, collection, addDoc, updateDoc, deleteDoc, doc, setDoc, serverTimestamp, arrayUnion } from '../firebase-config.js';
+import { db, collection, addDoc, updateDoc, deleteDoc, doc, setDoc, serverTimestamp, arrayUnion, arrayRemove } from '../firebase-config.js';
 import { adminCreateUser } from '../auth.js?v=20260506-setup-wizard-fix';
 import { showModal, closeModal, showConfirm, showToast, escapeHTML, renderAvatar } from '../ui.js?v=20260502-photo-sync';
 import { getStudentDashboardHTML, attachStudentProfileEvents } from './studentProfile.js?v=20260502-photo-viewer';
@@ -97,6 +97,12 @@ export function attachStudentEvents() {
     showConfirm(t('delete'), t('confirmDelete'), async () => {
       try {
         const student = state.students.find(s => s.id === btn.dataset.id);
+        // Remove from class.studentIds before deleting
+        if (student?.classId) {
+          await updateDoc(doc(db, 'classes', student.classId), {
+            studentIds: arrayRemove(btn.dataset.id)
+          }).catch(() => {});
+        }
         await deleteDoc(doc(db, 'students', btn.dataset.id));
         await recordAudit('delete', 'students', `حذف طالب: ${student?.name || btn.dataset.id}`);
         showToast(t('deletedSuccess'), 'success');
@@ -140,6 +146,11 @@ export function attachStudentEvents() {
         showConfirm(t('delete'), t('confirmDelete'), async () => {
           try {
             const student = state.students.find(s => s.id === btn.dataset.id);
+            if (student?.classId) {
+              await updateDoc(doc(db, 'classes', student.classId), {
+                studentIds: arrayRemove(btn.dataset.id)
+              }).catch(() => {});
+            }
             await deleteDoc(doc(db, 'students', btn.dataset.id));
             await recordAudit('delete', 'students', `حذف طالب: ${student?.name || btn.dataset.id}`);
             showToast(t('deletedSuccess'), 'success');
@@ -208,6 +219,16 @@ function showTransferModal(student) {
         classId: newClassId,
         updatedAt: new Date().toISOString()
       });
+
+      // 3. Sync class.studentIds[] — remove from old, add to new
+      if (student.classId) {
+        await updateDoc(doc(db, 'classes', student.classId), {
+          studentIds: arrayRemove(student.id)
+        }).catch(() => {});
+      }
+      await updateDoc(doc(db, 'classes', newClassId), {
+        studentIds: arrayUnion(student.id)
+      }).catch(() => {});
       await recordAudit('update', 'students', `نقل الطالب ${student.name} من ${currentClass?.name || '—'} إلى ${newClass?.name || '—'}`);
 
       closeModal();
@@ -322,6 +343,19 @@ function showStudentForm(student = null) {
 
       if (isEdit) {
         await updateDoc(doc(db, 'students', student.id), data);
+        // Sync class.studentIds[] if the class changed
+        if (data.classId !== student.classId) {
+          if (student.classId) {
+            await updateDoc(doc(db, 'classes', student.classId), {
+              studentIds: arrayRemove(student.id)
+            }).catch(() => {});
+          }
+          if (data.classId) {
+            await updateDoc(doc(db, 'classes', data.classId), {
+              studentIds: arrayUnion(student.id)
+            }).catch(() => {});
+          }
+        }
         Object.assign(student, data);
         await recordAudit('update', 'students', `تعديل بيانات الطالب: ${data.name}`);
       } else {
@@ -339,6 +373,13 @@ function showStudentForm(student = null) {
           studentId = studentRef.id;
         }
         await recordAudit('create', 'students', `إضافة طالب جديد: ${data.name}`);
+        // Add to class.studentIds[]
+        if (data.classId && studentId) {
+          await updateDoc(doc(db, 'classes', data.classId), {
+            studentIds: arrayUnion(studentId)
+          }).catch(() => {});
+        }
+        // Link to parent
         if (finalParentId && studentId) {
           await updateDoc(doc(db, 'parents', finalParentId), {
             studentIds: arrayUnion(studentId),
@@ -390,6 +431,13 @@ function showImportModal() {
           <input type="file" id="import-file-input" accept=".xlsx,.xls,.csv" style="display:none">
         </label>
         <p class="text-muted" style="font-size:.78rem;margin-top:.25rem">.xlsx, .xls, .csv</p>
+      </div>
+      <div class="form-group" style="margin-top:1rem">
+        <label>${isAr ? 'تعيين لصف (اختياري)' : 'Assign to Level (optional)'}</label>
+        <select id="import-class-select" class="form-select">
+          <option value="">${isAr ? '— بدون صف —' : '— No Level —'}</option>
+          ${state.classes.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
+        </select>
       </div>
       <div id="import-preview" class="hidden"></div>
       <div class="form-actions" style="margin-top:1rem">
@@ -534,7 +582,10 @@ function showImportModal() {
     btn.disabled = true;
     btn.innerHTML = `<span class="spinner-sm"></span> ${isAr?'جاري الاستيراد...':'Importing...'}`;
 
+    const importClassId = document.getElementById('import-class-select')?.value || '';
     let successCount = 0, errorCount = 0;
+    const importedIds = [];
+
     for (const row of parsedRows) {
       try {
         const data = {
@@ -545,17 +596,26 @@ function showImportModal() {
           phone:      row.phone      || '',
           nationalId: row.nationalId || '',
           notes:      row.notes      || '',
+          classId:    importClassId,
           status:     'active',
           createdAt:  new Date().toISOString(),
           importedAt: new Date().toISOString(),
         };
-        await addDoc(collection(db, 'students'), data);
+        const ref = await addDoc(collection(db, 'students'), data);
+        importedIds.push(ref.id);
         await recordAudit('create', 'students', `استيراد طالب: ${data.name}`);
         successCount++;
       } catch(e) {
         console.error('[Import] row failed:', row, e);
         errorCount++;
       }
+    }
+
+    // Sync class.studentIds[] for all imported students at once
+    if (importClassId && importedIds.length > 0) {
+      await updateDoc(doc(db, 'classes', importClassId), {
+        studentIds: arrayUnion(...importedIds)
+      }).catch(() => {});
     }
 
     btn.disabled = false;
