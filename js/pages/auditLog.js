@@ -1,5 +1,6 @@
 import { state, t } from '../state.js';
 import { db, collection, addDoc } from '../firebase-config.js';
+import { tCol, tDoc } from '../db.js';
 
 // ========================= AUDIT LOG =========================
 // Records every significant create/update/delete in Firestore
@@ -207,7 +208,7 @@ function exportAuditCSV(isAr) {
 // ── Global audit recorder — call this from anywhere ─────────────────
 export async function recordAudit(action, collectionName, details = '') {
   try {
-    await addDoc(collection(db, 'audit_logs'), {
+    await addDoc(tCol('audit_logs'), {
       action,
       collection: collectionName,
       details,

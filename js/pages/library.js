@@ -1,5 +1,6 @@
 import { state, t } from '../state.js';
 import { db, collection, addDoc, updateDoc, deleteDoc, doc } from '../firebase-config.js';
+import { tCol, tDoc } from '../db.js';
 import { showModal, closeModal, showConfirm, showToast, formatCurrency } from '../ui.js';
 import { libraryService } from '../services/libraryService.js';
 
@@ -147,7 +148,7 @@ export function attachLibraryEvents() {
     document.getElementById('add-book-form')?.addEventListener('submit', async e => {
       e.preventDefault();
       const data = { title: document.getElementById('book-title').value, author: document.getElementById('book-author').value, category: document.getElementById('book-cat').value, status: 'available' };
-      await addDoc(collection(db, 'books'), data);
+      await addDoc(tCol('books'), data);
       closeModal();
       showToast(t('savedSuccess'), 'success');
     });

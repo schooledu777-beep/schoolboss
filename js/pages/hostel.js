@@ -1,5 +1,6 @@
 import { state, t } from '../state.js';
 import { db, collection, addDoc, updateDoc, deleteDoc, doc } from '../firebase-config.js';
+import { tCol, tDoc } from '../db.js';
 import { showModal, closeModal, showConfirm, showToast, formatCurrency } from '../ui.js';
 import { hostelService } from '../services/hostelService.js';
 
@@ -148,7 +149,7 @@ export function attachHostelEvents() {
     document.getElementById('add-room-form')?.addEventListener('submit', async e => {
       e.preventDefault();
       const data = { number: document.getElementById('room-num').value, building: document.getElementById('room-build').value, capacity: Number(document.getElementById('room-cap').value) };
-      await addDoc(collection(db, 'rooms'), data);
+      await addDoc(tCol('rooms'), data);
       closeModal();
       showToast(t('savedSuccess'), 'success');
     });

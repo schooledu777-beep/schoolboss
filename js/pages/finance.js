@@ -1,5 +1,6 @@
 import { state, t } from '../state.js';
 import { db, collection, addDoc, updateDoc, deleteDoc, doc } from '../firebase-config.js';
+import { tCol, tDoc } from '../db.js';
 import { showModal, closeModal, showConfirm, showToast, formatCurrency, checkValid } from '../ui.js';
 import { notificationService } from '../services/notificationService.js';
 import { recordAudit } from './auditLog.js';
@@ -257,7 +258,7 @@ export function attachFinanceEvents() {
       try {
         const fee = state.fees.find(f => f.id === b.dataset.id);
         const student = state.students.find(s => s.id === fee?.studentId);
-        await deleteDoc(doc(db, 'fees', b.dataset.id));
+        await deleteDoc(tDoc('fees',b.dataset.id));
         await recordAudit('delete', 'fees', `حذف رسوم: ${student?.name || ''} - ${fee?.feeType || ''}`);
         showToast(t('deletedSuccess'), 'success');
       }
@@ -361,10 +362,10 @@ function showFeeForm(fee = null) {
     try {
       const student = state.students.find(s => s.id === data.studentId);
       if (isEdit) {
-        await updateDoc(doc(db, 'fees', fee.id), data);
+        await updateDoc(tDoc('fees',fee.id), data);
         await recordAudit('update', 'fees', `تعديل رسوم: ${student?.name || ''} - ${data.feeType}`);
       } else {
-        await addDoc(collection(db, 'fees'), data);
+        await addDoc(tCol('fees'), data);
         await recordAudit('create', 'fees', `إضافة رسوم: ${student?.name || ''} - ${data.feeType} - ${data.amount}`);
       }
       if (student?.parentId && data.amount > data.paidAmount) {
@@ -446,7 +447,7 @@ function showPaymentForm(feeId) {
     const paymentHistory = [...(fee.paymentHistory || []), paymentRecord];
 
     try {
-      await updateDoc(doc(db, 'fees', feeId), {
+      await updateDoc(tDoc('fees',feeId), {
         paidAmount: newPaid,
         paymentHistory,
         lastPaymentDate: paymentRecord.date,
@@ -538,7 +539,7 @@ function showBulkFeeForm() {
     const btn = e.target.querySelector('button[type="submit"]');
     btn.disabled = true; btn.innerHTML = '<span class="spinner-sm"></span>';
     try {
-      const promises = students.map(s => addDoc(collection(db, 'fees'), {
+      const promises = students.map(s => addDoc(tCol('fees'), {
         studentId:   s.id,
         feeType:     document.getElementById('bf-type').value,
         amount,
@@ -603,7 +604,7 @@ function showDiscountsPanel() {
   document.querySelectorAll('.delete-discount').forEach(btn => {
     btn.addEventListener('click', async () => {
       try {
-        await deleteDoc(doc(db, 'discounts', btn.dataset.id));
+        await deleteDoc(tDoc('discounts',btn.dataset.id));
         showToast(t('deletedSuccess'), 'success');
         showDiscountsPanel();
       } catch { showToast(t('errorOccurred'), 'error'); }
@@ -656,7 +657,7 @@ function showDiscountForm() {
       return;
     }
     try {
-      await addDoc(collection(db, 'discounts'), {
+      await addDoc(tCol('discounts'), {
         studentId,
         discountType: document.getElementById('df-type').value,
         percentage,

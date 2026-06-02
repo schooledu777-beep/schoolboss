@@ -1,4 +1,5 @@
 import { db, collection, addDoc, getDocs, serverTimestamp, query, where, limit } from '../firebase-config.js';
+import { tCol, tDoc } from '../db.js';
 import { state } from '../state.js';
 
 export const academicService = {
@@ -9,7 +10,7 @@ export const academicService = {
         if (state.profile?.role !== 'admin') return;
         
         try {
-            const typesRef = collection(db, 'assessment_types');
+            const typesRef = tCol('assessment_types');
             const snap = await getDocs(query(typesRef, limit(1)));
             
             if (snap.empty) {
@@ -70,7 +71,7 @@ export const academicService = {
     async processAcademicAlerts(studentId) {
         const attendancePct = this.getStudentAttendancePercentage(studentId);
         const gradeAvg = this.getStudentGradeAverage(studentId);
-        const alertsRef = collection(db, 'academic_alerts');
+        const alertsRef = tCol('academic_alerts');
 
         const alerts = [];
         if (attendancePct < 85) {

@@ -1,5 +1,6 @@
 import { state } from '../state.js';
 import { db, collection, doc, setDoc, deleteDoc, writeBatch } from '../firebase-config.js';
+import { tCol, tDoc } from '../db.js';
 
 // ========================= CLINIC SERVICE =========================
 // Uses Firestore batch writes to atomically:
@@ -18,8 +19,8 @@ export async function saveClinicVisit(visitData, existingId = null) {
 
   // 1. ── Clinic Visit document ─────────────────────────────────────
   const visitRef = existingId
-    ? doc(db, 'clinic_visits', existingId)
-    : doc(collection(db, 'clinic_visits'));
+    ? tDoc('clinic_visits',existingId)
+    : doc(tCol('clinic_visits'));
 
   const fullVisitData = {
     ...visitData,
@@ -32,7 +33,7 @@ export async function saveClinicVisit(visitData, existingId = null) {
   // Only write attendance if action sends student away from school
   if (['home', 'hospital'].includes(visitData.action_taken)) {
     const attDocId = `${visitData.studentId}_${visitData.date}`;
-    const attRef = doc(db, 'attendance', attDocId);
+    const attRef = tDoc('attendance',attDocId);
 
     const student = state.students.find(s => s.id === visitData.studentId);
 
@@ -56,7 +57,7 @@ export async function saveClinicVisit(visitData, existingId = null) {
  * (Does NOT roll back attendance — nurse must manually correct if needed.)
  */
 export async function deleteClinicVisit(id) {
-  await deleteDoc(doc(db, 'clinic_visits', id));
+  await deleteDoc(tDoc('clinic_visits',id));
 }
 
 /**

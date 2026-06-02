@@ -1,4 +1,5 @@
 import { db, collection, doc, addDoc, writeBatch, serverTimestamp } from '../firebase-config.js';
+import { tCol, tDoc } from '../db.js';
 import { state } from '../state.js';
 
 function getParentContact(parentId) {
@@ -57,8 +58,8 @@ export const notificationService = {
   async logNotification(payload) {
     try {
       const batch = writeBatch(db);
-      const logRef = doc(collection(db, 'notification_logs'));
-      const outboxRef = doc(collection(db, 'notification_outbox'));
+      const logRef = doc(tCol('notification_logs'));
+      const outboxRef = doc(tCol('notification_outbox'));
       batch.set(logRef, makeLogPayload(payload));
       batch.set(outboxRef, makeOutboxPayload(payload));
       await batch.commit();
@@ -70,8 +71,8 @@ export const notificationService = {
   },
 
   queueOutboxInBatch(batch, payload) {
-    const logRef = doc(collection(db, 'notification_logs'));
-    const outboxRef = doc(collection(db, 'notification_outbox'));
+    const logRef = doc(tCol('notification_logs'));
+    const outboxRef = doc(tCol('notification_outbox'));
     batch.set(logRef, makeLogPayload(payload));
     batch.set(outboxRef, makeOutboxPayload(payload));
     return outboxRef.id;

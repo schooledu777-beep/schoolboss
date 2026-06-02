@@ -4,12 +4,14 @@ import { translations } from './i18n.js';
 export const state = {
   user: null,
   profile: null,
+  tenantId: null,        // Set on login from user profile
+  isSuperAdmin: false,   // True only for the bootstrap super admin account
   loading: true,
   currentPage: 'dashboard',
   lang: localStorage.getItem('sms-lang') || 'ar',
   theme: localStorage.getItem('sms-theme') || 'dark',
   sidebarOpen: window.innerWidth > 1024,
-  schoolType: 'private', 
+  schoolType: 'private',
   setup: {
     completed: true,
     currentStep: 1,

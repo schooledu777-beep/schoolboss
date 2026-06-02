@@ -1,5 +1,6 @@
 import { state, t } from '../state.js';
 import { db, doc, updateDoc } from '../firebase-config.js';
+import { tCol, tDoc } from '../db.js';
 import { escapeHTML, getInitials, formatCurrency, renderAvatar, showToast, showModal, closeModal } from '../ui.js?v=20260502-photo-sync';
 import { uploadFile } from '../services/uploadService.js?v=20260502-photo-sync';
 import { showAdminAccountModal } from '../services/accountAdmin.js?v=20260503-admin-accounts';
@@ -652,7 +653,7 @@ export function attachStudentProfileEvents(modalElement) {
         try {
             showToast(state.lang === 'ar' ? 'جاري رفع الصورة...' : 'Uploading photo...', 'info');
             const url = await uploadFile(file, 'students/photos');
-            await updateDoc(doc(db, 'students', studentId), { photoURL: url });
+            await updateDoc(tDoc('students',studentId), { photoURL: url });
             const cachedStudent = state.students.find(s => s.id === studentId);
             if (cachedStudent) cachedStudent.photoURL = url;
             showToast(state.lang === 'ar' ? 'تم تحديث الصورة بنجاح' : 'Photo updated successfully', 'success');

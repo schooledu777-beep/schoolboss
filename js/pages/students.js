@@ -1,5 +1,6 @@
 import { state, t } from '../state.js';
 import { db, collection, addDoc, updateDoc, deleteDoc, doc, setDoc, serverTimestamp, arrayUnion, arrayRemove } from '../firebase-config.js';
+import { tCol, tDoc } from '../db.js';
 import { adminCreateUser } from '../auth.js?v=20260506-setup-wizard-fix';
 import { showModal, closeModal, showConfirm, showToast, escapeHTML, renderAvatar } from '../ui.js?v=20260502-photo-sync';
 import { getStudentDashboardHTML, attachStudentProfileEvents } from './studentProfile.js?v=20260502-photo-viewer';
@@ -99,11 +100,11 @@ export function attachStudentEvents() {
         const student = state.students.find(s => s.id === btn.dataset.id);
         // Remove from class.studentIds before deleting
         if (student?.classId) {
-          await updateDoc(doc(db, 'classes', student.classId), {
+          await updateDoc(tDoc('classes',student.classId), {
             studentIds: arrayRemove(btn.dataset.id)
           }).catch(() => {});
         }
-        await deleteDoc(doc(db, 'students', btn.dataset.id));
+        await deleteDoc(tDoc('students',btn.dataset.id));
         await recordAudit('delete', 'students', `حذف طالب: ${student?.name || btn.dataset.id}`);
         showToast(t('deletedSuccess'), 'success');
       } catch(e) { showToast(t('errorOccurred'), 'error'); }
@@ -147,11 +148,11 @@ export function attachStudentEvents() {
           try {
             const student = state.students.find(s => s.id === btn.dataset.id);
             if (student?.classId) {
-              await updateDoc(doc(db, 'classes', student.classId), {
+              await updateDoc(tDoc('classes',student.classId), {
                 studentIds: arrayRemove(btn.dataset.id)
               }).catch(() => {});
             }
-            await deleteDoc(doc(db, 'students', btn.dataset.id));
+            await deleteDoc(tDoc('students',btn.dataset.id));
             await recordAudit('delete', 'students', `حذف طالب: ${student?.name || btn.dataset.id}`);
             showToast(t('deletedSuccess'), 'success');
           } catch(e) { showToast(t('errorOccurred'), 'error'); }
@@ -203,7 +204,7 @@ function showTransferModal(student) {
 
     try {
       // 1. Log the transfer
-      await addDoc(collection(db, 'transfers'), {
+      await addDoc(tCol('transfers'), {
         studentId: student.id,
         fromClassId: student.classId || null,
         fromClassName: currentClass?.name || '—',
@@ -215,18 +216,18 @@ function showTransferModal(student) {
       });
 
       // 2. Update student record
-      await updateDoc(doc(db, 'students', student.id), {
+      await updateDoc(tDoc('students',student.id), {
         classId: newClassId,
         updatedAt: new Date().toISOString()
       });
 
       // 3. Sync class.studentIds[] — remove from old, add to new
       if (student.classId) {
-        await updateDoc(doc(db, 'classes', student.classId), {
+        await updateDoc(tDoc('classes',student.classId), {
           studentIds: arrayRemove(student.id)
         }).catch(() => {});
       }
-      await updateDoc(doc(db, 'classes', newClassId), {
+      await updateDoc(tDoc('classes',newClassId), {
         studentIds: arrayUnion(student.id)
       }).catch(() => {});
       await recordAudit('update', 'students', `نقل الطالب ${student.name} من ${currentClass?.name || '—'} إلى ${newClass?.name || '—'}`);
@@ -313,7 +314,7 @@ function showStudentForm(student = null) {
           const pPhone = document.getElementById('sf-parent-phone').value.trim();
           
           finalParentId = await adminCreateUser(pEmail, pPwd, 'parent', pName);
-          await setDoc(doc(db, 'parents', finalParentId), {
+          await setDoc(tDoc('parents',finalParentId), {
             uid: finalParentId, id: finalParentId, name: pName, email: pEmail, phone: pPhone, role: 'parent', studentIds: [], accountStatus: 'active',
             authManaged: { temporaryPassword: pPwd, passwordUpdatedAt: new Date().toISOString(), passwordSource: 'admin-created', mustChange: true },
             createdAt: new Date().toISOString()
@@ -342,16 +343,16 @@ function showStudentForm(student = null) {
       }
 
       if (isEdit) {
-        await updateDoc(doc(db, 'students', student.id), data);
+        await updateDoc(tDoc('students',student.id), data);
         // Sync class.studentIds[] if the class changed
         if (data.classId !== student.classId) {
           if (student.classId) {
-            await updateDoc(doc(db, 'classes', student.classId), {
+            await updateDoc(tDoc('classes',student.classId), {
               studentIds: arrayRemove(student.id)
             }).catch(() => {});
           }
           if (data.classId) {
-            await updateDoc(doc(db, 'classes', data.classId), {
+            await updateDoc(tDoc('classes',data.classId), {
               studentIds: arrayUnion(student.id)
             }).catch(() => {});
           }
@@ -364,24 +365,24 @@ function showStudentForm(student = null) {
         if (data.email) {
           const password = document.getElementById('sf-password').value || '123456';
           studentId = await adminCreateUser(data.email, password, 'student', data.name);
-          await setDoc(doc(db, 'students', studentId), {
+          await setDoc(tDoc('students',studentId), {
             ...data, uid: studentId, id: studentId, accountStatus: 'active',
             authManaged: { temporaryPassword: password, passwordUpdatedAt: new Date().toISOString(), passwordSource: 'admin-created', mustChange: true }
           });
         } else {
-          const studentRef = await addDoc(collection(db, 'students'), data);
+          const studentRef = await addDoc(tCol('students'), data);
           studentId = studentRef.id;
         }
         await recordAudit('create', 'students', `إضافة طالب جديد: ${data.name}`);
         // Add to class.studentIds[]
         if (data.classId && studentId) {
-          await updateDoc(doc(db, 'classes', data.classId), {
+          await updateDoc(tDoc('classes',data.classId), {
             studentIds: arrayUnion(studentId)
           }).catch(() => {});
         }
         // Link to parent
         if (finalParentId && studentId) {
-          await updateDoc(doc(db, 'parents', finalParentId), {
+          await updateDoc(tDoc('parents',finalParentId), {
             studentIds: arrayUnion(studentId),
             updatedAt: new Date().toISOString()
           }).catch(() => {});
@@ -601,7 +602,7 @@ function showImportModal() {
           createdAt:  new Date().toISOString(),
           importedAt: new Date().toISOString(),
         };
-        const ref = await addDoc(collection(db, 'students'), data);
+        const ref = await addDoc(tCol('students'), data);
         importedIds.push(ref.id);
         await recordAudit('create', 'students', `استيراد طالب: ${data.name}`);
         successCount++;
@@ -613,7 +614,7 @@ function showImportModal() {
 
     // Sync class.studentIds[] for all imported students at once
     if (importClassId && importedIds.length > 0) {
-      await updateDoc(doc(db, 'classes', importClassId), {
+      await updateDoc(tDoc('classes',importClassId), {
         studentIds: arrayUnion(...importedIds)
       }).catch(() => {});
     }

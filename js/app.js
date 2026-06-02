@@ -3,8 +3,8 @@ import { state, applyTheme, applyLang } from './state.js';
 import { hideLoading } from './ui.js?v=20260502-photo-sync';
 import { registerRoute, initRouter } from './router.js';
 import { renderAuthPage, attachAuthEvents, initAuth } from './auth.js?v=20260506-setup-wizard-fix';
-import { renderSidebar, renderHeader, attachLayoutEvents } from './components.js?v=20260503-annual-plan';
-import { syncService } from './services/syncService.js?v=20260506-setup-wizard-fix';
+import { renderSidebar, renderHeader, attachLayoutEvents } from './components.js?v=20260507-class-sync';
+import { syncService } from './services/syncService.js?v=20260507-class-sync';
 import { academicService } from './services/academicService.js';
 import { libraryService } from './services/libraryService.js';
 
@@ -38,8 +38,9 @@ import { renderExams, attachExamsEvents } from './pages/examsPage.js';
 import { renderAnalytics, attachAnalyticsEvents } from './pages/analytics.js';
 import { renderAuditLog, attachAuditLogEvents } from './pages/auditLog.js';
 import { renderInventory, attachInventoryEvents } from './pages/inventory.js';
-import { renderSetupWizard, attachSetupWizardEvents } from './pages/setupWizard.js?v=20260506-setup-wizard-fix';
+import { renderSetupWizard, attachSetupWizardEvents } from './pages/setupWizard.js?v=20260507-class-sync';
 import { renderNotificationOutbox, attachNotificationOutboxEvents } from './pages/notificationOutbox.js?v=20260506-outbox';
+import { renderSuperAdmin, attachSuperAdminEvents } from './pages/superAdmin.js?v=20260507-class-sync';
 // Export service (registers window.export* globals)
 import './services/exportService.js';
 
@@ -83,6 +84,7 @@ const pages = {
   inventory:  { render: renderInventory,  events: attachInventoryEvents   },
   'setup-wizard': { render: renderSetupWizard, events: attachSetupWizardEvents },
   'notification-outbox': { render: renderNotificationOutbox, events: attachNotificationOutboxEvents },
+  'super-admin':         { render: renderSuperAdmin,         events: attachSuperAdminEvents         },
 };
 
 pages['my-children'] = pages.dashboard;
@@ -91,7 +93,10 @@ pages['my-children'] = pages.dashboard;
 let currentLayout = null; // Track current layout type (auth or app)
 
 function isSetupLocked() {
-  return state.profile?.role === 'admin' && state.setup?.completed === false;
+  // Locked if setup not complete OR if admin hasn't activated yet (no tenantId)
+  if (state.profile?.role === 'admin' && state.setup?.completed === false) return true;
+  if (state.profile?.role === 'admin' && !state.isSuperAdmin && !state.tenantId) return true;
+  return false;
 }
 
 function renderApp() {
@@ -128,6 +133,10 @@ function renderApp() {
   // Route Guard
   const adminOnlyPages = ['admissions', 'settings', 'hr'];
   if (adminOnlyPages.includes(basePath) && state.profile.role !== 'admin') {
+    page = pages.dashboard;
+    window.location.hash = 'dashboard';
+  }
+  if (basePath === 'super-admin' && !state.isSuperAdmin) {
     page = pages.dashboard;
     window.location.hash = 'dashboard';
   }

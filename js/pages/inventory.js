@@ -1,5 +1,6 @@
 import { state, t } from '../state.js';
 import { db, collection, addDoc, updateDoc, deleteDoc, doc } from '../firebase-config.js';
+import { tCol, tDoc } from '../db.js';
 import { showModal, closeModal, showConfirm, showToast, checkValid } from '../ui.js';
 
 // ========================= INVENTORY MANAGEMENT =========================
@@ -232,7 +233,7 @@ export function attachInventoryEvents() {
     document.querySelectorAll('.maint-item').forEach(btn => {
       btn.addEventListener('click', async () => {
         try {
-          await updateDoc(doc(db, 'inventory', btn.dataset.id), { status: 'maintenance', lastMaintenanceRequest: new Date().toISOString() });
+          await updateDoc(tDoc('inventory',btn.dataset.id), { status: 'maintenance', lastMaintenanceRequest: new Date().toISOString() });
           showToast(isAr ? 'تم تسجيل طلب الصيانة' : 'Maintenance request recorded', 'success');
         } catch { showToast(t('errorOccurred'), 'error'); }
       });
@@ -244,7 +245,7 @@ export function attachInventoryEvents() {
           isAr ? 'هل تريد حذف هذا العنصر من المخزون؟' : 'Delete this inventory item?',
           async () => {
             try {
-              await deleteDoc(doc(db, 'inventory', btn.dataset.id));
+              await deleteDoc(tDoc('inventory',btn.dataset.id));
               showToast(t('deletedSuccess'), 'success');
             } catch { showToast(t('errorOccurred'), 'error'); }
           }
@@ -362,8 +363,8 @@ function showItemForm(item = null) {
     const old = btn.innerHTML;
     btn.disabled = true; btn.innerHTML = '<span class="spinner-sm"></span>';
     try {
-      if (isEdit) await updateDoc(doc(db, 'inventory', item.id), data);
-      else        await addDoc(collection(db, 'inventory'), data);
+      if (isEdit) await updateDoc(tDoc('inventory',item.id), data);
+      else        await addDoc(tCol('inventory'), data);
       closeModal();
       showToast(t('savedSuccess'), 'success');
     } catch (err) {

@@ -1,9 +1,12 @@
 import { state } from '../state.js';
 import { db, collection, addDoc, doc, setDoc, updateDoc } from '../firebase-config.js';
-import { adminCreateUser } from '../auth.js?v=20260506-setup-wizard-fix';
+import { tCol, tDoc } from '../db.js';
+import { adminCreateUser } from '../auth.js?v=20260507-class-sync';
 import { showToast, escapeHTML } from '../ui.js';
+import { validateActivationCode, consumeActivationCode } from '../services/tenantService.js';
+import { syncService } from '../services/syncService.js?v=20260506-setup-wizard-fix';
 
-const setupRef = () => doc(db, 'school_settings', 'general_info');
+const setupRef = () => tDoc('school_settings','general_info');
 
 const steps = [
   {
@@ -170,7 +173,55 @@ function renderStepContent(step) {
   return renderStepThree();
 }
 
+// ── Activation-code gate — shown before the wizard if tenantId not yet set ───
+function renderActivationGate() {
+  const isAr = state.lang === 'ar';
+  return `
+  <div class="setup-wizard-page" dir="${isAr ? 'rtl' : 'ltr'}">
+    <div class="setup-hero">
+      <div class="setup-brand">
+        <img src="assets/edumanage-mark.svg" alt="EduManage Pro">
+        <span>EduManage Pro</span>
+      </div>
+    </div>
+    <div class="setup-body" style="display:flex;align-items:center;justify-content:center;min-height:60vh">
+      <div class="glass-card" style="width:100%;max-width:460px;padding:2.5rem;text-align:center">
+        <div style="font-size:3.5rem;margin-bottom:1rem">🔑</div>
+        <h2 style="margin-bottom:.5rem">${isAr ? 'أدخل كود التفعيل' : 'Enter Activation Code'}</h2>
+        <p class="text-muted" style="margin-bottom:2rem;font-size:.9rem">
+          ${isAr
+            ? 'للبدء في استخدام النظام تحتاج إلى كود تفعيل. تواصل مع فريق المبيعات للحصول عليه.'
+            : 'You need an activation code to start. Contact the sales team to get yours.'}
+        </p>
+        <form id="activation-form">
+          <div class="form-group" style="margin-bottom:1.25rem">
+            <input
+              type="text" id="activation-code-input" class="form-input"
+              placeholder="XXXX-XXXX-XXXX"
+              style="text-align:center;font-size:1.3rem;letter-spacing:.15em;text-transform:uppercase"
+              maxlength="14" autocomplete="off" required>
+          </div>
+          <div class="form-group" style="margin-bottom:1.5rem">
+            <input type="text" id="activation-school-name" class="form-input"
+              placeholder="${isAr ? 'اسم مدرستك' : 'Your school name'}" required>
+          </div>
+          <div id="activation-error" class="alert alert-danger hidden" style="margin-bottom:1rem"></div>
+          <button type="submit" class="btn btn-primary btn-block btn-lg" id="activation-submit-btn">
+            ${isAr ? '✅ تفعيل النظام' : '✅ Activate System'}
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>`;
+}
+
 export function renderSetupWizard() {
+  // Super admin: no activation gate needed
+  // Regular admin without tenantId: show activation gate first
+  if (!state.isSuperAdmin && !state.tenantId) {
+    return renderActivationGate();
+  }
+
   const step = currentStep();
   const ready = stepReady(step);
   return `
@@ -237,7 +288,7 @@ async function handleClassSubmit(event) {
   const btn = event.target.querySelector('button[type="submit"]');
   btn.disabled = true;
   try {
-    await addDoc(collection(db, 'classes'), {
+    await addDoc(tCol('classes'), {
       name: explicitName || `${grade} - ${section}`,
       grade,
       section,
@@ -266,7 +317,7 @@ async function handleSubjectSubmit(event) {
   const btn = event.target.querySelector('button[type="submit"]');
   btn.disabled = true;
   try {
-    await addDoc(collection(db, 'subjects'), {
+    await addDoc(tCol('subjects'), {
       name,
       code,
       description,
@@ -299,7 +350,7 @@ async function handleTeacherSubmit(event) {
   btn.disabled = true;
   try {
     const uid = await adminCreateUser(email, password, 'teacher', name);
-    await setDoc(doc(db, 'teachers', uid), {
+    await setDoc(tDoc('teachers',uid), {
       id: uid,
       uid,
       name,
@@ -317,7 +368,7 @@ async function handleTeacherSubmit(event) {
         mustChange: true
       }
     }, { merge: true });
-    await updateDoc(doc(db, 'classes', classId), { teacherId: uid, updatedAt: new Date().toISOString() });
+    await updateDoc(tDoc('classes',classId), { teacherId: uid, updatedAt: new Date().toISOString() });
     event.target.reset();
     showToast('تم حفظ المعلم وربطه بالصف', 'success');
   } catch (error) {
@@ -329,6 +380,68 @@ async function handleTeacherSubmit(event) {
 }
 
 export function attachSetupWizardEvents() {
+  // ── Activation code gate ─────────────────────────────────────────
+  const activationForm = document.getElementById('activation-form');
+  if (activationForm) {
+    activationForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn      = document.getElementById('activation-submit-btn');
+      const errBox   = document.getElementById('activation-error');
+      const rawCode  = document.getElementById('activation-code-input').value.trim().toUpperCase();
+      const school   = document.getElementById('activation-school-name').value.trim();
+      const isAr     = state.lang === 'ar';
+
+      errBox.classList.add('hidden');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-sm"></span>';
+
+      try {
+        const result = await validateActivationCode(rawCode);
+        if (!result.valid) {
+          errBox.textContent = result.error;
+          errBox.classList.remove('hidden');
+          return;
+        }
+
+        // Consume code → creates tenant + assigns tenantId
+        const tenantId = await consumeActivationCode(
+          result.code, state.user.uid, state.user.email, school
+        );
+
+        // Patch user profile in Firestore
+        const { db } = await import('../db.js');
+        const { doc, setDoc } = await import('../firebase-config.js');
+        await setDoc(doc(db, 'users', state.user.uid), { tenantId, accountStatus: 'active' }, { merge: true });
+
+        // Update local state so tCol/tDoc starts working immediately
+        state.tenantId = tenantId;
+        if (state.profile) state.profile.tenantId = tenantId;
+
+        // Restart all Firestore listeners with the new tenantId
+        syncService.restart('setup-wizard');
+
+        showToast(isAr ? '🎉 تم التفعيل بنجاح! ابدأ الإعداد' : '🎉 Activated! Start setup', 'success');
+
+        // Re-render wizard (now tenantId is set → shows step 1)
+        const mainContent = document.getElementById('main-content');
+        if (mainContent) {
+          const { renderSetupWizard, attachSetupWizardEvents } = await import('./setupWizard.js?v=20260507-class-sync');
+          mainContent.innerHTML = renderSetupWizard();
+          attachSetupWizardEvents();
+        }
+      } catch(err) {
+        console.error('[Activation]', err);
+        errBox.textContent = err.message || (isAr ? 'حدث خطأ' : 'Error occurred');
+        errBox.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = isAr ? '✅ تفعيل النظام' : '✅ Activate System';
+      }
+    });
+    return; // Don't attach wizard step events when showing the gate
+  }
+  // ─────────────────────────────────────────────────────────────────
+
   document.getElementById('setup-class-form')?.addEventListener('submit', handleClassSubmit);
   document.getElementById('setup-subject-form')?.addEventListener('submit', handleSubjectSubmit);
   document.getElementById('setup-teacher-form')?.addEventListener('submit', handleTeacherSubmit);

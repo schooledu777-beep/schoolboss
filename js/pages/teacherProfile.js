@@ -1,5 +1,6 @@
 import { state, t } from '../state.js';
 import { db, doc, updateDoc, arrayUnion } from '../firebase-config.js';
+import { tCol, tDoc } from '../db.js';
 import { escapeHTML, renderAvatar, showToast } from '../ui.js?v=20260502-photo-viewer';
 import { showTeacherForm } from './teachers.js';
 import { uploadFile } from '../services/uploadService.js?v=20260502-photo-sync';
@@ -489,7 +490,7 @@ export function attachTeacherProfileEvents(modalElement) {
 
             try {
                 delBtn.disabled = true;
-                const teacherRef = doc(db, 'teachers', teacherId);
+                const teacherRef = tDoc('teachers',teacherId);
                 const teacherData = state.teachers.find(t => t.id === teacherId);
                 const nextDocuments = (teacherData?.documents || []).filter(d => d.url !== docUrl);
 
@@ -551,7 +552,7 @@ export function attachTeacherProfileEvents(modalElement) {
                 savePrefsBtn.disabled = true;
                 savePrefsBtn.innerHTML = `<span class="spinner-sm"></span> ${state.lang === 'ar' ? 'جاري الحفظ...' : 'Saving...'}`;
                 
-                const teacherRef = doc(db, 'teachers', teacherId);
+                const teacherRef = tDoc('teachers',teacherId);
                 await updateDoc(teacherRef, { preferences });
                 
                 const teacher = state.teachers.find(t => t.id === teacherId);
@@ -582,7 +583,7 @@ export function attachTeacherProfileEvents(modalElement) {
             try {
                 showToast(state.lang === 'ar' ? 'جاري رفع الصورة...' : 'Uploading photo...', 'info');
                 const url = await uploadFile(file, 'teachers/photos');
-                await updateDoc(doc(db, 'teachers', teacherId), { photoURL: url });
+                await updateDoc(tDoc('teachers',teacherId), { photoURL: url });
                 showToast(state.lang === 'ar' ? 'تم تحديث الصورة' : 'Photo updated', 'success');
                 window.onTeacherUpdated(teacherId);
             } catch (err) {
@@ -605,7 +606,7 @@ export function attachTeacherProfileEvents(modalElement) {
                 showToast(state.lang === 'ar' ? 'جاري رفع الوثيقة...' : 'Uploading document...', 'info');
                 const url = await uploadFile(file, `teachers/${teacherId}/documents`);
                 const docData = { name: file.name, url, type: file.type || 'application/octet-stream', size: file.size || 0, date: new Date().toISOString() };
-                await updateDoc(doc(db, 'teachers', teacherId), {
+                await updateDoc(tDoc('teachers',teacherId), {
                     documents: arrayUnion(docData)
                 });
                 showToast(state.lang === 'ar' ? 'تم رفع الوثيقة بنجاح' : 'Document uploaded successfully', 'success');

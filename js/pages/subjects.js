@@ -1,5 +1,6 @@
 import { state, t } from '../state.js';
 import { db, collection, addDoc, updateDoc, deleteDoc, doc } from '../firebase-config.js';
+import { tCol, tDoc } from '../db.js';
 import { showModal, closeModal, showConfirm, showToast, escapeHTML, renderAvatar } from '../ui.js';
 import { uploadFile } from '../services/uploadService.js?v=20260502-photo-sync';
 
@@ -165,7 +166,7 @@ function attachActionEvents() {
       e.stopPropagation();
       showConfirm(t('delete'), t('confirmDelete'), async () => {
         try {
-          await deleteDoc(doc(db, 'subjects', btn.dataset.id));
+          await deleteDoc(tDoc('subjects',btn.dataset.id));
           closeModal();
           showToast(t('deletedSuccess'), 'success');
         } catch (err) {
@@ -305,7 +306,7 @@ function showSubjectProfile(subject) {
       }
 
       const materials = [...(subject.materials || []), ...uploadedMaterials];
-      await updateDoc(doc(db, 'subjects', subject.id), {
+      await updateDoc(tDoc('subjects',subject.id), {
         materials,
         isOnline: true,
         updatedAt: new Date().toISOString()
@@ -342,7 +343,7 @@ function showSubjectGradeForm(subject) {
   document.getElementById('subject-grade-form')?.addEventListener('submit', async e => {
     e.preventDefault();
     try {
-      await addDoc(collection(db, 'grades'), {
+      await addDoc(tCol('grades'), {
         studentId: document.getElementById('sg-student').value,
         subject: subject.name,
         examType: document.getElementById('sg-type').value.trim() || 'quiz',
@@ -429,8 +430,8 @@ function showSubjectForm(subject = null) {
         updatedAt: new Date().toISOString()
       };
 
-      if (isEdit) await updateDoc(doc(db, 'subjects', subject.id), data);
-      else await addDoc(collection(db, 'subjects'), { ...data, createdAt: new Date().toISOString() });
+      if (isEdit) await updateDoc(tDoc('subjects',subject.id), data);
+      else await addDoc(tCol('subjects'), { ...data, createdAt: new Date().toISOString() });
 
       closeModal();
       showToast(t('savedSuccess'), 'success');

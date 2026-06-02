@@ -1,5 +1,6 @@
 import { state, t } from '../state.js';
 import { db, collection, addDoc, updateDoc, deleteDoc, doc, setDoc } from '../firebase-config.js';
+import { tCol, tDoc } from '../db.js';
 import { adminCreateUser } from '../auth.js?v=20260503-admin-accounts';
 import { showModal, closeModal, showConfirm, showToast, escapeHTML } from '../ui.js';
 import { showStudentCardModal } from './students.js';
@@ -84,7 +85,7 @@ export function attachParentEvents() {
     showConfirm(t('delete'), t('confirmDelete'), async () => {
       try {
         const parent = (state.parents || []).find(p => p.id === b.dataset.id);
-        await deleteDoc(doc(db,'parents',b.dataset.id));
+        await deleteDoc(tDoc('parents',b.dataset.id));
         await recordAudit('delete', 'parents', `حذف ولي أمر: ${parent?.name || b.dataset.id}`);
         showToast(t('deletedSuccess'),'success');
       } catch(e) { showToast(t('errorOccurred'),'error'); }
@@ -201,13 +202,13 @@ function showParentForm(parent = null) {
     };
     try {
       if(isEdit) {
-        await updateDoc(doc(db,'parents',parent.id),data);
+        await updateDoc(tDoc('parents',parent.id),data);
         await recordAudit('update', 'parents', `تعديل بيانات ولي الأمر: ${data.name}`);
       } else {
         data.createdAt=new Date().toISOString();
         const password = document.getElementById('pf-password').value;
         const newUid = await adminCreateUser(data.email, password, 'parent', data.name);
-        await setDoc(doc(db, 'parents', newUid), {
+        await setDoc(tDoc('parents',newUid), {
           ...data, uid: newUid, id: newUid, studentIds: [], accountStatus: 'active',
           authManaged: { temporaryPassword: password, passwordUpdatedAt: new Date().toISOString(), passwordSource: 'admin-created', mustChange: true }
         });

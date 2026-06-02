@@ -1,5 +1,6 @@
 import { state, t } from '../state.js';
 import { db, collection, addDoc, updateDoc, deleteDoc, doc } from '../firebase-config.js';
+import { tCol, tDoc } from '../db.js';
 import { showModal, closeModal, showConfirm, showToast, checkValid, escapeHTML, renderAvatar } from '../ui.js';
 import { academicService } from '../services/academicService.js';
 import { recordAudit } from './auditLog.js';
@@ -329,7 +330,7 @@ function attachGradeActionEvents(scope = document) {
     showConfirm(t('delete'), t('confirmDelete'), async () => {
       try {
         const g = state.grades.find(x => x.id === b.dataset.id);
-        await deleteDoc(doc(db, 'grades', b.dataset.id));
+        await deleteDoc(tDoc('grades',b.dataset.id));
         await recordAudit('delete', 'grades', `حذف درجة: ${g?.subject || ''} - ${state.students.find(s => s.id === g?.studentId)?.name || ''}`);
         closeModal();
         showToast(t('deletedSuccess'), 'success');
@@ -479,10 +480,10 @@ function showGradeForm(grade = null) {
 
     try {
       if (isEdit) {
-        await updateDoc(doc(db, 'grades', grade.id), data);
+        await updateDoc(tDoc('grades',grade.id), data);
         await recordAudit('update', 'grades', `تعديل درجة: ${data.subject} - ${state.students.find(s => s.id === data.studentId)?.name || ''} - ${data.score}/${data.maxScore}`);
       } else {
-        await addDoc(collection(db, 'grades'), data);
+        await addDoc(tCol('grades'), data);
         await recordAudit('create', 'grades', `إضافة درجة: ${data.subject} - ${state.students.find(s => s.id === data.studentId)?.name || ''} - ${data.score}/${data.maxScore}`);
       }
       academicService.processAcademicAlerts(data.studentId);
@@ -536,7 +537,7 @@ function showWeightForm() {
       createdAt: new Date().toISOString()
     };
     try {
-      await addDoc(collection(db, 'subject_weights'), data);
+      await addDoc(tCol('subject_weights'), data);
       showToast(t('savedSuccess'), 'success');
       showWeightForm();
     } catch (e) {
@@ -547,7 +548,7 @@ function showWeightForm() {
   document.querySelectorAll('.delete-weight').forEach(btn => {
     btn.addEventListener('click', async () => {
       try {
-        await deleteDoc(doc(db, 'subject_weights', btn.dataset.id));
+        await deleteDoc(tDoc('subject_weights',btn.dataset.id));
         showToast(t('deletedSuccess'), 'success');
         showWeightForm();
       } catch (e) {

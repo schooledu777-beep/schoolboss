@@ -65,14 +65,15 @@ function getNavGroups() {
       groups.push({ labelAr: 'المالية والتواصل', labelEn: 'Finance & Comms', items: commItems });
 
     // System always last
-    groups.push({
-      labelAr: 'النظام', labelEn: 'System',
-      items: [
-        { icon: '📊', key: 'analytics', page: 'analytics'  },
-        { icon: '🔍', key: 'auditLog',  page: 'audit-log'  },
-        { icon: '⚙️', key: 'settings',  page: 'settings'   },
-      ]
-    });
+    const sysItems = [
+      { icon: '📊', key: 'analytics', page: 'analytics' },
+      { icon: '🔍', key: 'auditLog',  page: 'audit-log' },
+      { icon: '⚙️', key: 'settings',  page: 'settings'  },
+    ];
+    if (state.isSuperAdmin) {
+      sysItems.push({ icon: '🛡️', key: 'superAdmin', page: 'super-admin' });
+    }
+    groups.push({ labelAr: 'النظام', labelEn: 'System', items: sysItems });
 
     return groups;
   }

@@ -1,5 +1,6 @@
 import { state } from '../state.js';
-import { db, collection, onSnapshot } from '../firebase-config.js';
+import { tCol } from '../db.js';
+import { onSnapshot } from '../firebase-config.js';
 
 class SyncService {
   constructor() {
@@ -85,7 +86,10 @@ class SyncService {
     collectionsNeeded.forEach(collName => {
       if (!this.activeSubscriptions.has(collName)) {
         const key = this.getStateKey(collName);
-        const unsub = onSnapshot(collection(db, collName), (snap) => {
+        let colRef;
+        try { colRef = tCol(collName); }
+        catch(e) { console.warn(`[Sync] Cannot subscribe to ${collName}: ${e.message}`); return; }
+        const unsub = onSnapshot(colRef, (snap) => {
           state.update({ [key]: snap.docs.map(d => ({ id: d.id, ...d.data() })) });
           console.log(`[Sync] Updated ${collName}`);
         }, (err) => {
@@ -102,6 +106,12 @@ class SyncService {
     this.activeSubscriptions.forEach(unsub => unsub());
     this.activeSubscriptions.clear();
     console.log(`[Sync] All subscriptions stopped`);
+  }
+
+  /** Stop all listeners, then re-subscribe for the current page (use after tenantId is set). */
+  restart(pageName) {
+    this.stopAll();
+    this.syncPage(pageName || state.currentPage || 'dashboard');
   }
 }
 

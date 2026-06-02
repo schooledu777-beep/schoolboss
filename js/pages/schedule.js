@@ -1,5 +1,6 @@
 import { state, t } from '../state.js';
 import { db, collection, addDoc, deleteDoc, doc, writeBatch } from '../firebase-config.js';
+import { tCol, tDoc } from '../db.js';
 import { showModal, closeModal, showConfirm, showToast } from '../ui.js';
 
 const days = {
@@ -228,7 +229,7 @@ function attachScheduleCellEvents() {
       e.stopPropagation();
       showConfirm(t('delete'), t('confirmDelete'), async () => {
         try {
-          await deleteDoc(doc(db, 'schedules', btn.dataset.id));
+          await deleteDoc(tDoc('schedules',btn.dataset.id));
           state.schedules = state.schedules.filter(s => s.id !== btn.dataset.id);
           refreshCurrentSchedule();
           showToast(t('deletedSuccess'), 'success');
@@ -259,7 +260,7 @@ function clearCurrentClassSchedule() {
     async () => {
       try {
         const batch = writeBatch(db);
-        classSchedules.forEach(entry => batch.delete(doc(db, 'schedules', entry.id)));
+        classSchedules.forEach(entry => batch.delete(tDoc('schedules',entry.id)));
         await batch.commit();
         state.schedules = state.schedules.filter(s => s.classId !== classId);
         refreshCurrentSchedule();
@@ -446,7 +447,7 @@ function showScheduleForm(entry = null, dayOfWeek = 0, timeslotId = '') {
     };
 
     try {
-      const ref = await addDoc(collection(db, 'schedules'), data);
+      const ref = await addDoc(tCol('schedules'), data);
       state.schedules.push({ id: ref.id, ...data });
       closeModal();
       refreshCurrentSchedule();
@@ -504,7 +505,7 @@ function showBreakForm(dayOfWeek = 0, timeslotId = '') {
     };
 
     try {
-      const ref = await addDoc(collection(db, 'schedules'), data);
+      const ref = await addDoc(tCol('schedules'), data);
       state.schedules.push({ id: ref.id, ...data });
       closeModal();
       refreshCurrentSchedule();
@@ -860,14 +861,14 @@ async function generateSmartSchedule(classId, options) {
   try {
     const batch = writeBatch(db);
     const createdSlots = slotPlan.missingSlots.map(data => {
-      const ref = doc(collection(db, 'timeslots'));
+      const ref = doc(tCol('timeslots'));
       const slotData = { startTime: data.startTime, endTime: data.endTime, order: data.order, generatedBy: 'smart-schedule' };
       batch.set(ref, slotData);
       return { id: ref.id, ...slotData };
     });
     const slotIdMap = new Map(slotPlan.missingSlots.map((slot, index) => [String(slot.id), createdSlots[index].id]));
     const created = draftEntries.map(data => {
-      const ref = doc(collection(db, 'schedules'));
+      const ref = doc(tCol('schedules'));
       const scheduleData = { ...data, timeslotId: slotIdMap.get(String(data.timeslotId)) || data.timeslotId };
       batch.set(ref, scheduleData);
       return { id: ref.id, ...scheduleData };
@@ -915,7 +916,7 @@ function showMasterDataModal() {
     try {
       const startTime = document.getElementById('ts-start').value;
       const endTime = document.getElementById('ts-end').value;
-      const ref = await addDoc(collection(db, 'timeslots'), { startTime, endTime, order: state.timeslots.length + 1 });
+      const ref = await addDoc(tCol('timeslots'), { startTime, endTime, order: state.timeslots.length + 1 });
       state.timeslots.push({ id: ref.id, startTime, endTime, order: state.timeslots.length + 1 });
       closeModal();
       refreshCurrentSchedule();
@@ -928,7 +929,7 @@ function showMasterDataModal() {
 
   document.querySelectorAll('.del-ts').forEach(btn => btn.addEventListener('click', async () => {
     try {
-      await deleteDoc(doc(db, 'timeslots', btn.dataset.id));
+      await deleteDoc(tDoc('timeslots',btn.dataset.id));
       state.timeslots = state.timeslots.filter(ts => String(ts.id) !== String(btn.dataset.id));
       showMasterDataModal();
       refreshCurrentSchedule();

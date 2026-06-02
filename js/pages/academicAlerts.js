@@ -1,5 +1,6 @@
 import { state, t } from '../state.js';
 import { db, updateDoc, doc } from '../firebase-config.js';
+import { tCol, tDoc } from '../db.js';
 import { showToast } from '../ui.js';
 
 export function renderAcademicAlerts() {
@@ -66,7 +67,7 @@ export function attachAcademicAlertsEvents() {
     document.querySelectorAll('.resolve-alert').forEach(btn => {
         btn.addEventListener('click', async () => {
             try {
-                await updateDoc(doc(db, 'academic_alerts', btn.dataset.id), { status: 'Resolved', resolvedAt: new Date().toISOString() });
+                await updateDoc(tDoc('academic_alerts',btn.dataset.id), { status: 'Resolved', resolvedAt: new Date().toISOString() });
                 showToast(state.lang==='ar'?'تم حل التنبيه':'Alert resolved', 'success');
             } catch(e) { showToast(t('errorOccurred'), 'error'); }
         });

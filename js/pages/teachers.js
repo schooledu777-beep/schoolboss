@@ -1,5 +1,6 @@
 import { state, t } from '../state.js';
 import { db, collection, addDoc, updateDoc, deleteDoc, doc, setDoc } from '../firebase-config.js';
+import { tCol, tDoc } from '../db.js';
 import { adminCreateUser } from '../auth.js?v=20260503-admin-accounts';
 import { showModal, closeModal, showConfirm, showToast, escapeHTML, renderAvatar } from '../ui.js?v=20260502-photo-sync';
 import { uploadFile } from '../services/uploadService.js?v=20260502-photo-sync';
@@ -33,7 +34,7 @@ export function attachTeacherEvents() {
     showConfirm(t('delete'), t('confirmDelete'), async () => {
       try {
         const tc = state.teachers.find(x => x.id === b.dataset.id);
-        await deleteDoc(doc(db,'teachers',b.dataset.id));
+        await deleteDoc(tDoc('teachers',b.dataset.id));
         await recordAudit('delete', 'teachers', `حذف معلم: ${tc?.name || b.dataset.id}`);
         showToast(t('deletedSuccess'),'success');
       } catch(e) { showToast(t('errorOccurred'),'error'); }
@@ -185,13 +186,13 @@ export function showTeacherForm(teacher = null) {
     try { 
       let teacherId = teacher?.id;
       if(isEdit) {
-        await updateDoc(doc(db,'teachers',teacher.id),data);
+        await updateDoc(tDoc('teachers',teacher.id),data);
         await recordAudit('update', 'teachers', `تعديل بيانات المعلم: ${data.name}`);
       } else {
         data.createdAt=new Date().toISOString();
         const password = document.getElementById('tf-password').value;
         const newUid = await adminCreateUser(data.email, password, 'teacher', data.name);
-        await setDoc(doc(db, 'teachers', newUid), {
+        await setDoc(tDoc('teachers',newUid), {
           ...data, uid: newUid, id: newUid, accountStatus: 'active',
           authManaged: { temporaryPassword: password, passwordUpdatedAt: new Date().toISOString(), passwordSource: 'admin-created', mustChange: true }
         });
@@ -206,9 +207,9 @@ export function showTeacherForm(teacher = null) {
         const currentlyHasMe = cls.teacherId === teacherId;
 
         if (isSelected && !currentlyHasMe) {
-          batchUpdates.push(updateDoc(doc(db, 'classes', cls.id), { teacherId: teacherId }));
+          batchUpdates.push(updateDoc(tDoc('classes',cls.id), { teacherId: teacherId }));
         } else if (!isSelected && currentlyHasMe) {
-          batchUpdates.push(updateDoc(doc(db, 'classes', cls.id), { teacherId: "" }));
+          batchUpdates.push(updateDoc(tDoc('classes',cls.id), { teacherId: "" }));
         }
       });
       if (batchUpdates.length > 0) await Promise.all(batchUpdates);

@@ -1,5 +1,6 @@
 import { state, t } from '../state.js';
 import { db, collection, getDocs, query, where, addDoc, doc, setDoc, writeBatch } from '../firebase-config.js';
+import { tCol, tDoc } from '../db.js';
 import { formatCurrency, showToast, showConfirm, renderStatsCard, renderCard, renderBadge } from '../ui.js';
 import { adminCreateUser } from '../auth.js';
 
@@ -674,7 +675,7 @@ export function attachDashboardEvents() {
       for (let t of teachersData) {
         try {
           const uid = await adminCreateUser(t.email, '123456', 'teacher', t.name);
-          await setDoc(doc(db, 'teachers', uid), { ...t, id: uid, createdAt: new Date().toISOString() }, { merge: true });
+          await setDoc(tDoc('teachers',uid), { ...t, id: uid, createdAt: new Date().toISOString() }, { merge: true });
           teacherIds.push(uid);
         } catch (err) { 
             console.warn(`Skipping teacher ${t.email}:`, err);
@@ -693,7 +694,7 @@ export function attachDashboardEvents() {
       for (let p of parentsData) {
         try {
           const uid = await adminCreateUser(p.email, '123456', 'parent', p.name);
-          await setDoc(doc(db, 'parents', uid), { ...p, id: uid, createdAt: new Date().toISOString() }, { merge: true });
+          await setDoc(tDoc('parents',uid), { ...p, id: uid, createdAt: new Date().toISOString() }, { merge: true });
           parentIds.push(uid);
         } catch (err) { 
             console.warn(`Skipping parent ${p.email}:`, err); 
@@ -706,10 +707,10 @@ export function attachDashboardEvents() {
       const subjectsData = ['رياضيات', 'لغة عربية', 'علوم', 'لغة إنجليزية', 'تاريخ'];
       for (let s of subjectsData) {
         try {
-          const q = query(collection(db, 'subjects'), where('name', '==', s));
+          const q = query(tCol('subjects'), where('name', '==', s));
           const snap = await getDocs(q);
           if (snap.empty) {
-            await addDoc(collection(db, 'subjects'), { name: s, code: 'SUBJ-'+Math.floor(Math.random()*1000) });
+            await addDoc(tCol('subjects'), { name: s, code: 'SUBJ-'+Math.floor(Math.random()*1000) });
           }
         } catch (err) { console.warn(`Skipping subject ${s}:`, err); }
       }
@@ -723,7 +724,7 @@ export function attachDashboardEvents() {
       for (let s of studentsData) {
         try {
           const uid = await adminCreateUser(s.email, '123456', 'student', s.name);
-          await setDoc(doc(db, 'students', uid), { ...s, id: uid, createdAt: new Date().toISOString() }, { merge: true });
+          await setDoc(tDoc('students',uid), { ...s, id: uid, createdAt: new Date().toISOString() }, { merge: true });
           studentIds.push(uid);
         } catch (err) { 
             console.warn(`Skipping student ${s.email}:`, err); 
@@ -734,7 +735,7 @@ export function attachDashboardEvents() {
 
       // 5. Add Classes and linked data
       if (teacherIds.length > 0 && studentIds.length > 0) {
-        const classRef = await addDoc(collection(db, 'classes'), { 
+        const classRef = await addDoc(tCol('classes'), { 
           name: 'الصف الأول - أ', 
           grade: 'الصف الأول', 
           teacherId: teacherIds[0], 
@@ -745,7 +746,7 @@ export function attachDashboardEvents() {
         // 6. Add Attendance for today
         const todayStr = new Date().toISOString().split('T')[0];
         for (let sid of studentIds) {
-          await addDoc(collection(db, 'attendance'), {
+          await addDoc(tCol('attendance'), {
             studentId: sid,
             date: todayStr,
             status: Math.random() > 0.1 ? 'present' : 'absent',
@@ -753,7 +754,7 @@ export function attachDashboardEvents() {
           });
           
           // 7. Add Grades
-          await addDoc(collection(db, 'grades'), {
+          await addDoc(tCol('grades'), {
             studentId: sid,
             subject: 'رياضيات',
             score: Math.floor(Math.random() * 20) + 80,
@@ -762,7 +763,7 @@ export function attachDashboardEvents() {
           });
 
           // 8. Add Fees
-          await addDoc(collection(db, 'fees'), {
+          await addDoc(tCol('fees'), {
             studentId: sid,
             amount: 5000,
             paidAmount: 2000,

@@ -1,4 +1,5 @@
-import { auth, db, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, doc, getDoc, setDoc, getDocs, collection, query, where, deleteDoc, firebaseConfig, initializeApp, getAuth, updatePassword, sendPasswordResetEmail } from './firebase-config.js?v=20260503-admin-accounts';
+import { auth, db, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, doc, getDoc, setDoc, getDocs, collection, query, where, deleteDoc, firebaseConfig, initializeApp, getAuth, updatePassword, sendPasswordResetEmail } from './firebase-config.js?v=20260507-class-sync';
+import { getTenantIdForUser } from './services/tenantService.js';
 import { state, t } from './state.js';
 import { showToast, hideLoading } from './ui.js';
 
@@ -240,6 +241,30 @@ export function initAuth(onLogin, onLogout) {
           await signOut(auth);
           return;
         }
+
+        // ── Multi-Tenant: resolve tenantId ──────────────────────────
+        const isSA = (user.email === BOOTSTRAP_ADMIN_EMAIL) || state.profile?.isSuperAdmin === true;
+        state.isSuperAdmin = isSA;
+
+        if (isSA) {
+          // Super admin uses tenantId 'main' for their own school data
+          state.tenantId = state.profile?.tenantId || 'main';
+          if (!state.profile?.tenantId) {
+            await setDoc(doc(db, 'users', user.uid), { tenantId: 'main', isSuperAdmin: true }, { merge: true });
+          }
+        } else if (state.profile?.tenantId) {
+          state.tenantId = state.profile.tenantId;
+        } else {
+          // Try to look up tenant by adminUid (first-time login after activation)
+          const foundTenantId = await getTenantIdForUser(user.uid).catch(() => null);
+          if (foundTenantId) {
+            state.tenantId = foundTenantId;
+            await setDoc(doc(db, 'users', user.uid), { tenantId: foundTenantId }, { merge: true });
+          }
+          // If still null: user hasn't activated yet → setupWizard will handle it
+        }
+        // ────────────────────────────────────────────────────────────
+
         // Load school settings
         try {
           const settingsDoc = await getDoc(doc(db, 'settings', 'general'));
@@ -280,6 +305,8 @@ export function initAuth(onLogin, onLogout) {
     } else {
       state.user = null;
       state.profile = null;
+      state.tenantId = null;
+      state.isSuperAdmin = false;
       state.unsubscribers.forEach(unsub => unsub());
       state.unsubscribers = [];
       hideLoading();

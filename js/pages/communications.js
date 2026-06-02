@@ -1,5 +1,6 @@
 import { state, t } from '../state.js';
 import { db, collection, addDoc, deleteDoc, doc, setDoc, updateDoc, writeBatch, getDocs } from '../firebase-config.js';
+import { tCol, tDoc } from '../db.js';
 import { showModal, closeModal, showConfirm, showToast, formatDate, escapeHTML } from '../ui.js';
 import { buildFieldKey } from '../services/customFields.js?v=20260506-custom-fields';
 
@@ -39,13 +40,13 @@ export function attachAnnouncementEvents() {
     document.getElementById('announce-form')?.addEventListener('submit', async e => {
       e.preventDefault();
       try {
-        await addDoc(collection(db,'announcements'), { title: document.getElementById('af-title').value.trim(), body: document.getElementById('af-body').value.trim(), targetRole: document.getElementById('af-target').value, priority: document.getElementById('af-priority').value, sender: state.profile?.name, date: new Date().toISOString() });
+        await addDoc(tCol('announcements'), { title: document.getElementById('af-title').value.trim(), body: document.getElementById('af-body').value.trim(), targetRole: document.getElementById('af-target').value, priority: document.getElementById('af-priority').value, sender: state.profile?.name, date: new Date().toISOString() });
         closeModal(); showToast(t('savedSuccess'),'success');
       } catch(e) { showToast(t('errorOccurred'),'error'); }
     });
   });
   document.querySelectorAll('.delete-announce').forEach(b => b.addEventListener('click', () => {
-    showConfirm(t('delete'),t('confirmDelete'), async()=>{ try{ await deleteDoc(doc(db,'announcements',b.dataset.id)); showToast(t('deletedSuccess'),'success'); }catch(e){ showToast(t('errorOccurred'),'error'); }});
+    showConfirm(t('delete'),t('confirmDelete'), async()=>{ try{ await deleteDoc(tDoc('announcements',b.dataset.id)); showToast(t('deletedSuccess'),'success'); }catch(e){ showToast(t('errorOccurred'),'error'); }});
   }));
 }
 
@@ -97,7 +98,7 @@ export function attachMessageEvents() {
           date: new Date().toISOString(), 
           read: false 
         };
-        await addDoc(collection(db,'messages'), payload);
+        await addDoc(tCol('messages'), payload);
         closeModal(); showToast(state.lang==='ar'?'تم الإرسال':'Sent!','success');
       } catch(e) { 
         console.error(e); 
@@ -218,7 +219,7 @@ export function attachSettingsEvents(renderApp) {
         isAr ? 'سيتم إخفاء الحقل من النماذج الجديدة مع الحفاظ على البيانات القديمة داخل سجلات الطلاب.' : 'The field will be hidden from new forms while old saved values remain archived.',
         async () => {
           try {
-            await updateDoc(doc(db, 'custom_fields_schema', btn.dataset.id), {
+            await updateDoc(tDoc('custom_fields_schema',btn.dataset.id), {
               is_active: false,
               updated_at: new Date().toISOString()
             });
@@ -396,7 +397,7 @@ function showCustomFieldModal() {
     const btn = event.target.querySelector('button[type="submit"]');
     btn.disabled = true;
     try {
-      await addDoc(collection(db, 'custom_fields_schema'), {
+      await addDoc(tCol('custom_fields_schema'), {
         target_entity: document.getElementById('cf-target').value,
         field_label: label,
         field_key: fieldKey,

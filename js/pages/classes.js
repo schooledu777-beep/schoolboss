@@ -1,5 +1,6 @@
 import { state, t } from '../state.js';
 import { db, collection, addDoc, updateDoc, deleteDoc, doc } from '../firebase-config.js';
+import { tCol, tDoc } from '../db.js';
 import { showModal, closeModal, showConfirm, showToast, escapeHTML, renderAvatar } from '../ui.js';
 import { recordAudit } from './auditLog.js';
 import { showStudentCardModal } from './students.js?v=20260506-custom-fields';
@@ -148,7 +149,7 @@ function attachClassActionEvents(scope = document) {
     showConfirm(t('delete'), t('confirmDelete'), async () => {
       try {
         const cls = state.classes.find(c => c.id === btn.dataset.id);
-        await deleteDoc(doc(db, 'classes', btn.dataset.id));
+        await deleteDoc(tDoc('classes',btn.dataset.id));
         await recordAudit('delete', 'classes', `حذف صف: ${cls?.name || btn.dataset.id}`);
         closeModal();
         showToast(t('deletedSuccess'), 'success');
@@ -337,17 +338,17 @@ function showClassForm(cls = null) {
     };
     try {
       if (isEdit) {
-        await updateDoc(doc(db, 'classes', cls.id), data);
+        await updateDoc(tDoc('classes',cls.id), data);
         await Promise.all(state.students.map(s => {
-          if (studentIds.includes(s.id)) return updateDoc(doc(db, 'students', s.id), { classId: cls.id }).catch(() => {});
-          if (s.classId === cls.id && !studentIds.includes(s.id)) return updateDoc(doc(db, 'students', s.id), { classId: '' }).catch(() => {});
+          if (studentIds.includes(s.id)) return updateDoc(tDoc('students',s.id), { classId: cls.id }).catch(() => {});
+          if (s.classId === cls.id && !studentIds.includes(s.id)) return updateDoc(tDoc('students',s.id), { classId: '' }).catch(() => {});
           return Promise.resolve();
         }));
         await recordAudit('update', 'classes', `تعديل صف: ${data.name}`);
       } else {
         data.createdAt = new Date().toISOString();
-        const ref = await addDoc(collection(db, 'classes'), data);
-        await Promise.all(studentIds.map(id => updateDoc(doc(db, 'students', id), { classId: ref.id }).catch(() => {})));
+        const ref = await addDoc(tCol('classes'), data);
+        await Promise.all(studentIds.map(id => updateDoc(tDoc('students',id), { classId: ref.id }).catch(() => {})));
         await recordAudit('create', 'classes', `إضافة صف جديد: ${data.name}`);
       }
       closeModal();

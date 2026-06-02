@@ -1,5 +1,6 @@
 import { state, t } from '../state.js';
 import { db, collection, addDoc, setDoc, updateDoc, deleteDoc, doc } from '../firebase-config.js';
+import { tCol, tDoc } from '../db.js';
 import { showModal, closeModal, showConfirm, showToast, escapeHTML } from '../ui.js';
 import { recordAudit } from './auditLog.js';
 
@@ -320,7 +321,7 @@ function showGenerateForm() {
       term2Start: document.getElementById('apg-term2').value
     });
     try {
-      await setDoc(doc(db, 'annual_plans', cls.id), plan);
+      await setDoc(tDoc('annual_plans',cls.id), plan);
       await recordAudit('create', 'annual_plans', `إنشاء خطة سنوية: ${cls.name}`);
       closeModal();
       showToast(t('savedSuccess'), 'success');
@@ -333,7 +334,7 @@ function showGenerateForm() {
 
 async function savePlan(plan) {
   const { id, ...data } = plan;
-  await updateDoc(doc(db, 'annual_plans', id), { ...data, updatedAt: new Date().toISOString() });
+  await updateDoc(tDoc('annual_plans',id), { ...data, updatedAt: new Date().toISOString() });
 }
 
 function showQuotaForm(quota = null) {
@@ -462,7 +463,7 @@ async function syncAssessmentsToCalendar() {
   }
   try {
     for (const row of assessments) {
-      await addDoc(collection(db, 'calendar_events'), {
+      await addDoc(tCol('calendar_events'), {
         title: `${row.assessment.title} - ${plan.className}${row.assessment.subject ? ` - ${row.assessment.subject}` : ''}`,
         type: 'exam',
         date: row.week.startDate,

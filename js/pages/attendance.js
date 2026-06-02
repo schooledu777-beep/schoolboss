@@ -1,5 +1,6 @@
 import { state, t } from '../state.js';
 import { db, doc, setDoc, writeBatch } from '../firebase-config.js';
+import { tCol, tDoc } from '../db.js';
 import { showToast } from '../ui.js';
 import { academicService } from '../services/academicService.js';
 import { notificationService } from '../services/notificationService.js';
@@ -161,7 +162,7 @@ async function saveAttendance() {
 
       // ── Composite doc ID: studentId_date ─────────────────────────
       const attDocId = `${sid}_${date}`;
-      const attRef   = doc(db, 'attendance', attDocId);
+      const attRef   = tDoc('attendance',attDocId);
 
       batch.set(attRef, {
         studentId: sid,
