@@ -1,7 +1,7 @@
 import { state } from '../state.js';
 import { db, collection, addDoc, doc, setDoc, updateDoc } from '../firebase-config.js';
 import { tCol, tDoc } from '../db.js';
-import { adminCreateUser } from '../auth.js?v=20260507-class-sync';
+import { adminCreateUser } from '../auth.js?v=20260611-tenants';
 import { showToast, escapeHTML } from '../ui.js';
 import { validateActivationCode, consumeActivationCode } from '../services/tenantService.js';
 import { syncService } from '../services/syncService.js?v=20260506-setup-wizard-fix';
@@ -411,11 +411,25 @@ export function attachSetupWizardEvents() {
         // Patch user profile in Firestore
         const { db } = await import('../db.js');
         const { doc, setDoc } = await import('../firebase-config.js');
-        await setDoc(doc(db, 'users', state.user.uid), { tenantId, accountStatus: 'active' }, { merge: true });
+        await setDoc(doc(db, 'users', state.user.uid), {
+          tenantId,
+          role: 'admin',
+          accountStatus: 'active'
+        }, { merge: true });
 
         // Update local state so tCol/tDoc starts working immediately
         state.tenantId = tenantId;
-        if (state.profile) state.profile.tenantId = tenantId;
+        state.tenant = {
+          id: tenantId,
+          name: school,
+          plan: result.data.plan || 'pro',
+          maxStudents: Number(result.data.maxStudents || 500),
+          status: 'active'
+        };
+        if (state.profile) {
+          state.profile.tenantId = tenantId;
+          state.profile.role = 'admin';
+        }
 
         // Restart all Firestore listeners with the new tenantId
         syncService.restart('setup-wizard');
@@ -425,7 +439,7 @@ export function attachSetupWizardEvents() {
         // Re-render wizard (now tenantId is set → shows step 1)
         const mainContent = document.getElementById('main-content');
         if (mainContent) {
-          const { renderSetupWizard, attachSetupWizardEvents } = await import('./setupWizard.js?v=20260507-class-sync');
+          const { renderSetupWizard, attachSetupWizardEvents } = await import('./setupWizard.js?v=20260611-tenants');
           mainContent.innerHTML = renderSetupWizard();
           attachSetupWizardEvents();
         }

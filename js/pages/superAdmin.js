@@ -9,7 +9,10 @@ import {
   createActivationCode, listActivationCodes,
   listTenants, setTenantStatus,
 } from '../services/tenantService.js';
-import { adminCreateUser } from '../auth.js?v=20260507-class-sync';
+import { adminCreateUser } from '../auth.js?v=20260611-tenants';
+import {
+  inspectLegacyData, migrateLegacyDataToMain
+} from '../services/tenantMigrationService.js';
 
 // ─── Render ───────────────────────────────────────────────────────────────────
 
@@ -29,6 +32,9 @@ export function renderSuperAdmin() {
         </button>
         <button class="btn btn-outline" id="sa-new-code-btn">
           🔑 ${isAr ? 'كود تفعيل فقط' : 'Code Only'}
+        </button>
+        <button class="btn btn-outline" id="sa-migrate-legacy-btn">
+          ${isAr ? 'نقل البيانات القديمة' : 'Migrate Legacy Data'}
         </button>
       </div>
     </div>
@@ -78,6 +84,7 @@ export async function attachSuperAdminEvents() {
 
   document.getElementById('sa-create-account-btn')?.addEventListener('click', showCreateAccountModal);
   document.getElementById('sa-new-code-btn')?.addEventListener('click', showNewCodeModal);
+  document.getElementById('sa-migrate-legacy-btn')?.addEventListener('click', migrateLegacyData);
 
   document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -87,6 +94,57 @@ export async function attachSuperAdminEvents() {
       document.getElementById(`sa-tab-${btn.dataset.tab}`).style.display = '';
     });
   });
+}
+
+async function migrateLegacyData() {
+  const isAr = state.lang === 'ar';
+  const button = document.getElementById('sa-migrate-legacy-btn');
+
+  try {
+    button.disabled = true;
+    button.textContent = isAr ? 'جاري الفحص...' : 'Inspecting...';
+    const legacy = await inspectLegacyData();
+
+    if (!legacy.length) {
+      showToast(isAr ? 'لا توجد بيانات قديمة تحتاج إلى نقل' : 'No legacy data needs migration', 'info');
+      return;
+    }
+
+    const total = legacy.reduce((sum, item) => sum + item.count, 0);
+    showConfirm(
+      isAr ? 'نقل البيانات القديمة' : 'Migrate Legacy Data',
+      isAr
+        ? `سيتم نسخ ${total} سجلاً إلى المدرسة الأساسية دون حذف الأصل. هل تريد المتابعة؟`
+        : `${total} records will be copied to the main tenant without deleting the originals. Continue?`,
+      async () => {
+        try {
+          button.disabled = true;
+          button.textContent = isAr ? 'جاري النقل...' : 'Migrating...';
+          const report = await migrateLegacyDataToMain();
+          const migrated = report.reduce((sum, item) => sum + item.count, 0);
+          showToast(
+            isAr ? `تم نقل ${migrated} سجلاً إلى المدرسة الأساسية` : `Migrated ${migrated} records to the main tenant`,
+            'success',
+            6000
+          );
+        } catch (error) {
+          console.error('[SuperAdmin] migration error:', error);
+          showToast(error.message || 'Migration failed', 'error');
+        } finally {
+          button.disabled = false;
+          button.textContent = isAr ? 'نقل البيانات القديمة' : 'Migrate Legacy Data';
+        }
+      }
+    );
+  } catch (error) {
+    console.error('[SuperAdmin] migration error:', error);
+    showToast(error.message || 'Migration failed', 'error');
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = isAr ? 'نقل البيانات القديمة' : 'Migrate Legacy Data';
+    }
+  }
 }
 
 // ─── Create School Account Modal ──────────────────────────────────────────────
@@ -203,7 +261,7 @@ function showCreateAccountModal() {
 
     try {
       // 1. Create Firebase Auth account (secondary app — doesn't log out super admin)
-      const uid = await adminCreateUser(email, password, 'admin', schoolName);
+      const uid = await adminCreateUser(email, password, 'admin', schoolName, { tenantId: null });
 
       // 2. Create activation code + tenant config in one step
       const { code } = await createActivationCode({ schoolName, plan, maxStudents, note });

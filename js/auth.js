@@ -1,5 +1,5 @@
-import { auth, db, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, doc, getDoc, setDoc, getDocs, collection, query, where, deleteDoc, firebaseConfig, initializeApp, getAuth, updatePassword, sendPasswordResetEmail } from './firebase-config.js?v=20260507-class-sync';
-import { getTenantIdForUser } from './services/tenantService.js';
+import { auth, db, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, doc, rootDoc, getDoc, setDoc, getDocs, collection, firebaseConfig, initializeApp, getAuth, updatePassword, sendPasswordResetEmail } from './firebase-config.js?v=20260611-tenants';
+import { getTenantConfig, getTenantIdForUser } from './services/tenantService.js';
 import { state, t } from './state.js';
 import { showToast, hideLoading } from './ui.js';
 
@@ -115,8 +115,10 @@ export function renderAuthPage() {
           <span id="auth-btn-text">${t('login')}</span>
         </button>
       </form>
-
-
+      <div class="auth-toggle" style="margin-top:1rem;text-align:center">
+        <span id="auth-toggle-text">${t('noAccount')}</span>
+        <a href="#" id="auth-toggle-link">${t('registerNow')}</a>
+      </div>
     </div>
   </div>`;
 }
@@ -199,6 +201,8 @@ export function initAuth(onLogin, onLogout) {
     
     if (user) {
       state.user = user;
+      state.tenantId = null;
+      state.tenant = null;
       try {
         // Check if user has a profile
         const userDoc = await getDoc(doc(db, 'users', user.uid));
@@ -206,22 +210,7 @@ export function initAuth(onLogin, onLogout) {
           state.profile = userDoc.data();
           state.profile.uid = user.uid;
         } else {
-          // Check if admin pre-created a profile with same email
-          let existingProfile = null;
-          let existingDocId = null;
-          if (user.email) {
-            const emailQ = query(collection(db, 'users'), where('email', '==', user.email));
-            const snap = await getDocs(emailQ);
-            if (!snap.empty) {
-              existingProfile = snap.docs[0].data();
-              existingDocId = snap.docs[0].id;
-            }
-          }
-          const profile = existingProfile ? {
-            ...existingProfile, uid: user.uid,
-            name: existingProfile.name || user.displayName || user.email?.split('@')[0],
-            avatar: user.photoURL || existingProfile.avatar || ''
-          } : {
+          const profile = {
             uid: user.uid,
             name: state._pendingName || user.displayName || user.email?.split('@')[0] || 'User',
             email: user.email || '',
@@ -231,9 +220,6 @@ export function initAuth(onLogin, onLogout) {
           };
           delete state._pendingName;
           await setDoc(doc(db, 'users', user.uid), profile);
-          if (existingDocId && existingDocId !== user.uid) {
-            try { await deleteDoc(doc(db, 'users', existingDocId)); } catch(e) {}
-          }
           state.profile = profile;
         }
         if (state.profile?.accountStatus === 'suspended') {
@@ -252,6 +238,20 @@ export function initAuth(onLogin, onLogout) {
           if (!state.profile?.tenantId) {
             await setDoc(doc(db, 'users', user.uid), { tenantId: 'main', isSuperAdmin: true }, { merge: true });
           }
+          const mainTenant = await getTenantConfig('main');
+          if (!mainTenant) {
+            const now = new Date().toISOString();
+            await setDoc(rootDoc('tenants', 'main'), {
+              name: 'EduManage Pro',
+              adminUid: user.uid,
+              adminEmail: user.email || '',
+              plan: 'owner',
+              maxStudents: 100000,
+              status: 'active',
+              createdAt: now,
+              updatedAt: now,
+            }, { merge: true });
+          }
         } else if (state.profile?.tenantId) {
           state.tenantId = state.profile.tenantId;
         } else {
@@ -263,10 +263,25 @@ export function initAuth(onLogin, onLogout) {
           }
           // If still null: user hasn't activated yet → setupWizard will handle it
         }
+
+        if (state.tenantId) {
+          state.tenant = await getTenantConfig(state.tenantId);
+          if (state.tenant?.status === 'suspended') {
+            showToast(
+              state.lang === 'ar'
+                ? 'تم إيقاف اشتراك هذه المدرسة. تواصل مع إدارة النظام.'
+                : 'This school subscription is suspended.',
+              'error',
+              6000
+            );
+            await signOut(auth);
+            return;
+          }
+        }
         // ────────────────────────────────────────────────────────────
 
         // Load school settings
-        try {
+        if (state.tenantId) try {
           const settingsDoc = await getDoc(doc(db, 'settings', 'general'));
           if (settingsDoc.exists()) state.schoolType = settingsDoc.data().schoolType || 'private';
 
@@ -286,6 +301,8 @@ export function initAuth(onLogin, onLogout) {
         } catch(e) {
           console.warn("Failed to load settings:", e);
           state.setup = { ...state.setup, loading: false };
+        } else {
+          state.setup = { ...state.setup, completed: false, currentStep: 1, loading: false };
         }
       } catch (err) {
         console.error("Error during profile initialization (check Firebase rules/config):", err);
@@ -306,6 +323,7 @@ export function initAuth(onLogin, onLogout) {
       state.user = null;
       state.profile = null;
       state.tenantId = null;
+      state.tenant = null;
       state.isSuperAdmin = false;
       state.unsubscribers.forEach(unsub => unsub());
       state.unsubscribers = [];
@@ -325,8 +343,14 @@ export async function logout() {
  * Creates a new Firebase Auth user without logging out the current admin.
  * يستخدم Secondary App Singleton — لا يُنشئ instance جديدة في كل استدعاء.
  */
-export async function adminCreateUser(email, password, role, name) {
-  const secondaryAuth = getSecondaryAuth(); // ← singleton بدلاً من initializeApp جديد
+export async function adminCreateUser(email, password, role, name, options = {}) {
+  const tenantId = Object.prototype.hasOwnProperty.call(options, 'tenantId')
+    ? options.tenantId
+    : state.tenantId;
+  if (!tenantId && role !== 'admin') {
+    throw new Error('TENANT_REQUIRED_FOR_USER');
+  }
+  const secondaryAuth = getSecondaryAuth();
   try {
     let newUid;
     try {
@@ -348,6 +372,7 @@ export async function adminCreateUser(email, password, role, name) {
 
     await setDoc(doc(db, 'users', newUid), {
       email, role, name, uid: newUid,
+      ...(tenantId ? { tenantId } : {}),
       accountStatus: 'active',
       authManaged: {
         temporaryPassword: password,

@@ -1,61 +1,25 @@
-/**
- * tenantService.js
- * ─────────────────────────────────────────────────────────────────
- * Manages multi-tenant activation codes and tenant configuration.
- *
- * Firestore schema (root-level, NOT tenant-prefixed):
- *
- * /activation_codes/{code}
- *   status       : 'pending' | 'active' | 'used' | 'suspended'
- *   tenantId     : string   (pre-generated UUID)
- *   schoolName   : string
- *   plan         : 'basic' | 'pro'
- *   maxStudents  : number
- *   createdAt    : ISO string
- *   expiresAt    : ISO string | null
- *   usedBy       : uid | null
- *   usedAt       : ISO string | null
- *   createdBy    : uid (super admin)
- *   note         : string (internal note)
- *
- * /tenants/{tenantId}
- *   name         : string
- *   adminUid     : string
- *   adminEmail   : string
- *   plan         : string
- *   maxStudents  : number
- *   status       : 'active' | 'suspended'
- *   activationCode : string
- *   createdAt    : ISO string
- */
-
-import { db } from '../db.js';
 import {
-  collection, doc, getDoc, getDocs, setDoc, updateDoc,
-  query, where, orderBy
+  db, rootCollection, rootDoc, getDoc, getDocs, setDoc, updateDoc,
+  query, where, orderBy, runTransaction
 } from '../firebase-config.js';
 import { state } from '../state.js';
 
 const CODES_COL = 'activation_codes';
 const TENANTS_COL = 'tenants';
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
 function generateCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no confusable chars
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = '';
-  for (let i = 0; i < 12; i++) {
-    if (i === 4 || i === 8) code += '-';
+  for (let index = 0; index < 12; index += 1) {
+    if (index === 4 || index === 8) code += '-';
     code += chars[Math.floor(Math.random() * chars.length)];
   }
-  return code; // e.g. ABCD-EFGH-JKLM
+  return code;
 }
 
 function generateTenantId() {
-  return 'tenant_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
+  return `tenant_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
 }
-
-// ── Super Admin: Create Activation Code ──────────────────────────────────────
 
 export async function createActivationCode({
   schoolName = '',
@@ -71,12 +35,12 @@ export async function createActivationCode({
     ? new Date(now.getTime() + expiresInDays * 86400_000).toISOString()
     : null;
 
-  await setDoc(doc(db, CODES_COL, code), {
+  await setDoc(rootDoc(CODES_COL, code), {
     status: 'pending',
     tenantId,
     schoolName,
     plan,
-    maxStudents,
+    maxStudents: Number(maxStudents || 500),
     note,
     createdAt: now.toISOString(),
     expiresAt,
@@ -88,88 +52,102 @@ export async function createActivationCode({
   return { code, tenantId };
 }
 
-// ── Super Admin: List All Codes ───────────────────────────────────────────────
-
 export async function listActivationCodes() {
-  const snap = await getDocs(
-    query(collection(db, CODES_COL), orderBy('createdAt', 'desc'))
+  const snapshot = await getDocs(
+    query(rootCollection(CODES_COL), orderBy('createdAt', 'desc'))
   );
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  return snapshot.docs.map(item => ({ id: item.id, ...item.data() }));
 }
-
-// ── Super Admin: List All Tenants ─────────────────────────────────────────────
 
 export async function listTenants() {
-  const snap = await getDocs(
-    query(collection(db, TENANTS_COL), orderBy('createdAt', 'desc'))
+  const snapshot = await getDocs(
+    query(rootCollection(TENANTS_COL), orderBy('createdAt', 'desc'))
   );
-  // Exclude the 'main' tenant (super admin's own school)
-  return snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(t => t.adminEmail);
+  return snapshot.docs
+    .map(item => ({ id: item.id, ...item.data() }))
+    .filter(tenant => tenant.id !== 'main');
 }
-
-// ── Super Admin: Suspend / Activate Tenant ───────────────────────────────────
 
 export async function setTenantStatus(tenantId, status) {
-  await updateDoc(doc(db, TENANTS_COL, tenantId), { status });
+  await updateDoc(rootDoc(TENANTS_COL, tenantId), {
+    status,
+    updatedAt: new Date().toISOString(),
+  });
 }
-
-// ── New Admin: Validate Activation Code ──────────────────────────────────────
 
 export async function validateActivationCode(code) {
-  const trimmed = code.trim().toUpperCase().replace(/\s/g, '');
-  const snap = await getDoc(doc(db, CODES_COL, trimmed));
-  if (!snap.exists()) return { valid: false, error: 'الكود غير موجود' };
+  const normalizedCode = code.trim().toUpperCase().replace(/\s/g, '');
+  const snapshot = await getDoc(rootDoc(CODES_COL, normalizedCode));
+  if (!snapshot.exists()) return { valid: false, error: 'الكود غير موجود' };
 
-  const data = snap.data();
-  if (data.status === 'used')
+  const data = snapshot.data();
+  if (data.status === 'used') {
     return { valid: false, error: 'هذا الكود مستخدم بالفعل' };
-  if (data.status === 'suspended')
+  }
+  if (data.status === 'suspended') {
     return { valid: false, error: 'تم إيقاف هذا الكود' };
-  if (data.expiresAt && new Date(data.expiresAt) < new Date())
+  }
+  if (data.status !== 'pending') {
+    return { valid: false, error: 'هذا الكود غير متاح للتفعيل' };
+  }
+  if (data.expiresAt && new Date(data.expiresAt) < new Date()) {
     return { valid: false, error: 'انتهت صلاحية هذا الكود' };
+  }
 
-  return { valid: true, code: trimmed, data };
+  return { valid: true, code: normalizedCode, data };
 }
-
-// ── New Admin: Consume Activation Code (called after successful registration) ─
 
 export async function consumeActivationCode(code, adminUid, adminEmail, schoolName) {
-  const codeRef = doc(db, CODES_COL, code);
-  const snap = await getDoc(codeRef);
-  if (!snap.exists()) throw new Error('Code not found');
+  const normalizedCode = code.trim().toUpperCase().replace(/\s/g, '');
+  const codeRef = rootDoc(CODES_COL, normalizedCode);
+  const now = new Date().toISOString();
 
-  const codeData = snap.data();
-  const { tenantId, plan, maxStudents } = codeData;
+  return runTransaction(db, async (transaction) => {
+    const snapshot = await transaction.get(codeRef);
+    if (!snapshot.exists()) throw new Error('ACTIVATION_CODE_NOT_FOUND');
 
-  // Mark code as used
-  await updateDoc(codeRef, {
-    status: 'used',
-    usedBy: adminUid,
-    usedAt: new Date().toISOString(),
-    schoolName: schoolName || codeData.schoolName,
+    const codeData = snapshot.data();
+    if (codeData.status !== 'pending') throw new Error('ACTIVATION_CODE_ALREADY_USED');
+    if (codeData.expiresAt && new Date(codeData.expiresAt) < new Date()) {
+      throw new Error('ACTIVATION_CODE_EXPIRED');
+    }
+
+    const tenantId = codeData.tenantId;
+    const tenantRef = rootDoc(TENANTS_COL, tenantId);
+    const resolvedSchoolName = schoolName || codeData.schoolName || 'مدرسة جديدة';
+
+    transaction.update(codeRef, {
+      status: 'used',
+      usedBy: adminUid,
+      usedAt: now,
+      schoolName: resolvedSchoolName,
+    });
+    transaction.set(tenantRef, {
+      name: resolvedSchoolName,
+      adminUid,
+      adminEmail,
+      plan: codeData.plan || 'pro',
+      maxStudents: Number(codeData.maxStudents || 500),
+      status: 'active',
+      activationCode: normalizedCode,
+      createdAt: now,
+      updatedAt: now,
+    }, { merge: true });
+
+    return tenantId;
   });
-
-  // Create tenant config document
-  await setDoc(doc(db, TENANTS_COL, tenantId), {
-    name: schoolName || codeData.schoolName || 'مدرسة جديدة',
-    adminUid,
-    adminEmail,
-    plan,
-    maxStudents,
-    status: 'active',
-    activationCode: code,
-    createdAt: new Date().toISOString(),
-  });
-
-  return tenantId;
 }
 
-// ── Lookup tenant for a given admin UID ──────────────────────────────────────
-
 export async function getTenantIdForUser(uid) {
-  const snap = await getDocs(
-    query(collection(db, TENANTS_COL), where('adminUid', '==', uid))
+  const snapshot = await getDocs(
+    query(rootCollection(TENANTS_COL), where('adminUid', '==', uid))
   );
-  if (snap.empty) return null;
-  return snap.docs[0].id;
+  if (snapshot.empty) return null;
+  return snapshot.docs[0].id;
+}
+
+export async function getTenantConfig(tenantId) {
+  if (!tenantId) return null;
+  const snapshot = await getDoc(rootDoc(TENANTS_COL, tenantId));
+  return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null;
 }

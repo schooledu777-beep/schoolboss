@@ -16,8 +16,8 @@ import { db, collection, doc } from './firebase-config.js';
 export function tCol(name) {
   const tid = state.tenantId;
   if (!tid) {
-    console.warn(`[db] tCol('${name}') — no tenantId in state, falling back to root`);
-    return collection(db, name);          // graceful fallback during bootstrap
+    console.warn(`[db] tCol('${name}') - no active tenant`);
+    throw new Error(`TENANT_REQUIRED:${name}`);
   }
   return collection(db, 'tenants', tid, name);
 }
@@ -26,8 +26,8 @@ export function tCol(name) {
 export function tDoc(name, id) {
   const tid = state.tenantId;
   if (!tid) {
-    console.warn(`[db] tDoc('${name}','${id}') — no tenantId in state, falling back to root`);
-    return doc(db, name, id);             // graceful fallback during bootstrap
+    console.warn(`[db] tDoc('${name}','${id}') - no active tenant`);
+    throw new Error(`TENANT_REQUIRED:${name}/${id}`);
   }
   return doc(db, 'tenants', tid, name, id);
 }

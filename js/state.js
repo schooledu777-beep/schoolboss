@@ -5,6 +5,7 @@ export const state = {
   user: null,
   profile: null,
   tenantId: null,        // Set on login from user profile
+  tenant: null,          // Active tenant configuration
   isSuperAdmin: false,   // True only for the bootstrap super admin account
   loading: true,
   currentPage: 'dashboard',

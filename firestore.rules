@@ -13,8 +13,40 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
+    function isSuperAdmin() {
+      return bootstrapAdmin() ||
+        (signedIn() && userProfile().get('isSuperAdmin', false) == true);
+    }
+
+    function tenantId() {
+      return userProfile().get('tenantId', '__none__');
+    }
+
     function hasRole(role) {
-      return signedIn() && (bootstrapAdmin() || userProfile().role == role);
+      return signedIn() &&
+        (bootstrapAdmin() ||
+          (tenantId() == '__none__' && userProfile().role == role));
+    }
+
+    function tenantActive(id) {
+      return exists(/databases/$(database)/documents/tenants/$(id)) &&
+        get(/databases/$(database)/documents/tenants/$(id)).data.status == 'active';
+    }
+
+    function isTenantMember(id) {
+      return signedIn() && tenantId() == id && tenantActive(id);
+    }
+
+    function hasTenantRole(id, role) {
+      return isTenantMember(id) && userProfile().role == role;
+    }
+
+    function isTenantAdmin(id) {
+      return hasTenantRole(id, 'admin');
+    }
+
+    function isTenantTeacher(id) {
+      return hasTenantRole(id, 'teacher');
     }
 
     function isAdmin() {
@@ -71,33 +103,56 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read: if isOwner(userId) || isAdmin();
+      allow read: if isOwner(userId) || isSuperAdmin() ||
+        (signedIn() && userProfile().role == 'admin' &&
+          resource.data.get('tenantId', '__none__') == tenantId() &&
+          tenantActive(tenantId()));
       allow create: if isOwner(userId) &&
         request.resource.data.role == 'student' &&
-        request.resource.data.uid == request.auth.uid;
-      allow update: if isOwner(userId) &&
-        request.resource.data.role == resource.data.role &&
-        request.resource.data.uid == resource.data.uid;
-      allow write: if isAdmin();
+        request.resource.data.uid == request.auth.uid &&
+        !request.resource.data.keys().hasAny(['tenantId', 'isSuperAdmin']);
+      allow create: if isSuperAdmin() ||
+        (signedIn() && userProfile().role == 'admin' &&
+          request.resource.data.tenantId == tenantId() &&
+          tenantActive(tenantId()));
+      allow update: if isSuperAdmin() ||
+        (isOwner(userId) &&
+          request.resource.data.uid == resource.data.uid &&
+          request.resource.data.role == resource.data.role &&
+          request.resource.data.get('tenantId', '__none__') == resource.data.get('tenantId', '__none__') &&
+          request.resource.data.get('isSuperAdmin', false) == resource.data.get('isSuperAdmin', false)) ||
+        (isOwner(userId) &&
+          resource.data.get('tenantId', '__none__') == '__none__' &&
+          request.resource.data.role == 'admin' &&
+          request.resource.data.tenantId is string &&
+          get(/databases/$(database)/documents/tenants/$(request.resource.data.tenantId)).data.adminUid == request.auth.uid) ||
+        (signedIn() && userProfile().role == 'admin' &&
+          resource.data.get('tenantId', '__none__') == tenantId() &&
+          request.resource.data.tenantId == tenantId() &&
+          tenantActive(tenantId()));
+      allow delete: if isSuperAdmin() ||
+        (signedIn() && userProfile().role == 'admin' &&
+          resource.data.get('tenantId', '__none__') == tenantId() &&
+          tenantActive(tenantId()));
     }
 
     match /settings/{settingId} {
-      allow read: if signedIn();
+      allow read: if isSuperAdmin();
       allow write: if isAdmin();
     }
 
     match /custom_fields_schema/{fieldId} {
-      allow read: if signedIn();
+      allow read: if isSuperAdmin();
       allow write: if isAdmin();
     }
 
     match /school_settings/{settingId} {
-      allow read: if signedIn();
+      allow read: if isSuperAdmin();
       allow write: if isAdmin();
     }
 
     match /roles/{roleId} {
-      allow read: if signedIn();
+      allow read: if isSuperAdmin();
       allow write: if isAdmin();
     }
 
@@ -115,22 +170,22 @@ service cloud.firestore {
     }
 
     match /teachers/{teacherId} {
-      allow read: if signedIn();
+      allow read: if isSuperAdmin();
       allow write: if isAdmin();
     }
 
     match /classes/{classId} {
-      allow read: if signedIn();
+      allow read: if isSuperAdmin();
       allow write: if isAdmin();
     }
 
     match /subjects/{subjectId} {
-      allow read: if signedIn();
+      allow read: if isSuperAdmin();
       allow write: if isAdmin() || (isTeacher() && setupCompleted());
     }
 
     match /annual_plans/{planId} {
-      allow read: if signedIn();
+      allow read: if isSuperAdmin();
       allow write: if isAdmin() || isTeacher();
     }
 
@@ -158,19 +213,19 @@ service cloud.firestore {
     }
 
     match /schedules/{scheduleId} {
-      allow read: if signedIn();
+      allow read: if isSuperAdmin();
       allow write: if isAdmin();
     }
 
     match /announcements/{announcementId} {
-      allow read: if signedIn();
+      allow read: if isSuperAdmin();
       allow create: if isAdmin() || isTeacher();
       allow update, delete: if isAdmin();
     }
 
     match /messages/{messageId} {
       allow read: if isAdmin() || resource.data.from == request.auth.uid || resource.data.to == request.auth.uid;
-      allow create: if signedIn() && request.resource.data.from == request.auth.uid;
+      allow create: if isSuperAdmin() && request.resource.data.from == request.auth.uid;
       allow update, delete: if isAdmin() || resource.data.from == request.auth.uid || resource.data.to == request.auth.uid;
     }
 
@@ -183,7 +238,7 @@ service cloud.firestore {
     }
 
     match /books/{bookId} {
-      allow read: if signedIn();
+      allow read: if isSuperAdmin();
       allow write: if isAdmin();
     }
 
@@ -213,12 +268,12 @@ service cloud.firestore {
     }
 
     match /buildings/{buildingId} {
-      allow read: if signedIn();
+      allow read: if isSuperAdmin();
       allow write: if isAdmin();
     }
 
     match /rooms/{roomId} {
-      allow read: if signedIn();
+      allow read: if isSuperAdmin();
       allow write: if isAdmin();
     }
 
@@ -246,7 +301,7 @@ service cloud.firestore {
     }
 
     match /homework/{homeworkId} {
-      allow read: if signedIn();
+      allow read: if isSuperAdmin();
       allow write: if isAdmin() || isTeacher();
     }
 
@@ -269,27 +324,27 @@ service cloud.firestore {
     }
 
     match /assessment_types/{assessmentTypeId} {
-      allow read: if signedIn();
+      allow read: if isSuperAdmin();
       allow write: if isAdmin();
     }
 
     match /subject_weights/{subjectWeightId} {
-      allow read: if signedIn();
+      allow read: if isSuperAdmin();
       allow write: if isAdmin() || isTeacher();
     }
 
     match /timeslots/{timeslotId} {
-      allow read: if signedIn();
+      allow read: if isSuperAdmin();
       allow write: if isAdmin();
     }
 
     match /classrooms/{classroomId} {
-      allow read: if signedIn();
+      allow read: if isSuperAdmin();
       allow write: if isAdmin();
     }
 
     match /teacherAvailability/{availabilityId} {
-      allow read: if signedIn();
+      allow read: if isSuperAdmin();
       allow write: if isAdmin() || resource.data.teacherId == request.auth.uid;
       allow create: if isAdmin() || request.resource.data.teacherId == request.auth.uid;
     }
@@ -297,12 +352,12 @@ service cloud.firestore {
     // ── NEW COLLECTIONS ─────────────────────────────────────────────
 
     match /calendar_events/{eventId} {
-      allow read: if signedIn();
+      allow read: if isSuperAdmin();
       allow create, update, delete: if isAdmin();
     }
 
     match /exam_schedule/{examId} {
-      allow read: if signedIn();
+      allow read: if isSuperAdmin();
       allow create, update: if isAdmin() || isTeacher();
       allow delete: if isAdmin();
     }
@@ -331,15 +386,78 @@ service cloud.firestore {
 
     match /audit_logs/{logId} {
       allow read: if isAdmin();
-      allow create: if signedIn();
+      allow create: if isSuperAdmin();
       allow update, delete: if isAdmin();
     }
 
     match /inventory/{itemId} {
-      allow read: if signedIn();
+      allow read: if isSuperAdmin();
       allow write: if isAdmin();
     }
 
+    // ── Multi-Tenant: Activation Codes ──────────────────────────────
+    // Any signed-in user can read (to validate their code on first login).
+    // Only super admin can create / update / delete codes.
+    match /activation_codes/{code} {
+      allow get: if signedIn();
+      allow list, create, delete: if isSuperAdmin();
+      allow update: if isSuperAdmin() ||
+        (signedIn() &&
+          resource.data.status == 'pending' &&
+          request.resource.data.status == 'used' &&
+          request.resource.data.usedBy == request.auth.uid &&
+          request.resource.data.tenantId == resource.data.tenantId &&
+          request.resource.data.plan == resource.data.plan &&
+          request.resource.data.maxStudents == resource.data.maxStudents &&
+          request.resource.data.createdBy == resource.data.createdBy);
+    }
+
+    // ── Multi-Tenant: Tenant Config Documents ────────────────────────
+    // Super admin: full access.
+    // Tenant admin: can read their own config; write is via consumeActivationCode (super admin).
+    match /tenants/{tenantId} {
+      allow read: if isSuperAdmin() ||
+        (signedIn() && tenantId() == tenantId);
+      allow create: if isSuperAdmin() ||
+        (signedIn() &&
+          request.resource.data.adminUid == request.auth.uid &&
+          request.resource.data.activationCode is string &&
+          getAfter(/databases/$(database)/documents/activation_codes/$(request.resource.data.activationCode)).data.status == 'used' &&
+          getAfter(/databases/$(database)/documents/activation_codes/$(request.resource.data.activationCode)).data.usedBy == request.auth.uid &&
+          getAfter(/databases/$(database)/documents/activation_codes/$(request.resource.data.activationCode)).data.tenantId == tenantId);
+      allow update: if isSuperAdmin() ||
+        (isTenantAdmin(tenantId) &&
+          request.resource.data.adminUid == resource.data.adminUid &&
+          request.resource.data.status == resource.data.status &&
+          request.resource.data.activationCode == resource.data.activationCode);
+      allow delete: if isSuperAdmin();
+    }
+
+    match /tenants/{tenantId}/students/{studentId} {
+      allow read: if isSuperAdmin() || isTenantMember(tenantId);
+      allow create, delete: if isSuperAdmin() || isTenantAdmin(tenantId);
+      allow update: if isSuperAdmin() || isTenantAdmin(tenantId) ||
+        (isTenantTeacher(tenantId) && behaviorStudentUpdateOnly());
+    }
+
+    match /tenants/{tenantId}/{collectionName}/{documentId} {
+      allow read: if isSuperAdmin() || isTenantMember(tenantId);
+      allow create, update, delete: if isSuperAdmin() || isTenantAdmin(tenantId) ||
+        (isTenantTeacher(tenantId) &&
+          collectionName in [
+            'attendance', 'grades', 'annual_plans', 'subjects',
+            'announcements', 'messages', 'homework', 'rewards',
+            'behavior_logs', 'academic_alerts', 'notification_logs',
+            'notification_outbox', 'teacherAvailability'
+          ]);
+    }
+
+    match /tenants/{tenantId}/{collectionName}/{documentId}/{nestedDocument=**} {
+      allow read: if isSuperAdmin() || isTenantMember(tenantId);
+      allow write: if isSuperAdmin() || isTenantAdmin(tenantId);
+    }
+
+    // ── Catch-all: deny everything not explicitly listed ─────────────
     match /{document=**} {
       allow read, write: if false;
     }

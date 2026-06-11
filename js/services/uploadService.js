@@ -1,3 +1,5 @@
+import { state } from '../state.js';
+
 const CLOUD_NAME = 'dhlxfwmpm';
 const UPLOAD_PRESET = 'school';
 
@@ -44,11 +46,12 @@ async function assertPdfDelivery(url) {
 
 export async function uploadFile(file, folder = 'uploads') {
   if (!file) return null;
+  if (!state.tenantId) throw new Error('TENANT_REQUIRED_FOR_UPLOAD');
   
   const formData = new FormData();
   formData.append('file', file);
   formData.append('upload_preset', UPLOAD_PRESET);
-  formData.append('folder', folder);
+  formData.append('folder', `tenants/${state.tenantId}/${folder}`);
 
   try {
     const resourceType = getResourceType(file);

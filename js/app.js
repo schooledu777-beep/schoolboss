@@ -2,7 +2,7 @@
 import { state, applyTheme, applyLang } from './state.js';
 import { hideLoading } from './ui.js?v=20260502-photo-sync';
 import { registerRoute, initRouter } from './router.js';
-import { renderAuthPage, attachAuthEvents, initAuth } from './auth.js?v=20260506-setup-wizard-fix';
+import { renderAuthPage, attachAuthEvents, initAuth } from './auth.js?v=20260611-tenants';
 import { renderSidebar, renderHeader, attachLayoutEvents } from './components.js?v=20260507-class-sync';
 import { syncService } from './services/syncService.js?v=20260507-class-sync';
 import { academicService } from './services/academicService.js';
@@ -38,9 +38,9 @@ import { renderExams, attachExamsEvents } from './pages/examsPage.js';
 import { renderAnalytics, attachAnalyticsEvents } from './pages/analytics.js';
 import { renderAuditLog, attachAuditLogEvents } from './pages/auditLog.js';
 import { renderInventory, attachInventoryEvents } from './pages/inventory.js';
-import { renderSetupWizard, attachSetupWizardEvents } from './pages/setupWizard.js?v=20260507-class-sync';
+import { renderSetupWizard, attachSetupWizardEvents } from './pages/setupWizard.js?v=20260611-tenants';
 import { renderNotificationOutbox, attachNotificationOutboxEvents } from './pages/notificationOutbox.js?v=20260506-outbox';
-import { renderSuperAdmin, attachSuperAdminEvents } from './pages/superAdmin.js?v=20260507-class-sync';
+import { renderSuperAdmin, attachSuperAdminEvents } from './pages/superAdmin.js?v=20260611-tenants';
 // Export service (registers window.export* globals)
 import './services/exportService.js';
 
@@ -94,8 +94,8 @@ let currentLayout = null; // Track current layout type (auth or app)
 
 function isSetupLocked() {
   // Locked if setup not complete OR if admin hasn't activated yet (no tenantId)
-  if (state.profile?.role === 'admin' && state.setup?.completed === false) return true;
-  if (state.profile?.role === 'admin' && !state.isSuperAdmin && !state.tenantId) return true;
+  if (!state.isSuperAdmin && state.profile?.role === 'admin' && state.setup?.completed === false) return true;
+  if (!state.isSuperAdmin && !state.tenantId) return true;
   return false;
 }
 

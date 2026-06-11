@@ -302,6 +302,14 @@ function showStudentForm(student = null) {
     btn.innerHTML = '<span class="spinner-sm"></span>';
 
     try {
+      const maxStudents = Number(state.tenant?.maxStudents || 0);
+      if (!isEdit && maxStudents > 0 && state.students.length >= maxStudents) {
+        throw new Error(
+          state.lang === 'ar'
+            ? `تم الوصول إلى الحد الأقصى للخطة (${maxStudents} طالب)`
+            : `The plan limit of ${maxStudents} students has been reached`
+        );
+      }
       let finalParentId = student?.parentId || null;
       
       if (!isEdit) {
@@ -586,6 +594,17 @@ function showImportModal() {
     const importClassId = document.getElementById('import-class-select')?.value || '';
     let successCount = 0, errorCount = 0;
     const importedIds = [];
+    const maxStudents = Number(state.tenant?.maxStudents || 0);
+    const availableSeats = maxStudents > 0 ? Math.max(maxStudents - state.students.length, 0) : parsedRows.length;
+    if (parsedRows.length > availableSeats) {
+      showToast(
+        state.lang === 'ar'
+          ? `يمكن استيراد ${availableSeats} طالب فقط ضمن حد الخطة`
+          : `Only ${availableSeats} students can be imported within the plan limit`,
+        'error'
+      );
+      return;
+    }
 
     for (const row of parsedRows) {
       try {
