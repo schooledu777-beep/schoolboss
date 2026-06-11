@@ -4,16 +4,16 @@ const ASSETS_CACHE = 'edumanage-assets-v2-tenants';
 
 // Core shell assets to cache immediately
 const SHELL_ASSETS = [
-  '/',
-  '/index.html',
-  '/css/variables.css',
-  '/css/base.css',
-  '/css/layout.css',
-  '/css/components.css',
-  '/css/pages.css',
-  '/css/animations.css',
-  '/css/skeleton.css',
-  '/assets/edumanage-mark.svg',
+  './',
+  './index.html',
+  './css/variables.css',
+  './css/base.css',
+  './css/layout.css',
+  './css/components.css',
+  './css/pages.css',
+  './css/animations.css',
+  './css/skeleton.css',
+  './assets/edumanage-mark.svg',
 ];
 
 // ── Install: cache shell ────────────────────────────────────────────
@@ -57,7 +57,7 @@ self.addEventListener('fetch', event => {
           caches.open(CACHE_NAME).then(c => c.put(event.request, clone));
           return res;
         })
-        .catch(() => caches.match('/index.html'))
+        .catch(() => caches.match('./index.html'))
     );
     return;
   }
@@ -84,10 +84,10 @@ self.addEventListener('push', event => {
   event.waitUntil(
     self.registration.showNotification(data.title || 'EduManage', {
       body:    data.body    || '',
-      icon:    '/assets/edumanage-mark.svg',
-      badge:   '/assets/edumanage-mark.svg',
+      icon:    './assets/edumanage-mark.svg',
+      badge:   './assets/edumanage-mark.svg',
       tag:     data.tag     || 'edumanage',
-      data:    data.url     || '/',
+      data:    data.url     || './',
       dir:     'rtl',
       lang:    'ar',
     })

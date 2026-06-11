@@ -3,12 +3,12 @@
  */
 import { state } from '../state.js';
 import { showToast, showConfirm } from '../ui.js';
-import { db } from '../db.js';
-import { doc, setDoc } from '../firebase-config.js';
+import { db } from '../db.js?v=20260611-tenants';
+import { doc, setDoc } from '../firebase-config.js?v=20260611-tenants';
 import {
   createActivationCode, listActivationCodes,
   listTenants, setTenantStatus,
-} from '../services/tenantService.js';
+} from '../services/tenantService.js?v=20260611-tenants';
 import { adminCreateUser } from '../auth.js?v=20260611-tenants';
 import {
   inspectLegacyData, migrateLegacyDataToMain
@@ -267,7 +267,7 @@ function showCreateAccountModal() {
       const { code } = await createActivationCode({ schoolName, plan, maxStudents, note });
 
       // 3. Import and consume the code immediately (no need for client to enter it)
-      const { consumeActivationCode } = await import('../services/tenantService.js');
+      const { consumeActivationCode } = await import('../services/tenantService.js?v=20260611-tenants');
       const tenantId = await consumeActivationCode(code, uid, email, schoolName);
 
       // 4. Patch user profile with tenantId so it's ready on first login

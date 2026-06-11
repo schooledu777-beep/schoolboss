@@ -1,9 +1,9 @@
 import { state } from '../state.js';
-import { db, collection, addDoc, doc, setDoc, updateDoc } from '../firebase-config.js';
-import { tCol, tDoc } from '../db.js';
+import { db, collection, addDoc, doc, setDoc, updateDoc } from '../firebase-config.js?v=20260611-tenants';
+import { tCol, tDoc } from '../db.js?v=20260611-tenants';
 import { adminCreateUser } from '../auth.js?v=20260611-tenants';
 import { showToast, escapeHTML } from '../ui.js';
-import { validateActivationCode, consumeActivationCode } from '../services/tenantService.js';
+import { validateActivationCode, consumeActivationCode } from '../services/tenantService.js?v=20260611-tenants';
 import { syncService } from '../services/syncService.js?v=20260506-setup-wizard-fix';
 
 const setupRef = () => tDoc('school_settings','general_info');
@@ -409,8 +409,8 @@ export function attachSetupWizardEvents() {
         );
 
         // Patch user profile in Firestore
-        const { db } = await import('../db.js');
-        const { doc, setDoc } = await import('../firebase-config.js');
+        const { db } = await import('../db.js?v=20260611-tenants');
+        const { doc, setDoc } = await import('../firebase-config.js?v=20260611-tenants');
         await setDoc(doc(db, 'users', state.user.uid), {
           tenantId,
           role: 'admin',

@@ -1,6 +1,6 @@
 import { state } from '../state.js';
-import { tCol } from '../db.js';
-import { onSnapshot } from '../firebase-config.js';
+import { tCol } from '../db.js?v=20260611-tenants';
+import { onSnapshot } from '../firebase-config.js?v=20260611-tenants';
 
 class SyncService {
   constructor() {

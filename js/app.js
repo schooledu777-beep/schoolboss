@@ -4,7 +4,7 @@ import { hideLoading } from './ui.js?v=20260502-photo-sync';
 import { registerRoute, initRouter } from './router.js';
 import { renderAuthPage, attachAuthEvents, initAuth } from './auth.js?v=20260611-tenants';
 import { renderSidebar, renderHeader, attachLayoutEvents } from './components.js?v=20260507-class-sync';
-import { syncService } from './services/syncService.js?v=20260507-class-sync';
+import { syncService } from './services/syncService.js?v=20260611-tenants';
 import { academicService } from './services/academicService.js';
 import { libraryService } from './services/libraryService.js';
 
