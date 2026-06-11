@@ -1,6 +1,6 @@
 // EduManage Service Worker — offline support & caching
-const CACHE_NAME  = 'edumanage-v2-tenants';
-const ASSETS_CACHE = 'edumanage-assets-v2-tenants';
+const CACHE_NAME  = 'edumanage-v3-tenants';
+const ASSETS_CACHE = 'edumanage-assets-v3-tenants';
 
 // Core shell assets to cache immediately
 const SHELL_ASSETS = [

@@ -1,6 +1,6 @@
 import {
   db, rootCollection, doc, getDocs, writeBatch
-} from '../firebase-config.js?v=20260611-tenants';
+} from '../firebase-config.js?v=20260611-tenants2';
 
 const LEGACY_COLLECTIONS = [
   'settings', 'custom_fields_schema', 'school_settings', 'roles',

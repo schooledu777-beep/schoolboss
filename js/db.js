@@ -10,7 +10,7 @@
  *   updateDoc(tDoc('students', id), patch);
  */
 import { state } from './state.js';
-import { db, collection, doc } from './firebase-config.js?v=20260611-tenants';
+import { db, collection, doc } from './firebase-config.js?v=20260611-tenants2';
 
 /** Returns a tenant-prefixed CollectionReference. */
 export function tCol(name) {

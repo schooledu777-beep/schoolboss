@@ -1,5 +1,5 @@
-import { auth, db, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, doc, rootDoc, getDoc, setDoc, getDocs, collection, firebaseConfig, initializeApp, getAuth, updatePassword, sendPasswordResetEmail } from './firebase-config.js?v=20260611-tenants';
-import { getTenantConfig, getTenantIdForUser } from './services/tenantService.js?v=20260611-tenants';
+import { auth, db, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, doc, rootDoc, getDoc, setDoc, getDocs, collection, firebaseConfig, initializeApp, getAuth, updatePassword, sendPasswordResetEmail } from './firebase-config.js?v=20260611-tenants2';
+import { getTenantConfig, getTenantIdForUser } from './services/tenantService.js?v=20260611-tenants2';
 import { state, t } from './state.js';
 import { showToast, hideLoading } from './ui.js';
 

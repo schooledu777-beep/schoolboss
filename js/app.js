@@ -2,9 +2,9 @@
 import { state, applyTheme, applyLang } from './state.js';
 import { hideLoading } from './ui.js?v=20260502-photo-sync';
 import { registerRoute, initRouter } from './router.js';
-import { renderAuthPage, attachAuthEvents, initAuth } from './auth.js?v=20260611-tenants';
+import { renderAuthPage, attachAuthEvents, initAuth } from './auth.js?v=20260611-tenants2';
 import { renderSidebar, renderHeader, attachLayoutEvents } from './components.js?v=20260507-class-sync';
-import { syncService } from './services/syncService.js?v=20260611-tenants';
+import { syncService } from './services/syncService.js?v=20260611-tenants2';
 import { academicService } from './services/academicService.js';
 import { libraryService } from './services/libraryService.js';
 
@@ -38,9 +38,9 @@ import { renderExams, attachExamsEvents } from './pages/examsPage.js';
 import { renderAnalytics, attachAnalyticsEvents } from './pages/analytics.js';
 import { renderAuditLog, attachAuditLogEvents } from './pages/auditLog.js';
 import { renderInventory, attachInventoryEvents } from './pages/inventory.js';
-import { renderSetupWizard, attachSetupWizardEvents } from './pages/setupWizard.js?v=20260611-tenants';
+import { renderSetupWizard, attachSetupWizardEvents } from './pages/setupWizard.js?v=20260611-tenants2';
 import { renderNotificationOutbox, attachNotificationOutboxEvents } from './pages/notificationOutbox.js?v=20260506-outbox';
-import { renderSuperAdmin, attachSuperAdminEvents } from './pages/superAdmin.js?v=20260611-tenants';
+import { renderSuperAdmin, attachSuperAdminEvents } from './pages/superAdmin.js?v=20260611-tenants2';
 // Export service (registers window.export* globals)
 import './services/exportService.js';
 
