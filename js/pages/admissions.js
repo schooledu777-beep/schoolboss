@@ -1,5 +1,5 @@
 import { state, t } from '../state.js';
-import { admissionsService } from '../services/admissionsService.js';
+import { admissionsService } from '../services/admissionsService.js?v=20260628-perf2';
 import { showToast } from '../ui.js';
 
 let applicationsCache = [];

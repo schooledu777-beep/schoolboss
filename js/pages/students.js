@@ -3,7 +3,7 @@ import { db, collection, addDoc, updateDoc, deleteDoc, doc, setDoc, serverTimest
 import { tCol, tDoc } from '../db.js';
 import { adminCreateUser } from '../auth.js?v=20260506-setup-wizard-fix';
 import { showModal, closeModal, showConfirm, showToast, escapeHTML, renderAvatar } from '../ui.js?v=20260502-photo-sync';
-import { getStudentDashboardHTML, attachStudentProfileEvents } from './studentProfile.js?v=20260502-photo-viewer';
+import { getStudentDashboardHTML, attachStudentProfileEvents } from './studentProfile.js?v=20260628-perf2';
 import { uploadFile } from '../services/uploadService.js?v=20260502-photo-sync';
 import { showAdminAccountModal } from '../services/accountAdmin.js?v=20260503-admin-accounts';
 import { recordAudit } from './auditLog.js';

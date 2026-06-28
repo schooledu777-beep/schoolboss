@@ -2,6 +2,7 @@ import { state, t } from '../state.js';
 import { db, collection, addDoc, deleteDoc, doc, writeBatch } from '../firebase-config.js';
 import { tCol, tDoc } from '../db.js';
 import { showModal, closeModal, showConfirm, showToast } from '../ui.js';
+import { ensureHtml2Pdf } from '../services/pdfService.js';
 
 const days = {
   ar: ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'],
@@ -273,14 +274,16 @@ function clearCurrentClassSchedule() {
   );
 }
 
-function exportCurrentSchedulePdf() {
+async function exportCurrentSchedulePdf() {
   const classId = document.getElementById('sched-class')?.value || '';
   const selectedClass = state.classes.find(c => c.id === classId);
   const schedules = state.schedules.filter(s => s.classId === classId);
   const slots = getDisplaySlots(schedules);
   const dayNames = getDayNames();
 
-  if (!window.html2pdf) {
+  try {
+    await ensureHtml2Pdf();
+  } catch (error) {
     showToast(state.lang === 'ar' ? 'أداة تصدير PDF غير جاهزة' : 'PDF export tool is not ready', 'error');
     return;
   }

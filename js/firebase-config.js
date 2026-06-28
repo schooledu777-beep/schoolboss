@@ -1,7 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, updatePassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, updatePassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
 import { getFirestore, collection as firestoreCollection, doc as firestoreDoc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, serverTimestamp, limit, writeBatch, increment, arrayUnion, arrayRemove, runTransaction } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-storage.js";
 import { state } from './state.js';
 import { expandFirestorePath, resolveFirestorePath } from './tenantPaths.js';
 
@@ -17,8 +16,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const storage = getStorage(app);
-const googleProvider = new GoogleAuthProvider();
 
 function tenantPathSegments(segments) {
   return resolveFirestorePath(segments, state.tenantId);
@@ -43,12 +40,11 @@ function rootDoc(...segments) {
 }
 
 export {
-  auth, db, storage, googleProvider, firebaseConfig, initializeApp, getAuth,
+  app, auth, db, firebaseConfig, initializeApp, getAuth,
   signInWithEmailAndPassword, createUserWithEmailAndPassword,
   updatePassword, sendPasswordResetEmail,
-  signInWithPopup, signOut, onAuthStateChanged,
+  signOut, onAuthStateChanged,
   collection, doc, rootCollection, rootDoc, getDoc, getDocs, setDoc, addDoc,
   updateDoc, deleteDoc, query, where, orderBy,
-  onSnapshot, serverTimestamp, limit, writeBatch, runTransaction, increment, arrayUnion, arrayRemove,
-  ref, uploadBytes, getDownloadURL
+  onSnapshot, serverTimestamp, limit, writeBatch, runTransaction, increment, arrayUnion, arrayRemove
 };

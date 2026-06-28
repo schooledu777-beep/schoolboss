@@ -6,6 +6,7 @@ import { uploadFile } from '../services/uploadService.js?v=20260502-photo-sync';
 import { showAdminAccountModal } from '../services/accountAdmin.js?v=20260503-admin-accounts';
 import { renderCustomDataSummary } from '../services/customFields.js?v=20260506-custom-fields';
 import { getClassLeaderboard, getStudentBehaviorLogs, renderBehaviorBadge } from '../services/behaviorService.js?v=20260506-behavior';
+import { ensureHtml2Pdf } from '../services/pdfService.js';
 
 export function renderStudentProfile() {
   const hash = window.location.hash.slice(1);
@@ -727,7 +728,13 @@ export function showStudentCardModalPreview(studentId) {
 
   showModal(state.lang === 'ar' ? 'معاينة بطاقة الطالب' : 'Student ID Card Preview', cardHTML, { wide: false });
 
-  document.getElementById('export-pdf-btn').onclick = () => {
+  document.getElementById('export-pdf-btn').onclick = async () => {
+    try {
+      await ensureHtml2Pdf();
+    } catch (error) {
+      showToast(state.lang === 'ar' ? 'أداة تصدير PDF غير متاحة حاليا' : 'PDF export is not available right now', 'error');
+      return;
+    }
     const element = document.getElementById('student-id-card');
     const opt = {
       margin: 0,
@@ -736,6 +743,6 @@ export function showStudentCardModalPreview(studentId) {
       html2canvas: { scale: 2, useCORS: true },
       jsPDF: { unit: 'mm', format: [85, 120], orientation: 'portrait' }
     };
-    html2pdf().set(opt).from(element).save();
+    window.html2pdf().set(opt).from(element).save();
   };
 }

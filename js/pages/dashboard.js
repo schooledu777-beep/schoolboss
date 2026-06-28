@@ -1,8 +1,8 @@
 import { state, t } from '../state.js';
-import { db, collection, getDocs, query, where, addDoc, doc, setDoc, writeBatch } from '../firebase-config.js';
-import { tCol, tDoc } from '../db.js';
+import { db, collection, getDocs, query, where, addDoc, doc, setDoc, writeBatch } from '../firebase-config.js?v=20260628-perf2';
+import { tCol, tDoc } from '../db.js?v=20260628-perf2';
 import { formatCurrency, showToast, showConfirm, renderStatsCard, renderCard, renderBadge } from '../ui.js';
-import { adminCreateUser } from '../auth.js';
+import { adminCreateUser } from '../auth.js?v=20260628-perf2';
 
 export function renderDashboard() {
   const role = state.profile?.role || 'student';

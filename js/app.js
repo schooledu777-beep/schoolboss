@@ -1,108 +1,101 @@
-// ERP Sync - 2026-04-28
 import { state, applyTheme, applyLang } from './state.js';
-import { hideLoading } from './ui.js?v=20260502-photo-sync';
 import { registerRoute, initRouter } from './router.js';
-import { renderAuthPage, attachAuthEvents, initAuth } from './auth.js?v=20260611-tenants2';
-import { renderSidebar, renderHeader, attachLayoutEvents } from './components.js?v=20260507-class-sync';
-import { syncService } from './services/syncService.js?v=20260611-tenants2';
-import { academicService } from './services/academicService.js';
-import { libraryService } from './services/libraryService.js';
+import { renderAuthPage, attachAuthEvents, initAuth } from './auth.js?v=20260628-perf2';
+import { renderSidebar, renderHeader, attachLayoutEvents } from './components.js?v=20260628-perf2';
+import { syncService } from './services/syncService.js?v=20260628-perf2';
 
-// Import all page renderers
-import { renderDashboard, attachDashboardEvents } from './pages/dashboard.js';
-import { renderStudents, attachStudentEvents } from './pages/students.js?v=20260507-class-sync';
-import { renderTeachers, attachTeacherEvents } from './pages/teachers.js?v=20260503-admin-accounts';
-import { renderParents, attachParentEvents } from './pages/parents.js?v=20260506-outbox';
-import { renderClasses, attachClassEvents } from './pages/classes.js?v=20260506-behavior';
-import { renderAttendance, attachAttendanceEvents } from './pages/attendance.js?v=20260507-class-sync';
-import { renderSubjects, attachSubjectEvents } from './pages/subjects.js?v=20260503-subject-material-upload';
-import { renderAnnualPlan, attachAnnualPlanEvents } from './pages/annualPlan.js?v=20260503-annual-plan';
-import { renderSchedule, attachScheduleEvents } from './pages/schedule.js?v=20260430-one-page-pdf';
-import { renderFinance, attachFinanceEvents } from './pages/finance.js?v=20260506-outbox';
-import { renderAnnouncements, attachAnnouncementEvents, renderMessages, attachMessageEvents, renderSettings, attachSettingsEvents } from './pages/communications.js';
-import { renderAdmissions, attachAdmissionsEvents } from './pages/admissions.js';
-import { renderAcademicAlerts, attachAcademicAlertsEvents } from './pages/academicAlerts.js';
-import { renderHR, attachHREvents } from './pages/hr.js';
-import { renderLibrary, attachLibraryEvents } from './pages/library.js';
-import { renderHostel, attachHostelEvents } from './pages/hostel.js';
-import { renderTransportation, attachTransportationEvents } from './pages/transportation.js';
-import { renderStudentProfile, attachStudentProfileEvents } from './pages/studentProfile.js?v=20260506-behavior';
-import { renderParentProfile, attachParentProfileEvents } from './pages/parentProfile.js?v=20260503-admin-accounts';
-import { attachTeacherProfileEvents } from './pages/teacherProfile.js?v=20260507-class-sync';
-// New pages
-import { renderReportCards, attachReportCardsEvents } from './pages/reportCards.js?v=20260503-grade-total-print-fix';
-import { renderCalendar, attachCalendarEvents } from './pages/calendar.js';
-import { renderHomework, attachHomeworkEvents } from './pages/homeworkPage.js';
-import { renderClinic, attachClinicEvents } from './pages/clinicPage.js?v=20260506-clinic';
-import { renderExams, attachExamsEvents } from './pages/examsPage.js';
-import { renderAnalytics, attachAnalyticsEvents } from './pages/analytics.js';
-import { renderAuditLog, attachAuditLogEvents } from './pages/auditLog.js';
-import { renderInventory, attachInventoryEvents } from './pages/inventory.js';
-import { renderSetupWizard, attachSetupWizardEvents } from './pages/setupWizard.js?v=20260611-tenants2';
-import { renderNotificationOutbox, attachNotificationOutboxEvents } from './pages/notificationOutbox.js?v=20260506-outbox';
-import { renderSuperAdmin, attachSuperAdminEvents } from './pages/superAdmin.js?v=20260611-tenants2';
-// Export service (registers window.export* globals)
-import './services/exportService.js';
-
-// ========================= APPLY INITIAL SETTINGS =========================
 applyTheme();
 applyLang();
 
-// ========================= PAGE REGISTRY =========================
-const pages = {
-  dashboard:      { render: renderDashboard, events: attachDashboardEvents },
-  students:       { render: renderStudents, events: attachStudentEvents },
-  teachers:       { render: renderTeachers, events: attachTeacherEvents },
-  parents:        { render: renderParents, events: attachParentEvents },
-  classes:        { render: renderClasses, events: attachClassEvents },
-  attendance:     { render: renderAttendance, events: attachAttendanceEvents },
-  grades:         { render: renderReportCards, events: attachReportCardsEvents },
-  subjects:       { render: renderSubjects, events: attachSubjectEvents },
-  'annual-plan':  { render: renderAnnualPlan, events: attachAnnualPlanEvents },
-  schedule:       { render: renderSchedule, events: attachScheduleEvents },
-  finance:        { render: renderFinance, events: attachFinanceEvents },
-  announcements:  { render: renderAnnouncements, events: attachAnnouncementEvents },
-  messages:       { render: renderMessages, events: attachMessageEvents },
-  admissions:     { render: renderAdmissions, events: attachAdmissionsEvents },
-  'academic-alerts': { render: renderAcademicAlerts, events: attachAcademicAlertsEvents },
-  hr:             { render: renderHR, events: attachHREvents },
-  library:         { render: renderLibrary, events: attachLibraryEvents },
-  hostel:          { render: renderHostel, events: attachHostelEvents },
-  transportation:  { render: renderTransportation, events: attachTransportationEvents },
-  'student-profile': { render: renderStudentProfile, events: attachStudentProfileEvents },
-  'parent-profile':  { render: renderParentProfile,  events: attachParentProfileEvents  },
-  settings:          { render: renderSettings, events: (renderApp) => attachSettingsEvents(renderApp) },
-  // New pages — round 1
-  'report-cards': { render: renderReportCards, events: attachReportCardsEvents },
-  calendar:       { render: renderCalendar,    events: attachCalendarEvents    },
-  homework:       { render: renderHomework,    events: attachHomeworkEvents    },
-  clinic:         { render: renderClinic,      events: attachClinicEvents      },
-  exams:          { render: renderExams,       events: attachExamsEvents       },
-  // New pages — round 2
-  analytics:  { render: renderAnalytics,  events: attachAnalyticsEvents  },
-  'audit-log':{ render: renderAuditLog,   events: attachAuditLogEvents   },
-  inventory:  { render: renderInventory,  events: attachInventoryEvents   },
-  'setup-wizard': { render: renderSetupWizard, events: attachSetupWizardEvents },
-  'notification-outbox': { render: renderNotificationOutbox, events: attachNotificationOutboxEvents },
-  'super-admin':         { render: renderSuperAdmin,         events: attachSuperAdminEvents         },
-};
-
-pages['my-children'] = pages.dashboard;
-
-// ========================= RENDER APP =========================
-let currentLayout = null; // Track current layout type (auth or app)
-
-function isSetupLocked() {
-  // Locked if setup not complete OR if admin hasn't activated yet (no tenantId)
-  if (!state.isSuperAdmin && state.profile?.role === 'admin' && state.setup?.completed === false) return true;
-  if (!state.isSuperAdmin && !state.tenantId) return true;
-  return false;
+function lazyPage(load, renderName, eventsName) {
+  return async () => {
+    const module = await load();
+    return {
+      render: module[renderName],
+      events: eventsName ? module[eventsName] : null,
+    };
+  };
 }
 
-function renderApp() {
+const pageLoaders = {
+  dashboard: lazyPage(
+    () => import('./pages/dashboard.js?v=20260628-perf2'),
+    'renderDashboard',
+    'attachDashboardEvents'
+  ),
+  students: lazyPage(() => import('./pages/students.js?v=20260628-perf1'), 'renderStudents', 'attachStudentEvents'),
+  teachers: lazyPage(() => import('./pages/teachers.js?v=20260628-perf1'), 'renderTeachers', 'attachTeacherEvents'),
+  parents: lazyPage(() => import('./pages/parents.js?v=20260628-perf1'), 'renderParents', 'attachParentEvents'),
+  classes: lazyPage(() => import('./pages/classes.js?v=20260628-perf1'), 'renderClasses', 'attachClassEvents'),
+  attendance: lazyPage(() => import('./pages/attendance.js?v=20260628-perf1'), 'renderAttendance', 'attachAttendanceEvents'),
+  grades: lazyPage(() => import('./pages/reportCards.js?v=20260628-perf1'), 'renderReportCards', 'attachReportCardsEvents'),
+  subjects: lazyPage(() => import('./pages/subjects.js?v=20260628-perf1'), 'renderSubjects', 'attachSubjectEvents'),
+  'annual-plan': lazyPage(() => import('./pages/annualPlan.js?v=20260628-perf1'), 'renderAnnualPlan', 'attachAnnualPlanEvents'),
+  schedule: lazyPage(() => import('./pages/schedule.js?v=20260628-perf1'), 'renderSchedule', 'attachScheduleEvents'),
+  finance: lazyPage(() => import('./pages/finance.js?v=20260628-perf1'), 'renderFinance', 'attachFinanceEvents'),
+  announcements: lazyPage(() => import('./pages/communications.js?v=20260628-perf1'), 'renderAnnouncements', 'attachAnnouncementEvents'),
+  messages: lazyPage(() => import('./pages/communications.js?v=20260628-perf1'), 'renderMessages', 'attachMessageEvents'),
+  settings: lazyPage(() => import('./pages/communications.js?v=20260628-perf1'), 'renderSettings', 'attachSettingsEvents'),
+  admissions: lazyPage(() => import('./pages/admissions.js?v=20260628-perf1'), 'renderAdmissions', 'attachAdmissionsEvents'),
+  'academic-alerts': lazyPage(() => import('./pages/academicAlerts.js?v=20260628-perf1'), 'renderAcademicAlerts', 'attachAcademicAlertsEvents'),
+  hr: lazyPage(() => import('./pages/hr.js?v=20260628-perf1'), 'renderHR', 'attachHREvents'),
+  library: lazyPage(() => import('./pages/library.js?v=20260628-perf1'), 'renderLibrary', 'attachLibraryEvents'),
+  hostel: lazyPage(() => import('./pages/hostel.js?v=20260628-perf1'), 'renderHostel', 'attachHostelEvents'),
+  transportation: lazyPage(() => import('./pages/transportation.js?v=20260628-perf1'), 'renderTransportation', 'attachTransportationEvents'),
+  'student-profile': lazyPage(() => import('./pages/studentProfile.js?v=20260628-perf1'), 'renderStudentProfile', 'attachStudentProfileEvents'),
+  'parent-profile': lazyPage(() => import('./pages/parentProfile.js?v=20260628-perf1'), 'renderParentProfile', 'attachParentProfileEvents'),
+  'report-cards': lazyPage(() => import('./pages/reportCards.js?v=20260628-perf1'), 'renderReportCards', 'attachReportCardsEvents'),
+  calendar: lazyPage(() => import('./pages/calendar.js?v=20260628-perf1'), 'renderCalendar', 'attachCalendarEvents'),
+  homework: lazyPage(() => import('./pages/homeworkPage.js?v=20260628-perf1'), 'renderHomework', 'attachHomeworkEvents'),
+  clinic: lazyPage(() => import('./pages/clinicPage.js?v=20260628-perf1'), 'renderClinic', 'attachClinicEvents'),
+  exams: lazyPage(() => import('./pages/examsPage.js?v=20260628-perf1'), 'renderExams', 'attachExamsEvents'),
+  analytics: lazyPage(() => import('./pages/analytics.js?v=20260628-perf1'), 'renderAnalytics', 'attachAnalyticsEvents'),
+  'audit-log': lazyPage(() => import('./pages/auditLog.js?v=20260628-perf1'), 'renderAuditLog', 'attachAuditLogEvents'),
+  inventory: lazyPage(() => import('./pages/inventory.js?v=20260628-perf1'), 'renderInventory', 'attachInventoryEvents'),
+  'setup-wizard': lazyPage(() => import('./pages/setupWizard.js?v=20260628-perf2'), 'renderSetupWizard', 'attachSetupWizardEvents'),
+  'notification-outbox': lazyPage(
+    () => import('./pages/notificationOutbox.js?v=20260628-perf1'),
+    'renderNotificationOutbox',
+    'attachNotificationOutboxEvents'
+  ),
+  'super-admin': lazyPage(() => import('./pages/superAdmin.js?v=20260628-perf2'), 'renderSuperAdmin', 'attachSuperAdminEvents'),
+};
+
+pageLoaders['my-children'] = pageLoaders.dashboard;
+
+const pageCache = new Map();
+let currentLayout = null;
+let renderSequence = 0;
+
+async function getPage(path) {
+  const resolvedPath = pageLoaders[path] ? path : 'dashboard';
+  if (!pageCache.has(resolvedPath)) {
+    const loadingPage = pageLoaders[resolvedPath]().catch(error => {
+      pageCache.delete(resolvedPath);
+      throw error;
+    });
+    pageCache.set(resolvedPath, loadingPage);
+  }
+  return pageCache.get(resolvedPath);
+}
+
+function isSetupLocked() {
+  if (!state.isSuperAdmin && state.profile?.role === 'admin' && state.setup?.completed === false) return true;
+  return !state.isSuperAdmin && !state.tenantId;
+}
+
+function renderPageLoading() {
+  return `
+    <div class="page-content" style="display:grid;place-items:center;min-height:45vh">
+      <div class="loader-ring" aria-label="${state.lang === 'ar' ? 'جاري تحميل الصفحة' : 'Loading page'}"></div>
+    </div>`;
+}
+
+async function renderApp() {
+  const sequence = ++renderSequence;
   const app = document.getElementById('app');
-  
-  // Handle Auth State
+  if (!app) return;
+
   if (!state.user || !state.profile) {
     if (currentLayout !== 'auth') {
       app.innerHTML = renderAuthPage();
@@ -113,35 +106,27 @@ function renderApp() {
   }
 
   const requestedHash = window.location.hash.slice(1) || 'dashboard';
-  const requestedBasePath = requestedHash.split('?')[0];
-  if (isSetupLocked() || (requestedBasePath === 'setup-wizard' && state.profile?.role === 'admin')) {
-    if (currentLayout !== 'setup') {
-      app.innerHTML = renderSetupWizard();
-      currentLayout = 'setup';
-    } else {
-      app.innerHTML = renderSetupWizard();
-    }
-    attachSetupWizardEvents();
+  let basePath = requestedHash.split('?')[0];
+
+  if (isSetupLocked() || (basePath === 'setup-wizard' && state.profile?.role === 'admin')) {
+    const setupPage = await getPage('setup-wizard');
+    if (sequence !== renderSequence) return;
+    app.innerHTML = setupPage.render();
+    currentLayout = 'setup';
+    setupPage.events?.();
     return;
   }
 
-  // Determine current page
-  const currentHash = requestedHash;
-  const basePath = currentHash.split('?')[0];
-  let page = pages[basePath] || pages.dashboard;
-
-  // Route Guard
   const adminOnlyPages = ['admissions', 'settings', 'hr'];
   if (adminOnlyPages.includes(basePath) && state.profile.role !== 'admin') {
-    page = pages.dashboard;
+    basePath = 'dashboard';
     window.location.hash = 'dashboard';
   }
   if (basePath === 'super-admin' && !state.isSuperAdmin) {
-    page = pages.dashboard;
+    basePath = 'dashboard';
     window.location.hash = 'dashboard';
   }
 
-  // Render Full Layout if needed
   if (currentLayout !== 'app') {
     app.innerHTML = `
       <div class="app-layout ${state.sidebarOpen ? 'sidebar-expanded' : 'sidebar-collapsed'}">
@@ -155,35 +140,25 @@ function renderApp() {
     currentLayout = 'app';
   }
 
-  // Render Page Content — محاطة بـ Error Boundary
   const mainContent = document.getElementById('main-content');
-  if (mainContent) {
-    try {
-      mainContent.innerHTML = page.render();
-    } catch (renderErr) {
-      console.error('[App] Page render error:', renderErr);
-      mainContent.innerHTML = renderErrorBoundary(renderErr, basePath, state.lang);
-      return;
-    }
+  if (!mainContent) return;
+  if (!pageCache.has(basePath)) mainContent.innerHTML = renderPageLoading();
 
-    try {
-      // Attach Page Events
-      if (typeof page.events === 'function') {
-        if (basePath === 'settings') page.events(renderApp);
-        else page.events();
-      }
-      // Global profile events (tab switching etc)
-      attachStudentProfileEvents();
-      attachParentProfileEvents();
-      attachTeacherProfileEvents();
-    } catch (eventsErr) {
-      console.error('[App] Page events error:', eventsErr);
+  try {
+    const page = await getPage(basePath);
+    if (sequence !== renderSequence) return;
+    mainContent.innerHTML = page.render();
+    if (typeof page.events === 'function') {
+      if (basePath === 'settings') page.events(renderApp);
+      else page.events();
     }
+  } catch (error) {
+    console.error('[App] Page load error:', error);
+    mainContent.innerHTML = renderErrorBoundary(error, basePath, state.lang);
   }
 }
 
-/** Renders a friendly error page when a page crashes */
-function renderErrorBoundary(err, page, lang) {
+function renderErrorBoundary(error, page, lang) {
   return `
   <div class="page-content animate-in" style="display:flex;align-items:center;justify-content:center;min-height:60vh;">
     <div class="glass-card" style="padding:2.5rem;text-align:center;max-width:480px;">
@@ -193,7 +168,7 @@ function renderErrorBoundary(err, page, lang) {
       </h3>
       <p class="text-muted" style="margin-bottom:1.5rem;font-size:.85rem;">
         ${lang === 'ar' ? `الصفحة: ${page}` : `Page: ${page}`}<br>
-        <code style="opacity:.6;">${err?.message || ''}</code>
+        <code style="opacity:.6;">${error?.message || ''}</code>
       </p>
       <div style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;">
         <button class="btn btn-primary" onclick="window.location.hash='dashboard'">
@@ -207,79 +182,62 @@ function renderErrorBoundary(err, page, lang) {
   </div>`;
 }
 
-// ========================= INITIALIZATION =========================
-
-// Register all routes
-Object.keys(pages).forEach(path => {
+Object.keys(pageLoaders).forEach(path => {
   registerRoute(path, () => {
     state.currentPage = path;
-    syncService.syncPage(path); // Sync only when route changes
-    renderApp();
+    syncService.syncPage(path);
+    void renderApp();
   });
 });
 
-// Start Router
 initRouter();
 
-// Subscribe to state changes — only re-render page CONTENT, not full app
-let _isRendering = false;
-let _renderTimer = null;
+let renderTimer = null;
+let rendering = false;
 state.subscribe(() => {
-  if (!state.user || !state.profile) return;
-  if (_isRendering) return; // Guard against recursive renders
-  // Debounce rapid state updates to avoid excessive DOM thrashing
-  clearTimeout(_renderTimer);
-  _renderTimer = setTimeout(() => {
-    _isRendering = true;
+  if (!state.user || !state.profile || rendering) return;
+  clearTimeout(renderTimer);
+  renderTimer = setTimeout(async () => {
+    rendering = true;
     try {
-      const mainContent = document.getElementById('main-content');
-      const currentHash = window.location.hash.slice(1) || 'dashboard';
-      const basePath = currentHash.split('?')[0];
-      if (isSetupLocked() || (basePath === 'setup-wizard' && state.profile?.role === 'admin')) {
-        renderApp();
-        return;
-      }
-      if (!mainContent) return;
-      const page = pages[basePath] || pages.dashboard;
-      try {
-        mainContent.innerHTML = page.render();
-      } catch (renderErr) {
-        console.error('[App] State-triggered render error:', renderErr);
-        mainContent.innerHTML = renderErrorBoundary(renderErr, basePath, state.lang);
-        return;
-      }
-      try {
-        if (typeof page.events === 'function') {
-          if (basePath === 'settings') page.events(renderApp);
-          else page.events();
-        }
-        attachStudentProfileEvents();
-        attachParentProfileEvents();
-        attachTeacherProfileEvents();
-      } catch (evErr) {
-        console.error('[App] State-triggered events error:', evErr);
-      }
+      await renderApp();
     } finally {
-      _isRendering = false;
+      rendering = false;
     }
   }, 50);
 });
 
-// Init Auth
 initAuth(
-  () => { // onLogin
+  () => {
     const route = isSetupLocked() ? 'setup-wizard' : (window.location.hash.slice(1) || 'dashboard');
     state.currentPage = route;
-    syncService.syncPage(route); // Initial sync on login
-    if (state.profile?.role === 'admin') {
-        academicService.seedAssessmentTypes();
-        libraryService.processOverdueFees();
+    syncService.syncPage(route);
+
+    void renderApp();
+
+    const runBackgroundTasks = () => {
+      void import('./services/exportService.js');
+      if (state.profile?.role === 'admin') {
+        void Promise.all([
+          import('./services/academicService.js'),
+          import('./services/libraryService.js'),
+        ]).then(([academicModule, libraryModule]) => {
+          academicModule.academicService.seedAssessmentTypes();
+          libraryModule.libraryService.processOverdueFees();
+        }).catch(error => console.warn('[App] Background admin services failed:', error));
+      }
+    };
+
+    if ('requestIdleCallback' in window) {
+      window.requestIdleCallback(runBackgroundTasks, { timeout: 3000 });
+    } else {
+      window.setTimeout(runBackgroundTasks, 1000);
     }
-    renderApp();
   },
-  () => { // onLogout
+  () => {
     syncService.stopAll();
     currentLayout = null;
-    renderApp();
+    pageCache.clear();
+    void renderApp();
   }
 );

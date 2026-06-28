@@ -3,6 +3,7 @@ import { db, collection, addDoc, updateDoc, deleteDoc, doc } from '../firebase-c
 import { tCol, tDoc } from '../db.js';
 import { showModal, closeModal, showConfirm, showToast, checkValid, escapeHTML, renderAvatar } from '../ui.js';
 import { academicService } from '../services/academicService.js';
+import { ensureHtml2Pdf } from '../services/pdfService.js';
 import { recordAudit } from './auditLog.js';
 
 function getVisibleGradeContext() {
@@ -200,7 +201,9 @@ function buildGradeReportHtml(student, cls, studentGrades, summary) {
 }
 
 async function downloadStudentGradeReport(student, cls, studentGrades, summary) {
-  if (typeof window.html2pdf !== 'function') {
+  try {
+    await ensureHtml2Pdf();
+  } catch (error) {
     showToast(state.lang === 'ar' ? 'أداة تصدير PDF غير متاحة حاليا' : 'PDF export is not available right now', 'error');
     return;
   }

@@ -1,6 +1,5 @@
 import { 
     db, 
-    storage,
     collection, 
     addDoc, 
     updateDoc, 
@@ -11,11 +10,11 @@ import {
     where, 
     serverTimestamp,
     orderBy,
-    ref, 
-    uploadBytes, 
-    getDownloadURL,
     setDoc
-} from '../firebase-config.js';
+} from '../firebase-config.js?v=20260628-perf2';
+import {
+    storage, ref, uploadBytes, getDownloadURL
+} from '../firebase-storage.js?v=20260628-perf2';
 import { adminCreateUser } from '../auth.js';
 
 const COLLECTION_NAME = 'admission_applications';

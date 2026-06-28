@@ -1,12 +1,12 @@
 import { state } from '../state.js';
-import { tCol } from '../db.js?v=20260611-tenants2';
-import { onSnapshot } from '../firebase-config.js?v=20260611-tenants2';
+import { tCol } from '../db.js?v=20260628-perf2';
+import { onSnapshot } from '../firebase-config.js?v=20260628-perf2';
 
 class SyncService {
   constructor() {
     this.activeSubscriptions = new Map();
     this.pageCollectionMap = {
-      dashboard: ['students', 'teachers', 'classes', 'attendance', 'announcements', 'fees', 'notification_logs', 'notification_outbox', 'schedules', 'rewards', 'behavior_logs', 'homework', 'calendar_events', 'exam_schedule'],
+      dashboard: ['students', 'teachers', 'classes', 'parents', 'homework'],
       'setup-wizard': ['classes', 'subjects', 'teachers', 'school_settings'],
       students: ['students', 'classes', 'parents', 'custom_fields_schema', 'behavior_logs'],
       teachers: ['teachers', 'subjects'],

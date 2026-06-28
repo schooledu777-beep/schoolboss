@@ -1,5 +1,5 @@
-import { auth, db, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, doc, rootDoc, getDoc, setDoc, getDocs, collection, firebaseConfig, initializeApp, getAuth, updatePassword, sendPasswordResetEmail } from './firebase-config.js?v=20260611-tenants2';
-import { getTenantConfig, getTenantIdForUser } from './services/tenantService.js?v=20260611-tenants2';
+import { auth, db, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, doc, rootDoc, getDoc, setDoc, getDocs, collection, firebaseConfig, initializeApp, getAuth, updatePassword, sendPasswordResetEmail } from './firebase-config.js?v=20260628-perf2';
+import { getTenantConfig, getTenantIdForUser } from './services/tenantService.js?v=20260628-perf2';
 import { state, t } from './state.js';
 import { showToast, hideLoading } from './ui.js';
 
@@ -282,16 +282,18 @@ export function initAuth(onLogin, onLogout) {
 
         // Load school settings
         if (state.tenantId) try {
-          const settingsDoc = await getDoc(doc(db, 'settings', 'general'));
+          const [settingsDoc, modulesDoc, customFieldsDoc, rolesSnap] = await Promise.all([
+            getDoc(doc(db, 'settings', 'general')),
+            getDoc(doc(db, 'settings', 'modules')),
+            getDoc(doc(db, 'settings', 'custom_fields')),
+            getDocs(collection(db, 'roles')),
+          ]);
           if (settingsDoc.exists()) state.schoolType = settingsDoc.data().schoolType || 'private';
 
-          const modulesDoc = await getDoc(doc(db, 'settings', 'modules'));
           if (modulesDoc.exists()) state.modules = { ...state.modules, ...modulesDoc.data() };
 
-          const customFieldsDoc = await getDoc(doc(db, 'settings', 'custom_fields'));
           if (customFieldsDoc.exists()) state.customFields = { ...state.customFields, ...customFieldsDoc.data() };
 
-          const rolesSnap = await getDocs(collection(db, 'roles'));
           const rolesData = [];
           rolesSnap.forEach(roleDoc => rolesData.push({ id: roleDoc.id, ...roleDoc.data() }));
           if (rolesData.length > 0) state.roles = rolesData;

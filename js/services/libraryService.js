@@ -1,5 +1,5 @@
 import { state } from '../state.js';
-import { db, collection, addDoc, updateDoc, doc, deleteDoc } from '../firebase-config.js';
+import { db, collection, addDoc, updateDoc, doc, deleteDoc } from '../firebase-config.js?v=20260628-perf2';
 
 export const libraryService = {
   async borrowBook(studentId, bookId, dueDate) {

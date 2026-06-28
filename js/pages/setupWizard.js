@@ -1,9 +1,9 @@
 import { state } from '../state.js';
-import { db, collection, addDoc, doc, setDoc, updateDoc } from '../firebase-config.js?v=20260611-tenants2';
-import { tCol, tDoc } from '../db.js?v=20260611-tenants2';
-import { adminCreateUser } from '../auth.js?v=20260611-tenants2';
+import { db, collection, addDoc, doc, setDoc, updateDoc } from '../firebase-config.js?v=20260628-perf2';
+import { tCol, tDoc } from '../db.js?v=20260628-perf2';
+import { adminCreateUser } from '../auth.js?v=20260628-perf2';
 import { showToast, escapeHTML } from '../ui.js';
-import { validateActivationCode, consumeActivationCode } from '../services/tenantService.js?v=20260611-tenants2';
+import { validateActivationCode, consumeActivationCode } from '../services/tenantService.js?v=20260628-perf2';
 import { syncService } from '../services/syncService.js?v=20260506-setup-wizard-fix';
 
 const setupRef = () => tDoc('school_settings','general_info');
@@ -409,8 +409,8 @@ export function attachSetupWizardEvents() {
         );
 
         // Patch user profile in Firestore
-        const { db } = await import('../db.js?v=20260611-tenants2');
-        const { doc, setDoc } = await import('../firebase-config.js?v=20260611-tenants2');
+        const { db } = await import('../db.js?v=20260628-perf2');
+        const { doc, setDoc } = await import('../firebase-config.js?v=20260628-perf2');
         await setDoc(doc(db, 'users', state.user.uid), {
           tenantId,
           role: 'admin',
@@ -439,7 +439,7 @@ export function attachSetupWizardEvents() {
         // Re-render wizard (now tenantId is set → shows step 1)
         const mainContent = document.getElementById('main-content');
         if (mainContent) {
-          const { renderSetupWizard, attachSetupWizardEvents } = await import('./setupWizard.js?v=20260611-tenants2');
+          const { renderSetupWizard, attachSetupWizardEvents } = await import('./setupWizard.js?v=20260628-perf2');
           mainContent.innerHTML = renderSetupWizard();
           attachSetupWizardEvents();
         }

@@ -1,5 +1,5 @@
-import { db, collection, addDoc, getDocs, serverTimestamp, query, where, limit } from '../firebase-config.js';
-import { tCol, tDoc } from '../db.js';
+import { db, collection, addDoc, getDocs, serverTimestamp, query, where, limit } from '../firebase-config.js?v=20260628-perf2';
+import { tCol, tDoc } from '../db.js?v=20260628-perf2';
 import { state } from '../state.js';
 
 export const academicService = {

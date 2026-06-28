@@ -1,6 +1,6 @@
 import { state, t, toggleTheme, toggleLang } from './state.js';
 import { navigate } from './router.js';
-import { logout } from './auth.js';
+import { logout } from './auth.js?v=20260628-perf2';
 import { showConfirm, getInitials } from './ui.js';
 
 // ========================= SIDEBAR NAV CONFIG =========================

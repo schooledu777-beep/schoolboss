@@ -1,7 +1,7 @@
 import {
   db, rootCollection, rootDoc, getDoc, getDocs, setDoc, updateDoc,
   query, where, orderBy, runTransaction
-} from '../firebase-config.js?v=20260611-tenants2';
+} from '../firebase-config.js?v=20260628-perf2';
 import { state } from '../state.js';
 
 const CODES_COL = 'activation_codes';

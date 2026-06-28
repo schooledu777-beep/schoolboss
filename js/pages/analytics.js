@@ -1,5 +1,6 @@
 import { state, t } from '../state.js';
 import { formatCurrency } from '../ui.js';
+import { ensureHtml2Pdf } from '../services/pdfService.js';
 
 // ========================= ADVANCED ANALYTICS DASHBOARD =========================
 
@@ -525,8 +526,9 @@ export function attachAnalyticsEvents() {
   });
 
   // Export PDF
-  document.getElementById('export-analytics-btn')?.addEventListener('click', () => {
-    if (window.html2pdf) {
+  document.getElementById('export-analytics-btn')?.addEventListener('click', async () => {
+    try {
+      await ensureHtml2Pdf();
       const el = document.querySelector('.page-content');
       window.html2pdf().set({
         margin: 10,
@@ -534,7 +536,8 @@ export function attachAnalyticsEvents() {
         html2canvas: { scale: 1.5 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
       }).from(el).save();
-    } else {
+    } catch (error) {
+      console.error('[Analytics] PDF library failed:', error);
       window.print();
     }
   });
